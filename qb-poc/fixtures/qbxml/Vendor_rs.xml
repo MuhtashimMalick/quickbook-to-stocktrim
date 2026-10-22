@@ -1,0 +1,2477 @@
+<?xml version="1.0" ?>
+<QBXML>
+<QBXMLMsgsRs>
+<VendorQueryRs statusCode="0" statusSeverity="Info" statusMessage="Status OK" iteratorRemainingCount="0" iteratorID="{5639bec2-3bce-40ee-9008-d0a1384482bc}">
+<VendorRet>
+<ListID>A60000-1197760912</ListID>
+<TimeCreated>2007-12-16T04:21:52+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:22+05:00</TimeModified>
+<EditSequence>1765784302</EditSequence>
+<Name>A Cheung Limited</Name>
+<IsActive>true</IsActive>
+<CompanyName>A Cheung Limited</CompanyName>
+<Salutation>Ms.</Salutation>
+<FirstName>Angela</FirstName>
+<LastName>Cheung</LastName>
+<VendorAddress>
+<Addr1>A Cheung Limited</Addr1>
+<Addr2>Angela Cheung</Addr2>
+<Addr3>3818 Bear Rd. West</Addr3>
+<City>Berkeley</City>
+<State>CA</State>
+<PostalCode>94688</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>A Cheung Limited</Addr1>
+<Addr2>Angela Cheung</Addr2>
+<Addr3>3818 Bear Rd. West</Addr3>
+<Addr4>Berkeley, CA 94688</Addr4>
+</VendorAddressBlock>
+<Phone>510 555 5723</Phone>
+<Fax>510 555 5733</Fax>
+<Email>AC@CheungLimited.com</Email>
+<Contact>Angela Cheung</Contact>
+<AdditionalContactRef>
+<ContactName>Main Phone</ContactName>
+<ContactValue>510 555 5723</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Fax</ContactName>
+<ContactValue>510 555 5733</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Main Email</ContactName>
+<ContactValue>AC@CheungLimited.com</ContactValue>
+</AdditionalContactRef>
+<ContactsRet>
+<ListID>0000000000000p5h</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Angela Cheung</FirstName>
+</ContactsRet>
+<NameOnCheck>A Cheung Limited</NameOnCheck>
+<IsVendorEligibleFor1099>false</IsVendorEligibleFor1099>
+<Balance>0.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>A40000-1197774038</ListID>
+<TimeCreated>2007-12-16T08:00:38+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:22+05:00</TimeModified>
+<EditSequence>1765784302</EditSequence>
+<Name>Bank of Anycity</Name>
+<IsActive>true</IsActive>
+<CompanyName>Bank of Anycity</CompanyName>
+<FirstName>Lisa</FirstName>
+<MiddleName>D.</MiddleName>
+<LastName>Holzhauser</LastName>
+<VendorAddress>
+<Addr1>Bank of Anycity</Addr1>
+<Addr2>Lisa Holzhauser</Addr2>
+<Addr3>1935 Main Street</Addr3>
+<City>Middlefield</City>
+<State>CA</State>
+<PostalCode>94482</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Bank of Anycity</Addr1>
+<Addr2>Lisa Holzhauser</Addr2>
+<Addr3>1935 Main Street</Addr3>
+<Addr4>Middlefield, CA 94482</Addr4>
+</VendorAddressBlock>
+<Phone>415-555-9135</Phone>
+<Fax>415-555-9153</Fax>
+<Email>lisah@samplename.com</Email>
+<Contact>Lisa Holzhauser</Contact>
+<AdditionalContactRef>
+<ContactName>Main Phone</ContactName>
+<ContactValue>415-555-9135</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Fax</ContactName>
+<ContactValue>415-555-9153</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Main Email</ContactName>
+<ContactValue>lisah@samplename.com</ContactValue>
+</AdditionalContactRef>
+<ContactsRet>
+<ListID>0000000000000p5l</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Lisa Holzhauser</FirstName>
+</ContactsRet>
+<NameOnCheck>Bank of Anycity</NameOnCheck>
+<IsVendorEligibleFor1099>false</IsVendorEligibleFor1099>
+<Balance>0.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>2B0000-933272658</ListID>
+<TimeCreated>1999-07-29T23:24:18+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:22+05:00</TimeModified>
+<EditSequence>1765784302</EditSequence>
+<Name>Bayshore CalOil Service</Name>
+<IsActive>true</IsActive>
+<CompanyName>Bayshore CalOil Service</CompanyName>
+<VendorAddress>
+<Addr1>Bayshore CalOil Service</Addr1>
+<Addr2>771 S. Lerimore</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>98323</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Bayshore CalOil Service</Addr1>
+<Addr2>771 S. Lerimore</Addr2>
+<Addr3>Bayshore, CA  98323</Addr3>
+</VendorAddressBlock>
+<Phone>415-555-7378</Phone>
+<Contact>Kurt Rutherford</Contact>
+<AdditionalContactRef>
+<ContactName>Main Phone</ContactName>
+<ContactValue>415-555-7378</ContactValue>
+</AdditionalContactRef>
+<ContactsRet>
+<ListID>0000000000000p5p</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Kurt Rutherford</FirstName>
+</ContactsRet>
+<NameOnCheck>Bayshore CalOil Service</NameOnCheck>
+<AccountNumber>7-9398</AccountNumber>
+<VendorTypeRef>
+<ListID>60000-1071475754</ListID>
+<FullName>Supplies</FullName>
+</VendorTypeRef>
+<TermsRef>
+<ListID>40000-933272659</ListID>
+<FullName>2% 10 Net 30</FullName>
+</TermsRef>
+<CreditLimit>2500.00</CreditLimit>
+<IsVendorEligibleFor1099>false</IsVendorEligibleFor1099>
+<Balance>0.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>2C0000-933272658</ListID>
+<TimeCreated>1999-07-29T23:24:18+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:22+05:00</TimeModified>
+<EditSequence>1765784302</EditSequence>
+<Name>Bayshore Water</Name>
+<IsActive>true</IsActive>
+<CompanyName>Bayshore Water</CompanyName>
+<VendorAddress>
+<Addr1>Bayshore Water</Addr1>
+<Addr2>P.O. Box 61</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Bayshore Water</Addr1>
+<Addr2>P.O. Box 61</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<Phone>415-555-0111</Phone>
+<Contact>N/A</Contact>
+<AdditionalContactRef>
+<ContactName>Main Phone</ContactName>
+<ContactValue>415-555-0111</ContactValue>
+</AdditionalContactRef>
+<ContactsRet>
+<ListID>0000000000000p5r</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>N/A</FirstName>
+</ContactsRet>
+<NameOnCheck>Bayshore Water</NameOnCheck>
+<AccountNumber>7594-8381</AccountNumber>
+<VendorTypeRef>
+<ListID>70000-1071475839</ListID>
+<FullName>Utility</FullName>
+</VendorTypeRef>
+<TermsRef>
+<ListID>10000-933272658</ListID>
+<FullName>Net 30</FullName>
+</TermsRef>
+<IsVendorEligibleFor1099>false</IsVendorEligibleFor1099>
+<Balance>0.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>800000D7-1197949366</ListID>
+<TimeCreated>2007-12-18T08:42:46+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:22+05:00</TimeModified>
+<EditSequence>1765784302</EditSequence>
+<Name>Bruce&apos;s Office Machines</Name>
+<IsActive>true</IsActive>
+<CompanyName>Bruce&apos;s Office Machines</CompanyName>
+<Salutation>Mr.</Salutation>
+<FirstName>Bruce</FirstName>
+<LastName>Anderson</LastName>
+<VendorAddress>
+<Addr1>Bruce&apos;s Office Machines</Addr1>
+<Addr2>Bruce Anderson</Addr2>
+<Addr3>P.O. Box 23884</Addr3>
+<City>Millbrae</City>
+<State>CA</State>
+<PostalCode>94030</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Bruce&apos;s Office Machines</Addr1>
+<Addr2>Bruce Anderson</Addr2>
+<Addr3>P.O. Box 23884</Addr3>
+<Addr4>Millbrae, CA 94030</Addr4>
+</VendorAddressBlock>
+<Phone>650-555-8923</Phone>
+<AltPhone>650-555-0982</AltPhone>
+<Fax>650-555-0293</Fax>
+<Email>banderson@myemail.com</Email>
+<Contact> Bruce Anderson</Contact>
+<AdditionalContactRef>
+<ContactName>Main Phone</ContactName>
+<ContactValue>650-555-8923</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Alt. Phone</ContactName>
+<ContactValue>650-555-0982</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Fax</ContactName>
+<ContactValue>650-555-0293</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Main Email</ContactName>
+<ContactValue>banderson@myemail.com</ContactValue>
+</AdditionalContactRef>
+<ContactsRet>
+<ListID>0000000000000p5t</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName> Bruce Anderson</FirstName>
+</ContactsRet>
+<NameOnCheck>Bruce&apos;s Office Machines</NameOnCheck>
+<VendorTypeRef>
+<ListID>20000-933272658</ListID>
+<FullName>Equipment</FullName>
+</VendorTypeRef>
+<TermsRef>
+<ListID>20000-933272658</ListID>
+<FullName>Net 15</FullName>
+</TermsRef>
+<IsVendorEligibleFor1099>false</IsVendorEligibleFor1099>
+<Balance>0.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>30000-933272656</ListID>
+<TimeCreated>1999-07-29T23:24:16+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:22+05:00</TimeModified>
+<EditSequence>1765784302</EditSequence>
+<Name>C.U. Electric</Name>
+<IsActive>true</IsActive>
+<CompanyName>C. U. Electric</CompanyName>
+<FirstName>Carrick</FirstName>
+<LastName>Underdown</LastName>
+<VendorAddress>
+<Addr1>C. U. Electric</Addr1>
+<Addr2>P.O. Box 2816</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>C. U. Electric</Addr1>
+<Addr2>P.O. Box 2816</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<Phone>415-555-0797</Phone>
+<Fax>415-555-7283</Fax>
+<Email>cu-service@samplename.com</Email>
+<Contact>Carrick Underdown</Contact>
+<AdditionalContactRef>
+<ContactName>Main Phone</ContactName>
+<ContactValue>415-555-0797</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Fax</ContactName>
+<ContactValue>415-555-7283</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Main Email</ContactName>
+<ContactValue>cu-service@samplename.com</ContactValue>
+</AdditionalContactRef>
+<ContactsRet>
+<ListID>0000000000000p5y</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Carrick Underdown</FirstName>
+</ContactsRet>
+<NameOnCheck>C. U. Electric</NameOnCheck>
+<AccountNumber>1028-91</AccountNumber>
+<VendorTypeRef>
+<ListID>40000-933272658</ListID>
+<FullName>Subcontractors</FullName>
+</VendorTypeRef>
+<TermsRef>
+<ListID>10000-933272658</ListID>
+<FullName>Net 30</FullName>
+</TermsRef>
+<VendorTaxIdent>987-65-4321</VendorTaxIdent>
+<IsVendorEligibleFor1099>true</IsVendorEligibleFor1099>
+<Balance>750.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>2D0000-933272659</ListID>
+<TimeCreated>1999-07-29T23:24:19+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:22+05:00</TimeModified>
+<EditSequence>1765784302</EditSequence>
+<Name>Cal Gas &amp; Electric</Name>
+<IsActive>true</IsActive>
+<CompanyName>Cal Gas &amp; Electric</CompanyName>
+<VendorAddress>
+<Addr1>Cal Gas &amp; Electric</Addr1>
+<Addr2>P.O. Box 5037</Addr2>
+<City>Middlefield</City>
+<State>CA</State>
+<PostalCode>94482</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Cal Gas &amp; Electric</Addr1>
+<Addr2>P.O. Box 5037</Addr2>
+<Addr3>Middlefield CA 94482</Addr3>
+</VendorAddressBlock>
+<Phone>415-555-0202</Phone>
+<Contact>N/A</Contact>
+<AdditionalContactRef>
+<ContactName>Main Phone</ContactName>
+<ContactValue>415-555-0202</ContactValue>
+</AdditionalContactRef>
+<ContactsRet>
+<ListID>0000000000000p62</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>N/A</FirstName>
+</ContactsRet>
+<NameOnCheck>Cal Gas &amp; Electric</NameOnCheck>
+<AccountNumber>560-82645-99C</AccountNumber>
+<VendorTypeRef>
+<ListID>70000-1071475839</ListID>
+<FullName>Utility</FullName>
+</VendorTypeRef>
+<TermsRef>
+<ListID>20000-933272658</ListID>
+<FullName>Net 15</FullName>
+</TermsRef>
+<IsVendorEligibleFor1099>false</IsVendorEligibleFor1099>
+<Balance>122.68</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>2E0000-933272659</ListID>
+<TimeCreated>1999-07-29T23:24:19+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:22+05:00</TimeModified>
+<EditSequence>1765784302</EditSequence>
+<Name>Cal Telephone</Name>
+<IsActive>true</IsActive>
+<CompanyName>Cal Telephone</CompanyName>
+<VendorAddress>
+<Addr1>Cal Telephone</Addr1>
+<Addr2>P.O. Box 1100</Addr2>
+<City>Middlefield</City>
+<State>CA</State>
+<PostalCode>94482</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Cal Telephone</Addr1>
+<Addr2>P.O. Box 1100</Addr2>
+<Addr3>Middlefield CA 94482</Addr3>
+</VendorAddressBlock>
+<Phone>415-555-5555</Phone>
+<Contact>N/A</Contact>
+<AdditionalContactRef>
+<ContactName>Main Phone</ContactName>
+<ContactValue>415-555-5555</ContactValue>
+</AdditionalContactRef>
+<ContactsRet>
+<ListID>0000000000000p64</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>N/A</FirstName>
+</ContactsRet>
+<NameOnCheck>Cal Telephone</NameOnCheck>
+<AccountNumber>415-555-9876-8053</AccountNumber>
+<VendorTypeRef>
+<ListID>70000-1071475839</ListID>
+<FullName>Utility</FullName>
+</VendorTypeRef>
+<TermsRef>
+<ListID>10000-933272658</ListID>
+<FullName>Net 30</FullName>
+</TermsRef>
+<IsVendorEligibleFor1099>false</IsVendorEligibleFor1099>
+<Balance>91.94</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>2F0000-933272659</ListID>
+<TimeCreated>1999-07-29T23:24:19+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:22+05:00</TimeModified>
+<EditSequence>1765784302</EditSequence>
+<Name>CalOil Company</Name>
+<IsActive>true</IsActive>
+<VendorAddress>
+<Addr1>CalOil Company</Addr1>
+<Addr2>PO Box 628</Addr2>
+<City>Middlefield</City>
+<State>CA</State>
+<PostalCode>94482</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>CalOil Company</Addr1>
+<Addr2>PO Box 628</Addr2>
+<Addr3>Middlefield CA 94482</Addr3>
+</VendorAddressBlock>
+<Phone>650-555-0912</Phone>
+<Contact>Bill S.</Contact>
+<AdditionalContactRef>
+<ContactName>Main Phone</ContactName>
+<ContactValue>650-555-0912</ContactValue>
+</AdditionalContactRef>
+<ContactsRet>
+<ListID>0000000000000p66</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Bill S.</FirstName>
+</ContactsRet>
+<AccountNumber>98-4567-432</AccountNumber>
+<TermsRef>
+<ListID>20000-933272658</ListID>
+<FullName>Net 15</FullName>
+</TermsRef>
+<IsVendorEligibleFor1099>false</IsVendorEligibleFor1099>
+<Balance>0.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>100000-933272656</ListID>
+<TimeCreated>1999-07-29T23:24:16+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:22+05:00</TimeModified>
+<EditSequence>1765784302</EditSequence>
+<Name>City of Bayshore</Name>
+<IsActive>true</IsActive>
+<CompanyName>City of Bayshore</CompanyName>
+<VendorAddress>
+<Addr1>City of Bayshore</Addr1>
+<Addr2>100 Main St</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>City of Bayshore</Addr1>
+<Addr2>100 Main St</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<Phone>415-555-1000</Phone>
+<Contact>Susan</Contact>
+<AdditionalContactRef>
+<ContactName>Main Phone</ContactName>
+<ContactValue>415-555-1000</ContactValue>
+</AdditionalContactRef>
+<ContactsRet>
+<ListID>0000000000000p68</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Susan</FirstName>
+</ContactsRet>
+<NameOnCheck>City of Bayshore</NameOnCheck>
+<VendorTypeRef>
+<ListID>80000-1071476598</ListID>
+<FullName>Permits</FullName>
+</VendorTypeRef>
+<TermsRef>
+<ListID>20000-933272658</ListID>
+<FullName>Net 15</FullName>
+</TermsRef>
+<IsVendorEligibleFor1099>false</IsVendorEligibleFor1099>
+<Balance>0.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>630000-1071521572</ListID>
+<TimeCreated>2003-12-16T01:52:52+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:22+05:00</TimeModified>
+<EditSequence>1765784302</EditSequence>
+<Name>City of East Bayshore</Name>
+<IsActive>true</IsActive>
+<VendorAddress>
+<Addr1>City of East Bayshore</Addr1>
+<Addr2>PO Box 32786</Addr2>
+<City>East Bayshore</City>
+<State>CA</State>
+<PostalCode>94786</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>City of East Bayshore</Addr1>
+<Addr2>PO Box 32786</Addr2>
+<Addr3>East Bayshore, CA  94786</Addr3>
+</VendorAddressBlock>
+<Phone>650-555-0101</Phone>
+<Contact>Planning Department</Contact>
+<AdditionalContactRef>
+<ContactName>Main Phone</ContactName>
+<ContactValue>650-555-0101</ContactValue>
+</AdditionalContactRef>
+<ContactsRet>
+<ListID>0000000000000p6A</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Planning Department</FirstName>
+</ContactsRet>
+<VendorTypeRef>
+<ListID>80000-1071476598</ListID>
+<FullName>Permits</FullName>
+</VendorTypeRef>
+<TermsRef>
+<ListID>30000-933272658</ListID>
+<FullName>Due on receipt</FullName>
+</TermsRef>
+<IsVendorEligibleFor1099>false</IsVendorEligibleFor1099>
+<Balance>0.29</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>300000-933272659</ListID>
+<TimeCreated>1999-07-29T23:24:19+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:22+05:00</TimeModified>
+<EditSequence>1765784302</EditSequence>
+<Name>City of Middlefield</Name>
+<IsActive>true</IsActive>
+<VendorAddress>
+<Addr1>City of Middlefield</Addr1>
+<Addr2>City Hall</Addr2>
+<Addr3>P.O. Box 1</Addr3>
+<City>Middlefield</City>
+<State>CA</State>
+<PostalCode>94482</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>City of Middlefield</Addr1>
+<Addr2>City Hall</Addr2>
+<Addr3>P.O. Box 1</Addr3>
+<Addr4>Middlefield CA 94482</Addr4>
+</VendorAddressBlock>
+<Phone>415-555-8500</Phone>
+<Contact>Planning Department</Contact>
+<AdditionalContactRef>
+<ContactName>Main Phone</ContactName>
+<ContactValue>415-555-8500</ContactValue>
+</AdditionalContactRef>
+<ContactsRet>
+<ListID>0000000000000p6C</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Planning Department</FirstName>
+</ContactsRet>
+<VendorTypeRef>
+<ListID>80000-1071476598</ListID>
+<FullName>Permits</FullName>
+</VendorTypeRef>
+<TermsRef>
+<ListID>30000-933272658</ListID>
+<FullName>Due on receipt</FullName>
+</TermsRef>
+<IsVendorEligibleFor1099>false</IsVendorEligibleFor1099>
+<Balance>0.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>7B0000-1071524812</ListID>
+<TimeCreated>2003-12-16T02:46:52+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:22+05:00</TimeModified>
+<EditSequence>1765784302</EditSequence>
+<Name>Custom Kitchens of Bayshore</Name>
+<IsActive>true</IsActive>
+<CompanyName>Custom Kitchens of Bayshore</CompanyName>
+<Salutation>Mr</Salutation>
+<FirstName>Butch</FirstName>
+<LastName>Brown</LastName>
+<VendorAddress>
+<Addr1>Custom Kitchens of Bayshore</Addr1>
+<Addr2>Butch Brown</Addr2>
+<Addr3>923 S. Industrial Way</Addr3>
+<Addr4>Suite 101</Addr4>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Custom Kitchens of Bayshore</Addr1>
+<Addr2>Butch Brown</Addr2>
+<Addr3>923 S. Industrial Way</Addr3>
+<Addr4>Suite 101</Addr4>
+<Addr5>Bayshore, CA  94326</Addr5>
+</VendorAddressBlock>
+<Phone>415-555-2828</Phone>
+<AltPhone>415-555-2827</AltPhone>
+<Fax>415-555-2804</Fax>
+<Email>CKBservice@samplename.com</Email>
+<Contact>Butch Brown</Contact>
+<AltContact>Jay Jessen</AltContact>
+<AdditionalContactRef>
+<ContactName>Main Phone</ContactName>
+<ContactValue>415-555-2828</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Alt. Phone</ContactName>
+<ContactValue>415-555-2827</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Fax</ContactName>
+<ContactValue>415-555-2804</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Main Email</ContactName>
+<ContactValue>CKBservice@samplename.com</ContactValue>
+</AdditionalContactRef>
+<ContactsRet>
+<ListID>0000000000000p6E</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Butch Brown</FirstName>
+</ContactsRet>
+<ContactsRet>
+<ListID>0000000000000p6F</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Jay Jessen</FirstName>
+</ContactsRet>
+<NameOnCheck>Custom Kitchens of Bayshore</NameOnCheck>
+<AccountNumber>A2-981</AccountNumber>
+<VendorTypeRef>
+<ListID>30000-933272658</ListID>
+<FullName>Materials</FullName>
+</VendorTypeRef>
+<TermsRef>
+<ListID>60000-933272660</ListID>
+<FullName>Net 60</FullName>
+</TermsRef>
+<CreditLimit>5000.00</CreditLimit>
+<IsVendorEligibleFor1099>false</IsVendorEligibleFor1099>
+<Balance>0.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>640000-1071525538</ListID>
+<TimeCreated>2003-12-16T02:58:58+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:22+05:00</TimeModified>
+<EditSequence>1765784302</EditSequence>
+<Name>Daigle Lighting</Name>
+<IsActive>true</IsActive>
+<CompanyName>Daigle Lighting</CompanyName>
+<VendorAddress>
+<Addr1>PO Box 5903</Addr1>
+<City>Middlefield</City>
+<State>CA</State>
+<PostalCode>94482</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>PO Box 5903</Addr1>
+<Addr2>Middlefield CA  94482</Addr2>
+</VendorAddressBlock>
+<Phone>415-555-7769</Phone>
+<Fax>415-555-7770</Fax>
+<Email>info@samplename.com</Email>
+<Contact>Pam Daigle</Contact>
+<AdditionalContactRef>
+<ContactName>Main Phone</ContactName>
+<ContactValue>415-555-7769</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Fax</ContactName>
+<ContactValue>415-555-7770</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Main Email</ContactName>
+<ContactValue>info@samplename.com</ContactValue>
+</AdditionalContactRef>
+<ContactsRet>
+<ListID>0000000000000p6K</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Pam Daigle</FirstName>
+</ContactsRet>
+<NameOnCheck>Daigle Lighting</NameOnCheck>
+<AccountNumber>2-9187</AccountNumber>
+<VendorTypeRef>
+<ListID>30000-933272658</ListID>
+<FullName>Materials</FullName>
+</VendorTypeRef>
+<TermsRef>
+<ListID>10000-933272658</ListID>
+<FullName>Net 30</FullName>
+</TermsRef>
+<CreditLimit>10000.00</CreditLimit>
+<IsVendorEligibleFor1099>false</IsVendorEligibleFor1099>
+<Balance>1591.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>310000-933272659</ListID>
+<TimeCreated>1999-07-29T23:24:19+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:22+05:00</TimeModified>
+<EditSequence>1765784302</EditSequence>
+<Name>Davis Business Associates</Name>
+<IsActive>true</IsActive>
+<CompanyName>Davis Business Associates</CompanyName>
+<FirstName>Vicki</FirstName>
+<LastName>Davis</LastName>
+<VendorAddress>
+<Addr1>Davis Business Associates</Addr1>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Davis Business Associates</Addr1>
+</VendorAddressBlock>
+<Phone>415-555-2874</Phone>
+<AltPhone>415-555-2875</AltPhone>
+<Fax>415-555-2801</Fax>
+<Email>kdavis@samplename.com</Email>
+<Contact>Keith Davis</Contact>
+<AltContact>Dottie</AltContact>
+<AdditionalContactRef>
+<ContactName>Main Phone</ContactName>
+<ContactValue>415-555-2874</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Alt. Phone</ContactName>
+<ContactValue>415-555-2875</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Fax</ContactName>
+<ContactValue>415-555-2801</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Main Email</ContactName>
+<ContactValue>kdavis@samplename.com</ContactValue>
+</AdditionalContactRef>
+<ContactsRet>
+<ListID>0000000000000p6O</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Keith Davis</FirstName>
+</ContactsRet>
+<ContactsRet>
+<ListID>0000000000000p6P</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Dottie</FirstName>
+</ContactsRet>
+<NameOnCheck>Davis Business Associates</NameOnCheck>
+<IsVendorEligibleFor1099>false</IsVendorEligibleFor1099>
+<Balance>0.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>800000D6-1197948697</ListID>
+<TimeCreated>2007-12-18T08:31:37+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:22+05:00</TimeModified>
+<EditSequence>1765784302</EditSequence>
+<Name>Dianne&apos;s Auto Shop</Name>
+<IsActive>true</IsActive>
+<CompanyName>Dianne&apos;s Auto Shop</CompanyName>
+<Salutation>Mrs.</Salutation>
+<FirstName>Dianne</FirstName>
+<LastName>Bradley</LastName>
+<VendorAddress>
+<Addr1>Dianne&apos;s Auto Shop</Addr1>
+<Addr2>Dianne Bradley</Addr2>
+<Addr3>29834 Mustang Ave.</Addr3>
+<City>Millbrae</City>
+<State>CA</State>
+<PostalCode>94030</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Dianne&apos;s Auto Shop</Addr1>
+<Addr2>Dianne Bradley</Addr2>
+<Addr3>29834 Mustang Ave.</Addr3>
+<Addr4>Millbrae, CA 94030</Addr4>
+</VendorAddressBlock>
+<Phone>650-555-2342</Phone>
+<AltPhone>650-555-8322</AltPhone>
+<Fax>650-555-0982</Fax>
+<Email>dbradley@myemail.com</Email>
+<Contact>Dianne Bradley</Contact>
+<AdditionalContactRef>
+<ContactName>Main Phone</ContactName>
+<ContactValue>650-555-2342</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Alt. Phone</ContactName>
+<ContactValue>650-555-8322</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Fax</ContactName>
+<ContactValue>650-555-0982</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Main Email</ContactName>
+<ContactValue>dbradley@myemail.com</ContactValue>
+</AdditionalContactRef>
+<ContactsRet>
+<ListID>0000000000000p6U</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Dianne Bradley</FirstName>
+</ContactsRet>
+<NameOnCheck>Dianne&apos;s Auto Shop</NameOnCheck>
+<VendorTypeRef>
+<ListID>20000-933272658</ListID>
+<FullName>Equipment</FullName>
+</VendorTypeRef>
+<TermsRef>
+<ListID>20000-933272658</ListID>
+<FullName>Net 15</FullName>
+</TermsRef>
+<IsVendorEligibleFor1099>false</IsVendorEligibleFor1099>
+<Balance>0.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>720000-1071512482</ListID>
+<TimeCreated>2003-12-15T23:21:22+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:22+05:00</TimeModified>
+<EditSequence>1765784302</EditSequence>
+<Name>East Bayshore Auto Mall</Name>
+<IsActive>true</IsActive>
+<CompanyName>Bayshore Auto Mall</CompanyName>
+<VendorAddress>
+<Addr1>East Bayshore Auto Mall</Addr1>
+<Addr2>1000 Auto Mall Dr</Addr2>
+<City>East Bayshore</City>
+<State>CA</State>
+<PostalCode>94786</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>East Bayshore Auto Mall</Addr1>
+<Addr2>1000 Auto Mall Dr</Addr2>
+<Addr3>East Bayshore, CA  94786</Addr3>
+</VendorAddressBlock>
+<Phone>415-555-8785</Phone>
+<Fax>415-555-0329</Fax>
+<Email>sales-service@samplename.com</Email>
+<Contact>Jason Hepler</Contact>
+<AdditionalContactRef>
+<ContactName>Main Phone</ContactName>
+<ContactValue>415-555-8785</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Fax</ContactName>
+<ContactValue>415-555-0329</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Main Email</ContactName>
+<ContactValue>sales-service@samplename.com</ContactValue>
+</AdditionalContactRef>
+<ContactsRet>
+<ListID>0000000000000p6Z</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Jason Hepler</FirstName>
+</ContactsRet>
+<NameOnCheck> East Bayshore Auto Mall</NameOnCheck>
+<TermsRef>
+<ListID>20000-933272658</ListID>
+<FullName>Net 15</FullName>
+</TermsRef>
+<IsVendorEligibleFor1099>false</IsVendorEligibleFor1099>
+<Balance>0.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>7C0000-1071526124</ListID>
+<TimeCreated>2003-12-16T03:08:44+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:22+05:00</TimeModified>
+<EditSequence>1765784302</EditSequence>
+<Name>East Bayshore Tool &amp; Supply</Name>
+<IsActive>true</IsActive>
+<FirstName>Eric</FirstName>
+<LastName>Hansen</LastName>
+<VendorAddress>
+<Addr1>East Bayshore Tool &amp; Supply</Addr1>
+<Addr2>5111 N. Grand Ave</Addr2>
+<City>E. Bayshore</City>
+<State>CA</State>
+<PostalCode>92781</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>East Bayshore Tool &amp; Supply</Addr1>
+<Addr2>5111 N. Grand Ave</Addr2>
+<Addr3>E. Bayshore,  CA  92781</Addr3>
+</VendorAddressBlock>
+<Phone>415-555-8665</Phone>
+<AltPhone>415-555-8675</AltPhone>
+<Fax>415-555-8600</Fax>
+<Email>ebts@samplename.com</Email>
+<Contact>Eric Hansen</Contact>
+<AdditionalContactRef>
+<ContactName>Main Phone</ContactName>
+<ContactValue>415-555-8665</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Alt. Phone</ContactName>
+<ContactValue>415-555-8675</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Fax</ContactName>
+<ContactValue>415-555-8600</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Main Email</ContactName>
+<ContactValue>ebts@samplename.com</ContactValue>
+</AdditionalContactRef>
+<ContactsRet>
+<ListID>0000000000000p6d</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Eric Hansen</FirstName>
+</ContactsRet>
+<TermsRef>
+<ListID>10000-933272658</ListID>
+<FullName>Net 30</FullName>
+</TermsRef>
+<IsVendorEligibleFor1099>false</IsVendorEligibleFor1099>
+<Balance>0.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>140000-933272657</ListID>
+<TimeCreated>1999-07-29T23:24:17+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:22+05:00</TimeModified>
+<EditSequence>1765784302</EditSequence>
+<Name>Employment Development Department</Name>
+<IsActive>true</IsActive>
+<VendorAddress>
+<Addr1>Employment Development Department</Addr1>
+<Addr2>P.O. Box 123456</Addr2>
+<City>Sacramento</City>
+<State>CA</State>
+<PostalCode>94280</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Employment Development Department</Addr1>
+<Addr2>P.O. Box 123456</Addr2>
+<Addr3>Sacramento CA 94280</Addr3>
+</VendorAddressBlock>
+<Phone>(916) 555-1234</Phone>
+<AdditionalContactRef>
+<ContactName>Main Phone</ContactName>
+<ContactValue>(916) 555-1234</ContactValue>
+</AdditionalContactRef>
+<IsVendorEligibleFor1099>false</IsVendorEligibleFor1099>
+<Balance>0.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>320000-933272659</ListID>
+<TimeCreated>1999-07-29T23:24:19+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:22+05:00</TimeModified>
+<EditSequence>1765784302</EditSequence>
+<Name>Express Delivery Service</Name>
+<IsActive>true</IsActive>
+<CompanyName>Express Delivery Service</CompanyName>
+<VendorAddress>
+<Addr1>Express Delivery Service</Addr1>
+<Addr2>5600 E. Broadway</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Express Delivery Service</Addr1>
+<Addr2>5600 E. Broadway</Addr2>
+<Addr3>Bayshore, CA  94326</Addr3>
+</VendorAddressBlock>
+<Phone>415-555-4646</Phone>
+<AltPhone>415-555-4650</AltPhone>
+<Fax>415-555-3000</Fax>
+<Email>drobson@samplename.com</Email>
+<Contact>Darci Robson</Contact>
+<AdditionalContactRef>
+<ContactName>Main Phone</ContactName>
+<ContactValue>415-555-4646</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Alt. Phone</ContactName>
+<ContactValue>415-555-4650</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Fax</ContactName>
+<ContactValue>415-555-3000</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Main Email</ContactName>
+<ContactValue>drobson@samplename.com</ContactValue>
+</AdditionalContactRef>
+<ContactsRet>
+<ListID>0000000000000p6j</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Darci Robson</FirstName>
+</ContactsRet>
+<NameOnCheck>Express Delivery Service</NameOnCheck>
+<AccountNumber>ES-123987D</AccountNumber>
+<TermsRef>
+<ListID>10000-933272658</ListID>
+<FullName>Net 30</FullName>
+</TermsRef>
+<IsVendorEligibleFor1099>false</IsVendorEligibleFor1099>
+<Balance>0.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>330000-933272659</ListID>
+<TimeCreated>1999-07-29T23:24:19+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:22+05:00</TimeModified>
+<EditSequence>1765784302</EditSequence>
+<Name>Fay, Maureen Lynn, CPA</Name>
+<IsActive>true</IsActive>
+<FirstName>Maureen Lynn</FirstName>
+<LastName>Fay</LastName>
+<VendorAddress>
+<Addr1>Maureen Lynn Fay, CPA</Addr1>
+<Addr2>200 Royal Rd</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Maureen Lynn Fay, CPA</Addr1>
+<Addr2>200 Royal Rd</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<Phone>415-555-2381</Phone>
+<Fax>415-555-2382</Fax>
+<Contact>Maureen Lynn Fay</Contact>
+<AltContact>Warner Onstine</AltContact>
+<AdditionalContactRef>
+<ContactName>Main Phone</ContactName>
+<ContactValue>415-555-2381</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Fax</ContactName>
+<ContactValue>415-555-2382</ContactValue>
+</AdditionalContactRef>
+<ContactsRet>
+<ListID>0000000000000p6o</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Maureen Lynn Fay</FirstName>
+</ContactsRet>
+<ContactsRet>
+<ListID>0000000000000p6p</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Warner Onstine</FirstName>
+</ContactsRet>
+<NameOnCheck>Maureen Lynn Fay</NameOnCheck>
+<VendorTypeRef>
+<ListID>10000-933272658</ListID>
+<FullName>Consultant</FullName>
+</VendorTypeRef>
+<TermsRef>
+<ListID>10000-933272658</ListID>
+<FullName>Net 30</FullName>
+</TermsRef>
+<IsVendorEligibleFor1099>false</IsVendorEligibleFor1099>
+<Balance>0.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>800000BC-1197728886</ListID>
+<TimeCreated>2007-12-15T19:28:06+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:22+05:00</TimeModified>
+<EditSequence>1765784302</EditSequence>
+<Name>Federal Treasury</Name>
+<IsActive>true</IsActive>
+<CompanyName>Federal Treasury</CompanyName>
+<VendorAddress>
+<Addr1>Federal Treasury</Addr1>
+<Addr2>1400 Pennsylvania Ave.</Addr2>
+<City>Washington</City>
+<State>DC</State>
+<PostalCode>20012</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Federal Treasury</Addr1>
+<Addr2>1400 Pennsylvania Ave.</Addr2>
+<Addr3>Washington, DC 20012</Addr3>
+</VendorAddressBlock>
+<NameOnCheck>Federal Treasury</NameOnCheck>
+<IsVendorEligibleFor1099>false</IsVendorEligibleFor1099>
+<Balance>0.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>9E0000-970008966</ListID>
+<TimeCreated>2000-09-27T03:56:06+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:22+05:00</TimeModified>
+<EditSequence>1765784302</EditSequence>
+<Name>Funds Transfer</Name>
+<IsActive>true</IsActive>
+<VendorAddress>
+<Addr1>Funds Transfer</Addr1>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Funds Transfer</Addr1>
+</VendorAddressBlock>
+<IsVendorEligibleFor1099>false</IsVendorEligibleFor1099>
+<Balance>0.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>340000-933272659</ListID>
+<TimeCreated>1999-07-29T23:24:19+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:22+05:00</TimeModified>
+<EditSequence>1765784302</EditSequence>
+<Name>Gallion Masonry</Name>
+<IsActive>true</IsActive>
+<CompanyName>Gallion Masonry</CompanyName>
+<Salutation>Mr.</Salutation>
+<FirstName>Garry</FirstName>
+<LastName>Gallion</LastName>
+<VendorAddress>
+<Addr1>Gallion Masonry</Addr1>
+<Addr2>189 Old Bayshore Rd</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Gallion Masonry</Addr1>
+<Addr2>189 Old Bayshore Rd</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<Phone>415-555-2436</Phone>
+<Contact>Gary Gallion</Contact>
+<AdditionalContactRef>
+<ContactName>Main Phone</ContactName>
+<ContactValue>415-555-2436</ContactValue>
+</AdditionalContactRef>
+<ContactsRet>
+<ListID>0000000000000p6s</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Gary Gallion</FirstName>
+</ContactsRet>
+<NameOnCheck>Gallion Masonry</NameOnCheck>
+<AccountNumber>R 594</AccountNumber>
+<VendorTypeRef>
+<ListID>30000-933272658</ListID>
+<FullName>Materials</FullName>
+</VendorTypeRef>
+<TermsRef>
+<ListID>10000-933272658</ListID>
+<FullName>Net 30</FullName>
+</TermsRef>
+<IsVendorEligibleFor1099>false</IsVendorEligibleFor1099>
+<Balance>0.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>800000AC-1197716220</ListID>
+<TimeCreated>2007-12-15T15:57:00+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:22+05:00</TimeModified>
+<EditSequence>1765784302</EditSequence>
+<Name>Great Statewide Bank</Name>
+<IsActive>true</IsActive>
+<CompanyName>Great Statewide Bank</CompanyName>
+<VendorAddress>
+<Addr1>Great Statewide Bank</Addr1>
+<Addr2>P.O. Box 522</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Great Statewide Bank</Addr1>
+<Addr2>P.O. Box 522</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<Phone>415-555-2400</Phone>
+<Contact>Cristina Jimenez</Contact>
+<AdditionalContactRef>
+<ContactName>Main Phone</ContactName>
+<ContactValue>415-555-2400</ContactValue>
+</AdditionalContactRef>
+<ContactsRet>
+<ListID>0000000000000p6u</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Cristina Jimenez</FirstName>
+</ContactsRet>
+<NameOnCheck>Great Statewide Bank</NameOnCheck>
+<IsVendorEligibleFor1099>false</IsVendorEligibleFor1099>
+<Balance>0.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>50000-933272656</ListID>
+<TimeCreated>1999-07-29T23:24:16+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:22+05:00</TimeModified>
+<EditSequence>1765784302</EditSequence>
+<Name>Hamlin Metal</Name>
+<IsActive>true</IsActive>
+<CompanyName>Hamlin Metal</CompanyName>
+<FirstName>Mark</FirstName>
+<LastName>Hamlin</LastName>
+<VendorAddress>
+<Addr1>Hamlin Metal</Addr1>
+<Addr2>270 Old Bayshore Rd</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Hamlin Metal</Addr1>
+<Addr2>270 Old Bayshore Rd</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<Phone>415-555-8965</Phone>
+<AltPhone>415-555-8970</AltPhone>
+<Fax>415-555-8900</Fax>
+<Email>mhamlin@samplename.com</Email>
+<Contact>Mark Hamlin</Contact>
+<AltContact>Mike Scopellite</AltContact>
+<AdditionalContactRef>
+<ContactName>Main Phone</ContactName>
+<ContactValue>415-555-8965</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Alt. Phone</ContactName>
+<ContactValue>415-555-8970</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Fax</ContactName>
+<ContactValue>415-555-8900</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Main Email</ContactName>
+<ContactValue>mhamlin@samplename.com</ContactValue>
+</AdditionalContactRef>
+<ContactsRet>
+<ListID>0000000000000p6w</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Mark Hamlin</FirstName>
+</ContactsRet>
+<ContactsRet>
+<ListID>0000000000000p6x</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Mike Scopellite</FirstName>
+</ContactsRet>
+<NameOnCheck>Hamlin Metal</NameOnCheck>
+<AccountNumber>94-201-6464-1</AccountNumber>
+<VendorTypeRef>
+<ListID>40000-933272658</ListID>
+<FullName>Subcontractors</FullName>
+</VendorTypeRef>
+<TermsRef>
+<ListID>10000-933272658</ListID>
+<FullName>Net 30</FullName>
+</TermsRef>
+<VendorTaxIdent>13-2456789</VendorTaxIdent>
+<IsVendorEligibleFor1099>true</IsVendorEligibleFor1099>
+<Balance>670.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>750000-1071527895</ListID>
+<TimeCreated>2003-12-16T03:38:15+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:22+05:00</TimeModified>
+<EditSequence>1765784302</EditSequence>
+<Name>Holly Heating and Electric</Name>
+<IsActive>true</IsActive>
+<CompanyName>Holly Heating and Electric</CompanyName>
+<Salutation>Mr</Salutation>
+<FirstName>Chris</FirstName>
+<LastName>Holly</LastName>
+<VendorAddress>
+<Addr1>Holly Heating and Electric</Addr1>
+<Addr2>Attn: Chris Holly</Addr2>
+<Addr3>201 S. Cherry Blvd</Addr3>
+<City>E. Batshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Holly Heating and Electric</Addr1>
+<Addr2>Attn: Chris Holly</Addr2>
+<Addr3>201 S. Cherry Blvd</Addr3>
+<Addr4>E. Batshore, CA  94326</Addr4>
+</VendorAddressBlock>
+<Phone>415-555-4300</Phone>
+<AltPhone>415-555-2653</AltPhone>
+<Fax>415-555-4328</Fax>
+<Email>hollyservice@samplename.com</Email>
+<Contact>Chris Holly</Contact>
+<AdditionalContactRef>
+<ContactName>Main Phone</ContactName>
+<ContactValue>415-555-4300</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Alt. Phone</ContactName>
+<ContactValue>415-555-2653</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Fax</ContactName>
+<ContactValue>415-555-4328</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Main Email</ContactName>
+<ContactValue>hollyservice@samplename.com</ContactValue>
+</AdditionalContactRef>
+<ContactsRet>
+<ListID>0000000000000p72</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Chris Holly</FirstName>
+</ContactsRet>
+<NameOnCheck>Holly Heating and Electric Co, Inc.</NameOnCheck>
+<TermsRef>
+<ListID>60000-933272660</ListID>
+<FullName>Net 60</FullName>
+</TermsRef>
+<VendorTaxIdent>94-0102000</VendorTaxIdent>
+<IsVendorEligibleFor1099>true</IsVendorEligibleFor1099>
+<Balance>0.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>F0000-933272656</ListID>
+<TimeCreated>1999-07-29T23:24:16+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:22+05:00</TimeModified>
+<EditSequence>1765784302</EditSequence>
+<Name>Hopkins Construction Rentals</Name>
+<IsActive>true</IsActive>
+<CompanyName>Hopkins Construction Rentals</CompanyName>
+<FirstName>Freddy</FirstName>
+<LastName>Hopkins, Jr.</LastName>
+<VendorAddress>
+<Addr1>Hopkins Construction Rentals</Addr1>
+<Addr2>33 Old Bayshore Rd</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Hopkins Construction Rentals</Addr1>
+<Addr2>33 Old Bayshore Rd</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<Phone>415-555-2366</Phone>
+<Fax>415-555-2367</Fax>
+<Email>fhopkins@samplename.com</Email>
+<Contact>Mike Golliday</Contact>
+<AdditionalContactRef>
+<ContactName>Main Phone</ContactName>
+<ContactValue>415-555-2366</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Fax</ContactName>
+<ContactValue>415-555-2367</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Main Email</ContactName>
+<ContactValue>fhopkins@samplename.com</ContactValue>
+</AdditionalContactRef>
+<ContactsRet>
+<ListID>0000000000000p77</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Mike Golliday</FirstName>
+</ContactsRet>
+<NameOnCheck>Hopkins Construction Rentals</NameOnCheck>
+<VendorTypeRef>
+<ListID>20000-933272658</ListID>
+<FullName>Equipment</FullName>
+</VendorTypeRef>
+<TermsRef>
+<ListID>20000-933272658</ListID>
+<FullName>Net 15</FullName>
+</TermsRef>
+<IsVendorEligibleFor1099>false</IsVendorEligibleFor1099>
+<Balance>700.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>350000-933272659</ListID>
+<TimeCreated>1999-07-29T23:24:19+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:22+05:00</TimeModified>
+<EditSequence>1765784302</EditSequence>
+<Name>Kershaw Computer Services</Name>
+<IsActive>true</IsActive>
+<CompanyName>Kershaw Computer Services</CompanyName>
+<Salutation>Mr.</Salutation>
+<FirstName>Greg</FirstName>
+<LastName>Kershaw</LastName>
+<VendorAddress>
+<Addr1>Kershaw Computer Services</Addr1>
+<Addr2>101 Main St</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Kershaw Computer Services</Addr1>
+<Addr2>101 Main St</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<Phone>415-555-1515</Phone>
+<Fax>415-555-1510</Fax>
+<Contact>Greg Kershaw</Contact>
+<AltContact>Donald Kucsmas</AltContact>
+<AdditionalContactRef>
+<ContactName>Main Phone</ContactName>
+<ContactValue>415-555-1515</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Fax</ContactName>
+<ContactValue>415-555-1510</ContactValue>
+</AdditionalContactRef>
+<ContactsRet>
+<ListID>0000000000000p7B</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Greg Kershaw</FirstName>
+</ContactsRet>
+<ContactsRet>
+<ListID>0000000000000p7C</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Donald Kucsmas</FirstName>
+</ContactsRet>
+<NameOnCheck>Kershaw Computer Services</NameOnCheck>
+<VendorTypeRef>
+<ListID>10000-933272658</ListID>
+<FullName>Consultant</FullName>
+</VendorTypeRef>
+<TermsRef>
+<ListID>10000-933272658</ListID>
+<FullName>Net 30</FullName>
+</TermsRef>
+<IsVendorEligibleFor1099>false</IsVendorEligibleFor1099>
+<Balance>0.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>40000-933272656</ListID>
+<TimeCreated>1999-07-29T23:24:16+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:22+05:00</TimeModified>
+<EditSequence>1765784302</EditSequence>
+<Name>Keswick Insulation</Name>
+<IsActive>true</IsActive>
+<VendorAddress>
+<Addr1>Keswick Insulation</Addr1>
+<Addr2>P.O. Box 620</Addr2>
+<City>Middlefield</City>
+<State>CA</State>
+<PostalCode>94482</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Keswick Insulation</Addr1>
+<Addr2>P.O. Box 620</Addr2>
+<Addr3>Middlefield CA 94482</Addr3>
+</VendorAddressBlock>
+<Phone>415-555-0305</Phone>
+<Contact>Shannon Keswick</Contact>
+<AltContact>Herb Crowther</AltContact>
+<AdditionalContactRef>
+<ContactName>Main Phone</ContactName>
+<ContactValue>415-555-0305</ContactValue>
+</AdditionalContactRef>
+<ContactsRet>
+<ListID>0000000000000p7F</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Shannon Keswick</FirstName>
+</ContactsRet>
+<ContactsRet>
+<ListID>0000000000000p7G</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Herb Crowther</FirstName>
+</ContactsRet>
+<NameOnCheck>Keswick Insulation</NameOnCheck>
+<VendorTypeRef>
+<ListID>40000-933272658</ListID>
+<FullName>Subcontractors</FullName>
+</VendorTypeRef>
+<TermsRef>
+<ListID>20000-933272658</ListID>
+<FullName>Net 15</FullName>
+</TermsRef>
+<VendorTaxIdent>12-3456789</VendorTaxIdent>
+<IsVendorEligibleFor1099>true</IsVendorEligibleFor1099>
+<Balance>0.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>10000-933272655</ListID>
+<TimeCreated>1999-07-29T23:24:15+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:23+05:00</TimeModified>
+<EditSequence>1765784303</EditSequence>
+<Name>Larson Flooring</Name>
+<IsActive>true</IsActive>
+<CompanyName>Larson Flooring</CompanyName>
+<VendorAddress>
+<Addr1>Larson Flooring</Addr1>
+<Addr2>2780 County Rd</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Larson Flooring</Addr1>
+<Addr2>2780 County Rd</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<Phone>415-555-2046</Phone>
+<Fax>415-555-2047</Fax>
+<Contact>Judith Larson</Contact>
+<AdditionalContactRef>
+<ContactName>Main Phone</ContactName>
+<ContactValue>415-555-2046</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Fax</ContactName>
+<ContactValue>415-555-2047</ContactValue>
+</AdditionalContactRef>
+<ContactsRet>
+<ListID>0000000000000p7I</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Judith Larson</FirstName>
+</ContactsRet>
+<NameOnCheck>Larson Flooring</NameOnCheck>
+<VendorTypeRef>
+<ListID>40000-933272658</ListID>
+<FullName>Subcontractors</FullName>
+</VendorTypeRef>
+<TermsRef>
+<ListID>10000-933272658</ListID>
+<FullName>Net 30</FullName>
+</TermsRef>
+<VendorTaxIdent>98-7654321</VendorTaxIdent>
+<IsVendorEligibleFor1099>true</IsVendorEligibleFor1099>
+<Balance>0.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>70000-933272656</ListID>
+<TimeCreated>1999-07-29T23:24:16+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:23+05:00</TimeModified>
+<EditSequence>1765784303</EditSequence>
+<Name>Lew Plumbing</Name>
+<IsActive>true</IsActive>
+<CompanyName>Lew Plumbing</CompanyName>
+<FirstName>Glenn</FirstName>
+<MiddleName>L.</MiddleName>
+<LastName>Lew</LastName>
+<VendorAddress>
+<Addr1>Lew Plumbing</Addr1>
+<Addr2>221 Old Bayshore Rd</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Lew Plumbing</Addr1>
+<Addr2>221 Old Bayshore Rd</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<Phone>415-555-5483</Phone>
+<Contact>Glenn L. Lew</Contact>
+<AdditionalContactRef>
+<ContactName>Main Phone</ContactName>
+<ContactValue>415-555-5483</ContactValue>
+</AdditionalContactRef>
+<ContactsRet>
+<ListID>0000000000000p7L</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Glenn L. Lew</FirstName>
+</ContactsRet>
+<NameOnCheck>Lew Plumbing</NameOnCheck>
+<AccountNumber>5-487</AccountNumber>
+<VendorTypeRef>
+<ListID>40000-933272658</ListID>
+<FullName>Subcontractors</FullName>
+</VendorTypeRef>
+<TermsRef>
+<ListID>20000-933272658</ListID>
+<FullName>Net 15</FullName>
+</TermsRef>
+<VendorTaxIdent>12-3456789</VendorTaxIdent>
+<IsVendorEligibleFor1099>true</IsVendorEligibleFor1099>
+<Balance>1330.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>800000A9-1197711748</ListID>
+<TimeCreated>2007-12-15T14:42:28+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:23+05:00</TimeModified>
+<EditSequence>1765784303</EditSequence>
+<Name>Madrid, Winnie</Name>
+<IsActive>true</IsActive>
+<VendorAddress>
+<Addr1>Winnie Madrid</Addr1>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Winnie Madrid</Addr1>
+</VendorAddressBlock>
+<IsVendorEligibleFor1099>false</IsVendorEligibleFor1099>
+<Balance>0.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>800000AB-1197711791</ListID>
+<TimeCreated>2007-12-15T14:43:11+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:23+05:00</TimeModified>
+<EditSequence>1765784303</EditSequence>
+<Name>Mason, Elizabeth</Name>
+<IsActive>true</IsActive>
+<VendorAddress>
+<Addr1>Mason, Elizabeth</Addr1>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Mason, Elizabeth</Addr1>
+</VendorAddressBlock>
+<IsVendorEligibleFor1099>false</IsVendorEligibleFor1099>
+<Balance>0.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>D0000-933272656</ListID>
+<TimeCreated>1999-07-29T23:24:16+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:23+05:00</TimeModified>
+<EditSequence>1765784303</EditSequence>
+<Name>McClain Appliances</Name>
+<IsActive>true</IsActive>
+<CompanyName>McClain Appliances</CompanyName>
+<Salutation>Mr.</Salutation>
+<FirstName>Joshua</FirstName>
+<MiddleName>A.</MiddleName>
+<LastName>McClain</LastName>
+<VendorAddress>
+<Addr1>McClain Appliances</Addr1>
+<Addr2>740 Washington Rd</Addr2>
+<City>Middlefield</City>
+<State>CA</State>
+<PostalCode>94482</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>McClain Appliances</Addr1>
+<Addr2>740 Washington Rd</Addr2>
+<Addr3>Middlefield CA 94482</Addr3>
+</VendorAddressBlock>
+<Phone>415-555-7422</Phone>
+<Fax>415-555-7426</Fax>
+<Contact>Joshua A. McClain</Contact>
+<AdditionalContactRef>
+<ContactName>Main Phone</ContactName>
+<ContactValue>415-555-7422</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Fax</ContactName>
+<ContactValue>415-555-7426</ContactValue>
+</AdditionalContactRef>
+<ContactsRet>
+<ListID>0000000000000p7N</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Joshua A. McClain</FirstName>
+</ContactsRet>
+<NameOnCheck>McClain Appliances</NameOnCheck>
+<AccountNumber>85-93117</AccountNumber>
+<VendorTypeRef>
+<ListID>20000-933272658</ListID>
+<FullName>Equipment</FullName>
+</VendorTypeRef>
+<TermsRef>
+<ListID>40000-933272659</ListID>
+<FullName>2% 10 Net 30</FullName>
+</TermsRef>
+<IsVendorEligibleFor1099>false</IsVendorEligibleFor1099>
+<Balance>0.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>A20000-970009674</ListID>
+<TimeCreated>2000-09-27T04:07:54+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:23+05:00</TimeModified>
+<EditSequence>1765784303</EditSequence>
+<Name>Mendoza Mechanical</Name>
+<IsActive>true</IsActive>
+<CompanyName>Mendoza Mechanical</CompanyName>
+<Salutation>Mr.</Salutation>
+<FirstName>Kevin</FirstName>
+<LastName>Mendoza</LastName>
+<VendorAddress>
+<Addr1>Mendoza Mechanical</Addr1>
+<Addr2>Kevin Mendoza</Addr2>
+<Addr3>456 E Bayshore Frwy</Addr3>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94400</PostalCode>
+<Country>USA</Country>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Mendoza Mechanical</Addr1>
+<Addr2>Kevin Mendoza</Addr2>
+<Addr3>456 E Bayshore Frwy</Addr3>
+<Addr4>Bayshore, Ca 94400</Addr4>
+<Addr5>USA</Addr5>
+</VendorAddressBlock>
+<Phone>888-555-5858</Phone>
+<Contact>Kevin Mendoza</Contact>
+<AdditionalContactRef>
+<ContactName>Main Phone</ContactName>
+<ContactValue>888-555-5858</ContactValue>
+</AdditionalContactRef>
+<ContactsRet>
+<ListID>0000000000000p7Q</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Kevin Mendoza</FirstName>
+</ContactsRet>
+<NameOnCheck>Mendoza Mechanical</NameOnCheck>
+<AccountNumber>123123123</AccountNumber>
+<IsVendorEligibleFor1099>false</IsVendorEligibleFor1099>
+<Balance>0.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>20000-933272656</ListID>
+<TimeCreated>1999-07-29T23:24:16+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:23+05:00</TimeModified>
+<EditSequence>1765784303</EditSequence>
+<Name>Middlefield Drywall</Name>
+<IsActive>true</IsActive>
+<VendorAddress>
+<Addr1>Middlefield Drywall</Addr1>
+<Addr2>P.O. Box 76</Addr2>
+<City>Middlefield</City>
+<State>CA</State>
+<PostalCode>94482</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Middlefield Drywall</Addr1>
+<Addr2>P.O. Box 76</Addr2>
+<Addr3>Middlefield CA 94482</Addr3>
+</VendorAddressBlock>
+<Phone>415-555-0046</Phone>
+<Contact>Craig Carlson</Contact>
+<AdditionalContactRef>
+<ContactName>Main Phone</ContactName>
+<ContactValue>415-555-0046</ContactValue>
+</AdditionalContactRef>
+<ContactsRet>
+<ListID>0000000000000p7S</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Craig Carlson</FirstName>
+</ContactsRet>
+<AccountNumber>ROCK-0921</AccountNumber>
+<VendorTypeRef>
+<ListID>40000-933272658</ListID>
+<FullName>Subcontractors</FullName>
+</VendorTypeRef>
+<TermsRef>
+<ListID>10000-933272658</ListID>
+<FullName>Net 30</FullName>
+</TermsRef>
+<VendorTaxIdent>333-33-3334</VendorTaxIdent>
+<IsVendorEligibleFor1099>true</IsVendorEligibleFor1099>
+<Balance>1200.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>800000AA-1197711777</ListID>
+<TimeCreated>2007-12-15T14:42:57+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:23+05:00</TimeModified>
+<EditSequence>1765784303</EditSequence>
+<Name>Miller, Dan</Name>
+<IsActive>true</IsActive>
+<VendorAddress>
+<Addr1>Dan Miller</Addr1>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Dan Miller</Addr1>
+</VendorAddressBlock>
+<IsVendorEligibleFor1099>false</IsVendorEligibleFor1099>
+<Balance>0.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>800000BE-1181228666</ListID>
+<TimeCreated>2007-06-07T20:04:26+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:23+05:00</TimeModified>
+<EditSequence>1765784303</EditSequence>
+<Name>Pacific Paint Supplies</Name>
+<IsActive>true</IsActive>
+<VendorAddress>
+<Addr1>Pacific Paint Supplies</Addr1>
+<Addr2>Maureen Pacific</Addr2>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Pacific Paint Supplies</Addr1>
+<Addr2>Maureen Pacific</Addr2>
+</VendorAddressBlock>
+<IsVendorEligibleFor1099>false</IsVendorEligibleFor1099>
+<Balance>0.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>B0000-933272656</ListID>
+<TimeCreated>1999-07-29T23:24:16+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:23+05:00</TimeModified>
+<EditSequence>1765784303</EditSequence>
+<Name>Patton Hardware Supplies</Name>
+<IsActive>true</IsActive>
+<CompanyName>Patton Hardware Supplies</CompanyName>
+<VendorAddress>
+<Addr1>Patton Hardware Supplies</Addr1>
+<Addr2>4872 County Rd</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Patton Hardware Supplies</Addr1>
+<Addr2>4872 County Rd</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<Phone>415-555-1370</Phone>
+<Fax>415-555-1371</Fax>
+<Contact>Cam Patton</Contact>
+<AltContact>Ted</AltContact>
+<AdditionalContactRef>
+<ContactName>Main Phone</ContactName>
+<ContactValue>415-555-1370</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Fax</ContactName>
+<ContactValue>415-555-1371</ContactValue>
+</AdditionalContactRef>
+<ContactsRet>
+<ListID>0000000000000p7U</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Cam Patton</FirstName>
+</ContactsRet>
+<ContactsRet>
+<ListID>0000000000000p7V</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Ted</FirstName>
+</ContactsRet>
+<NameOnCheck>Patton Hardware Supplies</NameOnCheck>
+<AccountNumber>RC 93</AccountNumber>
+<VendorTypeRef>
+<ListID>30000-933272658</ListID>
+<FullName>Materials</FullName>
+</VendorTypeRef>
+<TermsRef>
+<ListID>10000-933272658</ListID>
+<FullName>Net 30</FullName>
+</TermsRef>
+<IsVendorEligibleFor1099>false</IsVendorEligibleFor1099>
+<Balance>4479.20</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>C0000-933272656</ListID>
+<TimeCreated>1999-07-29T23:24:16+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:23+05:00</TimeModified>
+<EditSequence>1765784303</EditSequence>
+<Name>Perry Windows &amp; Doors</Name>
+<IsActive>true</IsActive>
+<VendorAddress>
+<Addr1>Perry Windows &amp; Doors</Addr1>
+<Addr2>P.O. Box 5033</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Perry Windows &amp; Doors</Addr1>
+<Addr2>P.O. Box 5033</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<Phone>415-555-5933</Phone>
+<Contact>Dave Perry</Contact>
+<AdditionalContactRef>
+<ContactName>Main Phone</ContactName>
+<ContactValue>415-555-5933</ContactValue>
+</AdditionalContactRef>
+<ContactsRet>
+<ListID>0000000000000p7Y</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Dave Perry</FirstName>
+</ContactsRet>
+<VendorTypeRef>
+<ListID>30000-933272658</ListID>
+<FullName>Materials</FullName>
+</VendorTypeRef>
+<TermsRef>
+<ListID>10000-933272658</ListID>
+<FullName>Net 30</FullName>
+</TermsRef>
+<IsVendorEligibleFor1099>false</IsVendorEligibleFor1099>
+<Balance>6705.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>9F0000-970009239</ListID>
+<TimeCreated>2000-09-27T04:00:39+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:23+05:00</TimeModified>
+<EditSequence>1765784303</EditSequence>
+<Name>QuickBooks MasterCard</Name>
+<IsActive>true</IsActive>
+<CompanyName>QuickBooks MasterCard</CompanyName>
+<VendorAddress>
+<Addr1>QuickBooks MasterCard</Addr1>
+<Addr2>PO BOX 0000</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94400</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>QuickBooks MasterCard</Addr1>
+<Addr2>PO BOX 0000</Addr2>
+<Addr3>Bayshore, CA 94400</Addr3>
+</VendorAddressBlock>
+<NameOnCheck>QuickBooks MasterCard</NameOnCheck>
+<IsVendorEligibleFor1099>false</IsVendorEligibleFor1099>
+<Balance>0.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>800000A8-1197711706</ListID>
+<TimeCreated>2007-12-15T14:41:46+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:23+05:00</TimeModified>
+<EditSequence>1765784303</EditSequence>
+<Name>Rand, Jenn</Name>
+<IsActive>true</IsActive>
+<VendorAddress>
+<Addr1>Jenn Rand</Addr1>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Jenn Rand</Addr1>
+</VendorAddressBlock>
+<IsVendorEligibleFor1099>false</IsVendorEligibleFor1099>
+<Balance>0.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>360000-933272659</ListID>
+<TimeCreated>1999-07-29T23:24:19+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:23+05:00</TimeModified>
+<EditSequence>1765784303</EditSequence>
+<Name>Reyes Properties</Name>
+<IsActive>true</IsActive>
+<VendorAddress>
+<Addr1>Reyes Properties</Addr1>
+<Addr2>P.O. Box 2836</Addr2>
+<City>Middlefield</City>
+<State>CA</State>
+<PostalCode>94482</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Reyes Properties</Addr1>
+<Addr2>P.O. Box 2836</Addr2>
+<Addr3>Middlefield CA 94482</Addr3>
+</VendorAddressBlock>
+<Phone>415-555-7900</Phone>
+<Contact>Celso Gullermo Reyes</Contact>
+<AdditionalContactRef>
+<ContactName>Main Phone</ContactName>
+<ContactValue>415-555-7900</ContactValue>
+</AdditionalContactRef>
+<ContactsRet>
+<ListID>0000000000000p7a</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Celso Gullermo Reyes</FirstName>
+</ContactsRet>
+<IsVendorEligibleFor1099>false</IsVendorEligibleFor1099>
+<Balance>0.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>120000-933272657</ListID>
+<TimeCreated>1999-07-29T23:24:17+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:23+05:00</TimeModified>
+<EditSequence>1765784303</EditSequence>
+<Name>Sergeant Insurance</Name>
+<IsActive>true</IsActive>
+<VendorAddress>
+<Addr1>Sergeant Insurance</Addr1>
+<Addr2>P.O. Box 6257</Addr2>
+<City>Middlefield</City>
+<State>CA</State>
+<PostalCode>94482</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Sergeant Insurance</Addr1>
+<Addr2>P.O. Box 6257</Addr2>
+<Addr3>Middlefield CA 94482</Addr3>
+</VendorAddressBlock>
+<Phone>415-555-1919</Phone>
+<Fax>415-555-2929</Fax>
+<Contact>Karen Jean Sergeant</Contact>
+<AdditionalContactRef>
+<ContactName>Main Phone</ContactName>
+<ContactValue>415-555-1919</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Fax</ContactName>
+<ContactValue>415-555-2929</ContactValue>
+</AdditionalContactRef>
+<ContactsRet>
+<ListID>0000000000000p7c</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Karen Jean Sergeant</FirstName>
+</ContactsRet>
+<AccountNumber>786-35</AccountNumber>
+<TermsRef>
+<ListID>10000-933272658</ListID>
+<FullName>Net 30</FullName>
+</TermsRef>
+<IsVendorEligibleFor1099>false</IsVendorEligibleFor1099>
+<Balance>4050.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>80000-933272656</ListID>
+<TimeCreated>1999-07-29T23:24:16+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:23+05:00</TimeModified>
+<EditSequence>1765784303</EditSequence>
+<Name>Sloan Roofing</Name>
+<IsActive>true</IsActive>
+<VendorAddress>
+<Addr1>Sloan Roofing</Addr1>
+<Addr2>P.O. Box 2431</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Sloan Roofing</Addr1>
+<Addr2>P.O. Box 2431</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<Phone>415-555-1284</Phone>
+<Contact>Mary L. Sloan</Contact>
+<AdditionalContactRef>
+<ContactName>Main Phone</ContactName>
+<ContactValue>415-555-1284</ContactValue>
+</AdditionalContactRef>
+<ContactsRet>
+<ListID>0000000000000p7f</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Mary L. Sloan</FirstName>
+</ContactsRet>
+<VendorTypeRef>
+<ListID>40000-933272658</ListID>
+<FullName>Subcontractors</FullName>
+</VendorTypeRef>
+<TermsRef>
+<ListID>10000-933272658</ListID>
+<FullName>Net 30</FullName>
+</TermsRef>
+<VendorTaxIdent>23-4567891</VendorTaxIdent>
+<IsVendorEligibleFor1099>true</IsVendorEligibleFor1099>
+<Balance>1047.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>110000-933272656</ListID>
+<TimeCreated>1999-07-29T23:24:16+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:23+05:00</TimeModified>
+<EditSequence>1765784303</EditSequence>
+<Name>State Board of Equalization</Name>
+<IsActive>true</IsActive>
+<VendorAddress>
+<Addr1>State Board of Equalization</Addr1>
+<Addr2>P.O. Box 3456</Addr2>
+<City>Sacramento</City>
+<State>CA</State>
+<PostalCode>94280</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>State Board of Equalization</Addr1>
+<Addr2>P.O. Box 3456</Addr2>
+<Addr3>Sacramento CA 94280</Addr3>
+</VendorAddressBlock>
+<AccountNumber>ABCD 11-234567</AccountNumber>
+<VendorTypeRef>
+<ListID>50000-933272658</ListID>
+<FullName>Tax agency</FullName>
+</VendorTypeRef>
+<IsVendorEligibleFor1099>false</IsVendorEligibleFor1099>
+<Balance>957.34</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>A30001-1197738874</ListID>
+<TimeCreated>2007-12-15T22:14:34+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:23+05:00</TimeModified>
+<EditSequence>1765784303</EditSequence>
+<Name>State Fund</Name>
+<IsActive>true</IsActive>
+<VendorAddress>
+<Addr1>State Fund</Addr1>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>State Fund</Addr1>
+</VendorAddressBlock>
+<IsVendorEligibleFor1099>false</IsVendorEligibleFor1099>
+<Balance>0.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>A0000-933272656</ListID>
+<TimeCreated>1999-07-29T23:24:16+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:23+05:00</TimeModified>
+<EditSequence>1765784303</EditSequence>
+<Name>Thomas Kitchen &amp; Bath</Name>
+<IsActive>true</IsActive>
+<FirstName>Jon</FirstName>
+<LastName>Thomas</LastName>
+<VendorAddress>
+<Addr1>Thomas Kitchen &amp; Bath</Addr1>
+<Addr2>608 Main St</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Thomas Kitchen &amp; Bath</Addr1>
+<Addr2>608 Main St</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<Phone>415-555-8462</Phone>
+<Fax>415-555-8463</Fax>
+<Contact>Bert Thomas</Contact>
+<AltContact>Niccola Thomas</AltContact>
+<AdditionalContactRef>
+<ContactName>Main Phone</ContactName>
+<ContactValue>415-555-8462</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Fax</ContactName>
+<ContactValue>415-555-8463</ContactValue>
+</AdditionalContactRef>
+<ContactsRet>
+<ListID>0000000000000p7h</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Bert Thomas</FirstName>
+</ContactsRet>
+<ContactsRet>
+<ListID>0000000000000p7i</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Niccola Thomas</FirstName>
+</ContactsRet>
+<AccountNumber>R 55-801</AccountNumber>
+<VendorTypeRef>
+<ListID>30000-933272658</ListID>
+<FullName>Materials</FullName>
+</VendorTypeRef>
+<TermsRef>
+<ListID>10000-933272658</ListID>
+<FullName>Net 30</FullName>
+</TermsRef>
+<IsVendorEligibleFor1099>false</IsVendorEligibleFor1099>
+<Balance>585.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>E0000-933272656</ListID>
+<TimeCreated>1999-07-29T23:24:16+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:23+05:00</TimeModified>
+<EditSequence>1765784303</EditSequence>
+<Name>Timberloft Lumber</Name>
+<IsActive>true</IsActive>
+<CompanyName>Timberloft Lumber</CompanyName>
+<FirstName>Daniel</FirstName>
+<LastName>Appodaca</LastName>
+<VendorAddress>
+<Addr1>Timberloft Lumber</Addr1>
+<Addr2>456 Old Bayshore Rd</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Timberloft Lumber</Addr1>
+<Addr2>456 Old Bayshore Rd</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<Phone>415-555-1490</Phone>
+<AltPhone>999-1234</AltPhone>
+<Contact>Daniel Appodaca</Contact>
+<AdditionalContactRef>
+<ContactName>Main Phone</ContactName>
+<ContactValue>415-555-1490</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Alt. Phone</ContactName>
+<ContactValue>999-1234</ContactValue>
+</AdditionalContactRef>
+<ContactsRet>
+<ListID>0000000000000p7l</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Daniel Appodaca</FirstName>
+</ContactsRet>
+<NameOnCheck>Timberloft Lumber</NameOnCheck>
+<AccountNumber>1890-76</AccountNumber>
+<VendorTypeRef>
+<ListID>30000-933272658</ListID>
+<FullName>Materials</FullName>
+</VendorTypeRef>
+<TermsRef>
+<ListID>10000-933272658</ListID>
+<FullName>Net 30</FullName>
+</TermsRef>
+<IsVendorEligibleFor1099>false</IsVendorEligibleFor1099>
+<Balance>215.10</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>800000B4-1197779815</ListID>
+<TimeCreated>2007-12-16T09:36:55+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:23+05:00</TimeModified>
+<EditSequence>1765784303</EditSequence>
+<Name>Vu Contracting</Name>
+<IsActive>true</IsActive>
+<CompanyName>Vu Contracting</CompanyName>
+<FirstName>Don</FirstName>
+<LastName>Vu</LastName>
+<VendorAddress>
+<Addr1>Vu Contracting</Addr1>
+<Addr2>Don Vu</Addr2>
+<Addr3>89304 Freedom Dr.</Addr3>
+<City>San Mateo</City>
+<State>CA</State>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Vu Contracting</Addr1>
+<Addr2>Don Vu</Addr2>
+<Addr3>89304 Freedom Dr.</Addr3>
+<Addr4>San Mateo, CA</Addr4>
+</VendorAddressBlock>
+<Phone>829-555-9019</Phone>
+<AltPhone>829-555-9002</AltPhone>
+<Fax>829-555-9020</Fax>
+<Email>dvu@versitlecontractingisp.com</Email>
+<Cc>inifo@rockcastle.com</Cc>
+<Contact>Don Vu</Contact>
+<AdditionalContactRef>
+<ContactName>Main Phone</ContactName>
+<ContactValue>829-555-9019</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Alt. Phone</ContactName>
+<ContactValue>829-555-9002</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Fax</ContactName>
+<ContactValue>829-555-9020</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Main Email</ContactName>
+<ContactValue>dvu@versitlecontractingisp.com</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>CC Email</ContactName>
+<ContactValue>inifo@rockcastle.com</ContactValue>
+</AdditionalContactRef>
+<ContactsRet>
+<ListID>0000000000000p7o</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Don Vu</FirstName>
+</ContactsRet>
+<NameOnCheck>Vu Contracting</NameOnCheck>
+<AccountNumber>103940</AccountNumber>
+<VendorTypeRef>
+<ListID>40000-933272658</ListID>
+<FullName>Subcontractors</FullName>
+</VendorTypeRef>
+<TermsRef>
+<ListID>20000-933272658</ListID>
+<FullName>Net 15</FullName>
+</TermsRef>
+<VendorTaxIdent>01-4920394</VendorTaxIdent>
+<IsVendorEligibleFor1099>true</IsVendorEligibleFor1099>
+<Balance>1250.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>60000-933272656</ListID>
+<TimeCreated>1999-07-29T23:24:16+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:23+05:00</TimeModified>
+<EditSequence>1765784303</EditSequence>
+<Name>Washuta &amp; Son Painting</Name>
+<IsActive>true</IsActive>
+<VendorAddress>
+<Addr1>Washuta &amp; Son Painting</Addr1>
+<Addr2>P.O. Box 783</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Washuta &amp; Son Painting</Addr1>
+<Addr2>P.O. Box 783</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<Phone>415-555-1813</Phone>
+<Fax>415-555-1883</Fax>
+<Contact>Steve Washuta</Contact>
+<AltContact>Glen</AltContact>
+<AdditionalContactRef>
+<ContactName>Main Phone</ContactName>
+<ContactValue>415-555-1813</ContactValue>
+</AdditionalContactRef>
+<AdditionalContactRef>
+<ContactName>Fax</ContactName>
+<ContactValue>415-555-1883</ContactValue>
+</AdditionalContactRef>
+<ContactsRet>
+<ListID>0000000000000p7u</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Steve Washuta</FirstName>
+</ContactsRet>
+<ContactsRet>
+<ListID>0000000000000p7v</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Glen</FirstName>
+</ContactsRet>
+<AccountNumber>123-78</AccountNumber>
+<VendorTypeRef>
+<ListID>40000-933272658</ListID>
+<FullName>Subcontractors</FullName>
+</VendorTypeRef>
+<TermsRef>
+<ListID>10000-933272658</ListID>
+<FullName>Net 30</FullName>
+</TermsRef>
+<VendorTaxIdent>98-7654321</VendorTaxIdent>
+<IsVendorEligibleFor1099>true</IsVendorEligibleFor1099>
+<Balance>600.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>90000-933272656</ListID>
+<TimeCreated>1999-07-29T23:24:16+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:23+05:00</TimeModified>
+<EditSequence>1765784303</EditSequence>
+<Name>Wheeler&apos;s Tile Etc.</Name>
+<IsActive>true</IsActive>
+<VendorAddress>
+<Addr1>Wheeler&apos;s Tile Etc.</Addr1>
+<Addr2>650 Old Bayshore Rd</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Wheeler&apos;s Tile Etc.</Addr1>
+<Addr2>650 Old Bayshore Rd</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<Phone>415-555-9977</Phone>
+<Contact>Travis Wheeler</Contact>
+<AltContact>Mushnik Jehosophat</AltContact>
+<AdditionalContactRef>
+<ContactName>Main Phone</ContactName>
+<ContactValue>415-555-9977</ContactValue>
+</AdditionalContactRef>
+<ContactsRet>
+<ListID>0000000000000p7y</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Travis Wheeler</FirstName>
+</ContactsRet>
+<ContactsRet>
+<ListID>0000000000000p7z</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Mushnik Jehosophat</FirstName>
+</ContactsRet>
+<AccountNumber>H-18756</AccountNumber>
+<VendorTypeRef>
+<ListID>40000-933272658</ListID>
+<FullName>Subcontractors</FullName>
+</VendorTypeRef>
+<TermsRef>
+<ListID>10000-933272658</ListID>
+<FullName>Net 30</FullName>
+</TermsRef>
+<VendorTaxIdent>99-8877665</VendorTaxIdent>
+<IsVendorEligibleFor1099>true</IsVendorEligibleFor1099>
+<Balance>1250.00</Balance>
+</VendorRet>
+<VendorRet>
+<ListID>800000BD-1181226959</ListID>
+<TimeCreated>2007-06-07T19:35:59+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:38:23+05:00</TimeModified>
+<EditSequence>1765784303</EditSequence>
+<Name>Zeng Building Supplies</Name>
+<IsActive>true</IsActive>
+<CompanyName>Zeng Building Supplies</CompanyName>
+<FirstName>Vivian</FirstName>
+<LastName>Zeng</LastName>
+<VendorAddress>
+<Addr1>Zeng Building Supplies</Addr1>
+<Addr2>Vivian Zeng</Addr2>
+<Addr3>345 Main St.</Addr3>
+<City>Middlefield</City>
+<State>CA</State>
+<PostalCode>94043</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Zeng Building Supplies</Addr1>
+<Addr2>Vivian Zeng</Addr2>
+<Addr3>345 Main St.</Addr3>
+<Addr4>Middlefield, CA 94043</Addr4>
+</VendorAddressBlock>
+<Contact>Vivian Zeng</Contact>
+<ContactsRet>
+<ListID>0000000000000p81</ListID>
+<TimeCreated>2012-07-26T08:46:25+05:00</TimeCreated>
+<TimeModified>2012-07-26T08:46:25+05:00</TimeModified>
+<EditSequence>1343274385</EditSequence>
+<FirstName>Vivian Zeng</FirstName>
+</ContactsRet>
+<NameOnCheck>Zeng Building Supplies</NameOnCheck>
+<IsVendorEligibleFor1099>false</IsVendorEligibleFor1099>
+<Balance>0.00</Balance>
+</VendorRet>
+</VendorQueryRs>
+</QBXMLMsgsRs>
+</QBXML>

@@ -1,0 +1,377 @@
+<?xml version="1.0" ?>
+<QBXML>
+<QBXMLMsgsRs>
+<SalesOrderQueryRs statusCode="0" statusSeverity="Info" statusMessage="Status OK" iteratorRemainingCount="0" iteratorID="{097a4f4e-f98a-4200-9a84-0a43b0b5f34f}">
+<SalesOrderRet>
+<TxnID>96A4-1181226042</TxnID>
+<TimeCreated>2007-06-07T19:20:42+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:37:55+05:00</TimeModified>
+<EditSequence>1765784274</EditSequence>
+<TxnNumber>1458</TxnNumber>
+<CustomerRef>
+<ListID>160000-933272658</ListID>
+<FullName>Abercrombie, Kristy:Family Room</FullName>
+</CustomerRef>
+<TemplateRef>
+<ListID>120000-1071512690</ListID>
+<FullName>Custom Sales Order</FullName>
+</TemplateRef>
+<TxnDate>2026-06-07</TxnDate>
+<RefNumber>7000</RefNumber>
+<BillAddress>
+<Addr1>Kristy Abercrombie</Addr1>
+<Addr2>5647 Cypress Hill Rd</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</BillAddress>
+<BillAddressBlock>
+<Addr1>Kristy Abercrombie</Addr1>
+<Addr2>5647 Cypress Hill Rd</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</BillAddressBlock>
+<ShipAddress>
+<Addr1>Kristy Abercrombie</Addr1>
+<Addr2>5647 Cypress Hill Rd</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Kristy Abercrombie</Addr1>
+<Addr2>5647 Cypress Hill Rd</Addr2>
+<Addr3>Bayshore, CA 94326</Addr3>
+</ShipAddressBlock>
+<DueDate>2027-06-07</DueDate>
+<ShipDate>2026-06-07</ShipDate>
+<Subtotal>1200.00</Subtotal>
+<ItemSalesTaxRef>
+<ListID>2E0000-933272656</ListID>
+<FullName>San Tomas</FullName>
+</ItemSalesTaxRef>
+<SalesTaxPercentage>7.75</SalesTaxPercentage>
+<SalesTaxTotal>93.00</SalesTaxTotal>
+<TotalAmount>1293.00</TotalAmount>
+<IsManuallyClosed>false</IsManuallyClosed>
+<IsFullyInvoiced>true</IsFullyInvoiced>
+<IsToBePrinted>true</IsToBePrinted>
+<IsToBeEmailed>true</IsToBeEmailed>
+<CustomerSalesTaxCodeRef>
+<ListID>10000-999022286</ListID>
+<FullName>Tax</FullName>
+</CustomerSalesTaxCodeRef>
+<SalesOrderLineRet>
+<TxnLineID>96A6-1181226042</TxnLineID>
+<ItemRef>
+<ListID>160000-933272656</ListID>
+<FullName>Wood Door:Exterior</FullName>
+</ItemRef>
+<Desc>Exterior wood door</Desc>
+<Quantity>10</Quantity>
+<Rate>120.00</Rate>
+<Amount>1200.00</Amount>
+<SalesTaxCodeRef>
+<ListID>10000-999022286</ListID>
+<FullName>Tax</FullName>
+</SalesTaxCodeRef>
+<Invoiced>10</Invoiced>
+<IsManuallyClosed>false</IsManuallyClosed>
+</SalesOrderLineRet>
+<FulfillmentStatus>Open</FulfillmentStatus>
+</SalesOrderRet>
+<SalesOrderRet>
+<TxnID>4912-1071512816</TxnID>
+<TimeCreated>2003-12-15T23:26:56+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:37:16+05:00</TimeModified>
+<EditSequence>1765784236</EditSequence>
+<TxnNumber>1081</TxnNumber>
+<CustomerRef>
+<ListID>6A0000-1071525654</ListID>
+<FullName>Roche, Diarmuid:Room addition</FullName>
+</CustomerRef>
+<ClassRef>
+<ListID>10000-933272658</ListID>
+<FullName>New Construction</FullName>
+</ClassRef>
+<TemplateRef>
+<ListID>120000-1071512690</ListID>
+<FullName>Custom Sales Order</FullName>
+</TemplateRef>
+<TxnDate>2026-10-20</TxnDate>
+<RefNumber>7001</RefNumber>
+<BillAddress>
+<Addr1>Diarmuid Roche</Addr1>
+<Addr2>3219 Lisa Lane</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</BillAddress>
+<BillAddressBlock>
+<Addr1>Diarmuid Roche</Addr1>
+<Addr2>3219 Lisa Lane</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</BillAddressBlock>
+<ShipAddress>
+<Addr1>Diarmuid Roche</Addr1>
+<Addr2>3219 Lisa Lane</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Diarmuid Roche</Addr1>
+<Addr2>3219 Lisa Lane</Addr2>
+<Addr3>Bayshore, CA 94326</Addr3>
+</ShipAddressBlock>
+<TermsRef>
+<ListID>30000-933272658</ListID>
+<FullName>Due on receipt</FullName>
+</TermsRef>
+<DueDate>2027-10-20</DueDate>
+<ShipDate>2026-10-20</ShipDate>
+<Subtotal>260.00</Subtotal>
+<ItemSalesTaxRef>
+<ListID>2E0000-933272656</ListID>
+<FullName>San Tomas</FullName>
+</ItemSalesTaxRef>
+<SalesTaxPercentage>7.75</SalesTaxPercentage>
+<SalesTaxTotal>20.15</SalesTaxTotal>
+<TotalAmount>280.15</TotalAmount>
+<IsManuallyClosed>false</IsManuallyClosed>
+<IsFullyInvoiced>false</IsFullyInvoiced>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<CustomerSalesTaxCodeRef>
+<ListID>10000-999022286</ListID>
+<FullName>Tax</FullName>
+</CustomerSalesTaxCodeRef>
+<SalesOrderLineRet>
+<TxnLineID>4914-1071512816</TxnLineID>
+<ItemRef>
+<ListID>1B0000-933272656</ListID>
+<FullName>Lumber:Decking</FullName>
+</ItemRef>
+<Desc>Decking lumber</Desc>
+<Quantity>28</Quantity>
+<Rate>8.00</Rate>
+<Amount>224.00</Amount>
+<SalesTaxCodeRef>
+<ListID>10000-999022286</ListID>
+<FullName>Tax</FullName>
+</SalesTaxCodeRef>
+<Invoiced>0</Invoiced>
+<IsManuallyClosed>false</IsManuallyClosed>
+</SalesOrderLineRet>
+<SalesOrderLineRet>
+<TxnLineID>4915-1071512816</TxnLineID>
+<ItemRef>
+<ListID>1C0000-933272656</ListID>
+<FullName>Lumber:Rough</FullName>
+</ItemRef>
+<Desc>Rough lumber</Desc>
+<Quantity>6</Quantity>
+<Rate>6.00</Rate>
+<Amount>36.00</Amount>
+<SalesTaxCodeRef>
+<ListID>10000-999022286</ListID>
+<FullName>Tax</FullName>
+</SalesTaxCodeRef>
+<Invoiced>0</Invoiced>
+<IsManuallyClosed>false</IsManuallyClosed>
+</SalesOrderLineRet>
+<FulfillmentStatus>Open</FulfillmentStatus>
+</SalesOrderRet>
+<SalesOrderRet>
+<TxnID>5B96-1197763849</TxnID>
+<TimeCreated>2007-12-16T05:10:49+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:37:50+05:00</TimeModified>
+<EditSequence>1765784259</EditSequence>
+<TxnNumber>1254</TxnNumber>
+<CustomerRef>
+<ListID>800000B3-1197778093</ListID>
+<FullName>Vasquez, Anabel:Basement Remodel</FullName>
+</CustomerRef>
+<ClassRef>
+<ListID>40000-933272658</ListID>
+<FullName>Remodel</FullName>
+</ClassRef>
+<TemplateRef>
+<ListID>170000-1064006338</ListID>
+<FullName>Sales Order with Rep</FullName>
+</TemplateRef>
+<TxnDate>2026-11-18</TxnDate>
+<RefNumber>7002</RefNumber>
+<BillAddress>
+<Addr1>Anabel Vasquez</Addr1>
+<Addr2>5601 Legacy Parkway</Addr2>
+<City>San Mateo</City>
+<State>CA</State>
+<PostalCode>09402</PostalCode>
+</BillAddress>
+<BillAddressBlock>
+<Addr1>Anabel Vasquez</Addr1>
+<Addr2>5601 Legacy Parkway</Addr2>
+<Addr3>San Mateo, CA 09402</Addr3>
+</BillAddressBlock>
+<ShipAddress>
+<Addr1>Anabel Vasquez</Addr1>
+<Addr2>5601 Legacy Parkway</Addr2>
+<City>San Mateo</City>
+<State>CA</State>
+<PostalCode>09402</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Anabel Vasquez</Addr1>
+<Addr2>5601 Legacy Parkway</Addr2>
+<Addr3>San Mateo, CA 09402</Addr3>
+</ShipAddressBlock>
+<TermsRef>
+<ListID>20000-933272658</ListID>
+<FullName>Net 15</FullName>
+</TermsRef>
+<DueDate>2027-12-03</DueDate>
+<ShipDate>2026-11-18</ShipDate>
+<Subtotal>1600.00</Subtotal>
+<ItemSalesTaxRef>
+<ListID>2E0000-933272656</ListID>
+<FullName>San Tomas</FullName>
+</ItemSalesTaxRef>
+<SalesTaxPercentage>7.75</SalesTaxPercentage>
+<SalesTaxTotal>124.00</SalesTaxTotal>
+<TotalAmount>1724.00</TotalAmount>
+<IsManuallyClosed>false</IsManuallyClosed>
+<IsFullyInvoiced>false</IsFullyInvoiced>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<CustomerSalesTaxCodeRef>
+<ListID>10000-999022286</ListID>
+<FullName>Tax</FullName>
+</CustomerSalesTaxCodeRef>
+<SalesOrderLineRet>
+<TxnLineID>5B98-1197763849</TxnLineID>
+<ItemRef>
+<ListID>110000-933272656</ListID>
+<FullName>Cabinets:Light Pine</FullName>
+</ItemRef>
+<Desc>Light pine kitchen cabinet wall unit</Desc>
+<Quantity>4</Quantity>
+<Rate>400.00</Rate>
+<ClassRef>
+<ListID>40000-933272658</ListID>
+<FullName>Remodel</FullName>
+</ClassRef>
+<Amount>1600.00</Amount>
+<SalesTaxCodeRef>
+<ListID>10000-999022286</ListID>
+<FullName>Tax</FullName>
+</SalesTaxCodeRef>
+<Invoiced>2</Invoiced>
+<IsManuallyClosed>false</IsManuallyClosed>
+</SalesOrderLineRet>
+<FulfillmentStatus>Open</FulfillmentStatus>
+</SalesOrderRet>
+<SalesOrderRet>
+<TxnID>490D-1071512761</TxnID>
+<TimeCreated>2003-12-15T23:26:01+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:37:16+05:00</TimeModified>
+<EditSequence>1765784236</EditSequence>
+<TxnNumber>1080</TxnNumber>
+<CustomerRef>
+<ListID>700000-1071512041</ListID>
+<FullName>Morgenthaler, Jenny:Room Addition</FullName>
+</CustomerRef>
+<ClassRef>
+<ListID>40000-933272658</ListID>
+<FullName>Remodel</FullName>
+</ClassRef>
+<TemplateRef>
+<ListID>120000-1071512690</ListID>
+<FullName>Custom Sales Order</FullName>
+</TemplateRef>
+<TxnDate>2026-12-15</TxnDate>
+<RefNumber>7003</RefNumber>
+<BillAddress>
+<Addr1>Jenny Morgenthaler</Addr1>
+<Addr2>37105 E. Oasis Dr.</Addr2>
+<City>Middlefield</City>
+<State>CA</State>
+<PostalCode>94485</PostalCode>
+</BillAddress>
+<BillAddressBlock>
+<Addr1>Jenny Morgenthaler</Addr1>
+<Addr2>37105 E. Oasis Dr.</Addr2>
+<Addr3>Middlefield, CA 94485</Addr3>
+</BillAddressBlock>
+<ShipAddress>
+<Addr1>Jenny Morgenthaler</Addr1>
+<Addr2>37105 E. Oasis Dr.</Addr2>
+<City>Middlefield</City>
+<State>CA</State>
+<PostalCode>94485</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Jenny Morgenthaler</Addr1>
+<Addr2>37105 E. Oasis Dr.</Addr2>
+<Addr3>Middlefield, CA 94485</Addr3>
+</ShipAddressBlock>
+<TermsRef>
+<ListID>10000-933272658</ListID>
+<FullName>Net 30</FullName>
+</TermsRef>
+<DueDate>2028-01-14</DueDate>
+<ShipDate>2026-12-17</ShipDate>
+<Subtotal>252.00</Subtotal>
+<ItemSalesTaxRef>
+<ListID>2E0000-933272656</ListID>
+<FullName>San Tomas</FullName>
+</ItemSalesTaxRef>
+<SalesTaxPercentage>7.75</SalesTaxPercentage>
+<SalesTaxTotal>19.53</SalesTaxTotal>
+<TotalAmount>271.53</TotalAmount>
+<IsManuallyClosed>false</IsManuallyClosed>
+<IsFullyInvoiced>false</IsFullyInvoiced>
+<IsToBePrinted>true</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<CustomerSalesTaxCodeRef>
+<ListID>10000-999022286</ListID>
+<FullName>Tax</FullName>
+</CustomerSalesTaxCodeRef>
+<SalesOrderLineRet>
+<TxnLineID>490F-1071512761</TxnLineID>
+<ItemRef>
+<ListID>370000-1071525040</ListID>
+<FullName>Fluorescent Ceiling Lighting</FullName>
+</ItemRef>
+<Desc>Fluorescent Lights</Desc>
+<Quantity>3</Quantity>
+<Rate>10.00</Rate>
+<Amount>30.00</Amount>
+<SalesTaxCodeRef>
+<ListID>10000-999022286</ListID>
+<FullName>Tax</FullName>
+</SalesTaxCodeRef>
+<Invoiced>0</Invoiced>
+<IsManuallyClosed>false</IsManuallyClosed>
+</SalesOrderLineRet>
+<SalesOrderLineRet>
+<TxnLineID>4910-1071512761</TxnLineID>
+<ItemRef>
+<ListID>3B0000-1071518615</ListID>
+<FullName>Lighting</FullName>
+</ItemRef>
+<Desc>Lighting</Desc>
+<Quantity>12</Quantity>
+<Rate>18.50</Rate>
+<Amount>222.00</Amount>
+<SalesTaxCodeRef>
+<ListID>10000-999022286</ListID>
+<FullName>Tax</FullName>
+</SalesTaxCodeRef>
+<Invoiced>0</Invoiced>
+<IsManuallyClosed>false</IsManuallyClosed>
+</SalesOrderLineRet>
+<FulfillmentStatus>Open</FulfillmentStatus>
+</SalesOrderRet>
+</SalesOrderQueryRs>
+</QBXMLMsgsRs>
+</QBXML>

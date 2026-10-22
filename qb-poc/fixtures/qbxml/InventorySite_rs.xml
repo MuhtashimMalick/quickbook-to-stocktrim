@@ -1,0 +1,6 @@
+<?xml version="1.0" ?>
+<QBXML>
+<QBXMLMsgsRs>
+<InventorySiteQueryRs statusCode="3250" statusSeverity="Error" statusMessage="This feature is not enabled or not available in this version of QuickBooks." />
+</QBXMLMsgsRs>
+</QBXML>

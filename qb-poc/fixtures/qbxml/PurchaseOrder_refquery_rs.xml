@@ -1,0 +1,58 @@
+<?xml version="1.0" ?>
+<QBXML>
+<QBXMLMsgsRs>
+<PurchaseOrderQueryRs statusCode="0" statusSeverity="Info" statusMessage="Status OK">
+<PurchaseOrderRet>
+<TxnID>2FBE0-1797335075</TxnID>
+<TimeCreated>2026-12-15T16:44:35+05:00</TimeCreated>
+<TimeModified>2026-12-15T16:44:35+05:00</TimeModified>
+<EditSequence>1797335075</EditSequence>
+<TxnNumber>1777</TxnNumber>
+<VendorRef>
+<ListID>A60000-1197760912</ListID>
+<FullName>A Cheung Limited</FullName>
+</VendorRef>
+<TemplateRef>
+<ListID>80000023-1324002806</ListID>
+<FullName>Custom Purchase Order Template</FullName>
+</TemplateRef>
+<TxnDate>2026-12-15</TxnDate>
+<RefNumber>ST-6B01C344</RefNumber>
+<VendorAddress>
+<Addr1>A Cheung Limited</Addr1>
+<Addr2>Angela Cheung</Addr2>
+<Addr3>3818 Bear Rd. West</Addr3>
+<City>Berkeley</City>
+<State>CA</State>
+<PostalCode>94688</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>A Cheung Limited</Addr1>
+<Addr2>Angela Cheung</Addr2>
+<Addr3>3818 Bear Rd. West</Addr3>
+<Addr4>Berkeley, CA 94688</Addr4>
+</VendorAddressBlock>
+<ShipAddress>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>1735 County Road</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>1735 County Road</Addr2>
+<Addr3>Bayshore, CA 94326</Addr3>
+</ShipAddressBlock>
+<DueDate>2026-12-15</DueDate>
+<ExpectedDate>2026-12-15</ExpectedDate>
+<TotalAmount>12.50</TotalAmount>
+<IsManuallyClosed>false</IsManuallyClosed>
+<IsFullyReceived>false</IsFullyReceived>
+<Memo>Created by integration - Review Required</Memo>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+</PurchaseOrderRet>
+</PurchaseOrderQueryRs>
+</QBXMLMsgsRs>
+</QBXML>

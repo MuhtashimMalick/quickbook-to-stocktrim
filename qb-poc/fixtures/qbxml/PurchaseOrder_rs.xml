@@ -1,0 +1,3757 @@
+<?xml version="1.0" ?>
+<QBXML>
+<QBXMLMsgsRs>
+<PurchaseOrderQueryRs statusCode="0" statusSeverity="Info" statusMessage="Status OK" iteratorRemainingCount="0" iteratorID="{44ae00e9-3105-433e-83ec-45f3e057ebd7}">
+<PurchaseOrderRet>
+<TxnID>69D1-1197779848</TxnID>
+<TimeCreated>2007-12-16T09:37:28+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:37:47+05:00</TimeModified>
+<EditSequence>1765784266</EditSequence>
+<TxnNumber>1367</TxnNumber>
+<VendorRef>
+<ListID>800000B4-1197779815</ListID>
+<FullName>Vu Contracting</FullName>
+</VendorRef>
+<ClassRef>
+<ListID>40000-933272658</ListID>
+<FullName>Remodel</FullName>
+</ClassRef>
+<ShipToEntityRef>
+<ListID>800000B3-1197778093</ListID>
+<FullName>Vasquez, Anabel:Basement Remodel</FullName>
+</ShipToEntityRef>
+<TemplateRef>
+<ListID>80000023-1324002806</ListID>
+<FullName>Custom Purchase Order Template</FullName>
+</TemplateRef>
+<TxnDate>2024-12-01</TxnDate>
+<RefNumber>6001</RefNumber>
+<VendorAddress>
+<Addr1>Vu Contracting</Addr1>
+<Addr2>Don Vu</Addr2>
+<Addr3>89304 Freedom Dr.</Addr3>
+<City>San Mateo</City>
+<State>CA</State>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Vu Contracting</Addr1>
+<Addr2>Don Vu</Addr2>
+<Addr3>89304 Freedom Dr.</Addr3>
+<Addr4>San Mateo, CA</Addr4>
+</VendorAddressBlock>
+<ShipAddress>
+<Addr1>Anabel Vasquez</Addr1>
+<Addr2>5601 Legacy Parkway</Addr2>
+<City>San Mateo</City>
+<State>CA</State>
+<PostalCode>09402</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Anabel Vasquez</Addr1>
+<Addr2>5601 Legacy Parkway</Addr2>
+<Addr3>San Mateo, CA 09402</Addr3>
+</ShipAddressBlock>
+<TermsRef>
+<ListID>20000-933272658</ListID>
+<FullName>Net 15</FullName>
+</TermsRef>
+<DueDate>2025-12-16</DueDate>
+<ExpectedDate>2024-12-01</ExpectedDate>
+<TotalAmount>2050.00</TotalAmount>
+<IsManuallyClosed>false</IsManuallyClosed>
+<IsFullyReceived>true</IsFullyReceived>
+<Memo>Estimate 35: Basement Remodel</Memo>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<PurchaseOrderLineRet>
+<TxnLineID>69D3-1197779848</TxnLineID>
+<ItemRef>
+<ListID>60000-933272656</ListID>
+<FullName>Subs:Carpet</FullName>
+</ItemRef>
+<Desc>Install carpeting</Desc>
+<Quantity>7</Quantity>
+<Rate>25.00</Rate>
+<ClassRef>
+<ListID>40000-933272658</ListID>
+<FullName>Remodel</FullName>
+</ClassRef>
+<Amount>175.00</Amount>
+<CustomerRef>
+<ListID>800000B3-1197778093</ListID>
+<FullName>Vasquez, Anabel:Basement Remodel</FullName>
+</CustomerRef>
+<ReceivedQuantity>7</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>69D4-1197779848</TxnLineID>
+<ItemRef>
+<ListID>70000-933272656</ListID>
+<FullName>Subs:Drywall</FullName>
+</ItemRef>
+<Desc>Install drywall</Desc>
+<Quantity>25</Quantity>
+<Rate>25.00</Rate>
+<ClassRef>
+<ListID>40000-933272658</ListID>
+<FullName>Remodel</FullName>
+</ClassRef>
+<Amount>625.00</Amount>
+<CustomerRef>
+<ListID>800000B3-1197778093</ListID>
+<FullName>Vasquez, Anabel:Basement Remodel</FullName>
+</CustomerRef>
+<ReceivedQuantity>25</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>69D5-1197779848</TxnLineID>
+<ItemRef>
+<ListID>3C0000-1071513137</ListID>
+<FullName>Subs:Duct Work</FullName>
+</ItemRef>
+<Desc>Heating &amp; Air Conditioning Duct Work</Desc>
+<Quantity>15</Quantity>
+<Rate>25.00</Rate>
+<ClassRef>
+<ListID>40000-933272658</ListID>
+<FullName>Remodel</FullName>
+</ClassRef>
+<Amount>375.00</Amount>
+<CustomerRef>
+<ListID>800000B3-1197778093</ListID>
+<FullName>Vasquez, Anabel:Basement Remodel</FullName>
+</CustomerRef>
+<ReceivedQuantity>15</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>69D6-1197779848</TxnLineID>
+<ItemRef>
+<ListID>80000-933272656</ListID>
+<FullName>Subs:Electrical</FullName>
+</ItemRef>
+<Desc>Electrical work</Desc>
+<Quantity>10</Quantity>
+<Rate>25.00</Rate>
+<ClassRef>
+<ListID>40000-933272658</ListID>
+<FullName>Remodel</FullName>
+</ClassRef>
+<Amount>250.00</Amount>
+<CustomerRef>
+<ListID>800000B3-1197778093</ListID>
+<FullName>Vasquez, Anabel:Basement Remodel</FullName>
+</CustomerRef>
+<ReceivedQuantity>10</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>69D7-1197779848</TxnLineID>
+<ItemRef>
+<ListID>90000-933272656</ListID>
+<FullName>Subs:Insulating</FullName>
+</ItemRef>
+<Desc>Install insulation</Desc>
+<Quantity>5</Quantity>
+<Rate>25.00</Rate>
+<ClassRef>
+<ListID>40000-933272658</ListID>
+<FullName>Remodel</FullName>
+</ClassRef>
+<Amount>125.00</Amount>
+<CustomerRef>
+<ListID>800000B3-1197778093</ListID>
+<FullName>Vasquez, Anabel:Basement Remodel</FullName>
+</CustomerRef>
+<ReceivedQuantity>5</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>69D8-1197779848</TxnLineID>
+<ItemRef>
+<ListID>B0000-933272656</ListID>
+<FullName>Subs:Painting</FullName>
+</ItemRef>
+<Desc>Painting</Desc>
+<Quantity>20</Quantity>
+<Rate>25.00</Rate>
+<ClassRef>
+<ListID>40000-933272658</ListID>
+<FullName>Remodel</FullName>
+</ClassRef>
+<Amount>500.00</Amount>
+<CustomerRef>
+<ListID>800000B3-1197778093</ListID>
+<FullName>Vasquez, Anabel:Basement Remodel</FullName>
+</CustomerRef>
+<ReceivedQuantity>20</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+</PurchaseOrderRet>
+<PurchaseOrderRet>
+<TxnID>2A97-1071506491</TxnID>
+<TimeCreated>2003-12-15T21:41:31+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:36:11+05:00</TimeModified>
+<EditSequence>1765784170</EditSequence>
+<TxnNumber>487</TxnNumber>
+<VendorRef>
+<ListID>C0000-933272656</ListID>
+<FullName>Perry Windows &amp; Doors</FullName>
+</VendorRef>
+<TemplateRef>
+<ListID>80000023-1324002806</ListID>
+<FullName>Custom Purchase Order Template</FullName>
+</TemplateRef>
+<TxnDate>2025-07-15</TxnDate>
+<RefNumber>6100</RefNumber>
+<VendorAddress>
+<Addr1>Perry Windows &amp; Doors</Addr1>
+<Addr2>P.O. Box 5033</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Perry Windows &amp; Doors</Addr1>
+<Addr2>P.O. Box 5033</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<ShipAddress>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>1735 County Road</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>1735 County Road</Addr2>
+<Addr3>Bayshore, CA 94326</Addr3>
+</ShipAddressBlock>
+<TermsRef>
+<ListID>10000-933272658</ListID>
+<FullName>Net 30</FullName>
+</TermsRef>
+<DueDate>2026-08-14</DueDate>
+<ExpectedDate>2025-07-15</ExpectedDate>
+<TotalAmount>144.75</TotalAmount>
+<IsManuallyClosed>false</IsManuallyClosed>
+<IsFullyReceived>true</IsFullyReceived>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<PurchaseOrderLineRet>
+<TxnLineID>2A99-1071506491</TxnLineID>
+<ItemRef>
+<ListID>3A0000-1071506378</ListID>
+<FullName>Patio Door</FullName>
+</ItemRef>
+<Quantity>1</Quantity>
+<Rate>144.75</Rate>
+<Amount>144.75</Amount>
+<CustomerRef>
+<ListID>5C0000-1071526575</ListID>
+<FullName>Ruff, Bryan:Sun Room</FullName>
+</CustomerRef>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+</PurchaseOrderRet>
+<PurchaseOrderRet>
+<TxnID>2AA4-1071512015</TxnID>
+<TimeCreated>2003-12-15T23:13:35+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:36:10+05:00</TimeModified>
+<EditSequence>1765784170</EditSequence>
+<TxnNumber>490</TxnNumber>
+<VendorRef>
+<ListID>A0000-933272656</ListID>
+<FullName>Thomas Kitchen &amp; Bath</FullName>
+</VendorRef>
+<ShipToEntityRef>
+<ListID>5C0000-1071526575</ListID>
+<FullName>Ruff, Bryan:Sun Room</FullName>
+</ShipToEntityRef>
+<TemplateRef>
+<ListID>80000023-1324002806</ListID>
+<FullName>Custom Purchase Order Template</FullName>
+</TemplateRef>
+<TxnDate>2025-07-15</TxnDate>
+<RefNumber>6101</RefNumber>
+<VendorAddress>
+<Addr1>Thomas Kitchen &amp; Bath</Addr1>
+<Addr2>608 Main St</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Thomas Kitchen &amp; Bath</Addr1>
+<Addr2>608 Main St</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<ShipAddress>
+<Addr1>Bryan Ruff</Addr1>
+<Addr2>782 Skyline Dr</Addr2>
+<City>East Bayshore</City>
+<State>CA</State>
+<PostalCode>94327</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Bryan Ruff</Addr1>
+<Addr2>782 Skyline Dr</Addr2>
+<Addr3>East Bayshore CA 94327</Addr3>
+</ShipAddressBlock>
+<TermsRef>
+<ListID>10000-933272658</ListID>
+<FullName>Net 30</FullName>
+</TermsRef>
+<DueDate>2026-08-14</DueDate>
+<ExpectedDate>2025-07-15</ExpectedDate>
+<TotalAmount>2080.00</TotalAmount>
+<IsManuallyClosed>false</IsManuallyClosed>
+<IsFullyReceived>true</IsFullyReceived>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<PurchaseOrderLineRet>
+<TxnLineID>2AA6-1071512015</TxnLineID>
+<ItemRef>
+<ListID>330000-1071527659</ListID>
+<FullName>Cabinets - Custom</FullName>
+</ItemRef>
+<Desc>see attached specs</Desc>
+<Quantity>1</Quantity>
+<Rate>2080</Rate>
+<Amount>2080.00</Amount>
+<CustomerRef>
+<ListID>5C0000-1071526575</ListID>
+<FullName>Ruff, Bryan:Sun Room</FullName>
+</CustomerRef>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+</PurchaseOrderRet>
+<PurchaseOrderRet>
+<TxnID>2AA7-1071512424</TxnID>
+<TimeCreated>2003-12-15T23:20:24+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:36:10+05:00</TimeModified>
+<EditSequence>1765784170</EditSequence>
+<TxnNumber>491</TxnNumber>
+<VendorRef>
+<ListID>E0000-933272656</ListID>
+<FullName>Timberloft Lumber</FullName>
+</VendorRef>
+<ShipToEntityRef>
+<ListID>5C0000-1071526575</ListID>
+<FullName>Ruff, Bryan:Sun Room</FullName>
+</ShipToEntityRef>
+<TemplateRef>
+<ListID>80000023-1324002806</ListID>
+<FullName>Custom Purchase Order Template</FullName>
+</TemplateRef>
+<TxnDate>2025-07-15</TxnDate>
+<RefNumber>6102</RefNumber>
+<VendorAddress>
+<Addr1>Timberloft Lumber</Addr1>
+<Addr2>456 Old Bayshore Rd</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Timberloft Lumber</Addr1>
+<Addr2>456 Old Bayshore Rd</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<ShipAddress>
+<Addr1>Bryan Ruff</Addr1>
+<Addr2>782 Skyline Dr</Addr2>
+<City>East Bayshore</City>
+<State>CA</State>
+<PostalCode>94327</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Bryan Ruff</Addr1>
+<Addr2>782 Skyline Dr</Addr2>
+<Addr3>East Bayshore CA 94327</Addr3>
+</ShipAddressBlock>
+<TermsRef>
+<ListID>50000-933272659</ListID>
+<FullName>1% 10 Net 30</FullName>
+</TermsRef>
+<DueDate>2026-08-14</DueDate>
+<ExpectedDate>2025-07-15</ExpectedDate>
+<TotalAmount>234.00</TotalAmount>
+<IsManuallyClosed>false</IsManuallyClosed>
+<IsFullyReceived>true</IsFullyReceived>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<PurchaseOrderLineRet>
+<TxnLineID>2AA9-1071512424</TxnLineID>
+<ItemRef>
+<ListID>1C0000-933272656</ListID>
+<FullName>Lumber:Rough</FullName>
+</ItemRef>
+<Desc>Rough lumber</Desc>
+<Rate>137.00</Rate>
+<Amount>137.00</Amount>
+<CustomerRef>
+<ListID>5C0000-1071526575</ListID>
+<FullName>Ruff, Bryan:Sun Room</FullName>
+</CustomerRef>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>2AAA-1071512424</TxnLineID>
+<ItemRef>
+<ListID>1D0000-933272656</ListID>
+<FullName>Lumber:Trim</FullName>
+</ItemRef>
+<Desc>Trim lumber</Desc>
+<Rate>97.00</Rate>
+<Amount>97.00</Amount>
+<CustomerRef>
+<ListID>5C0000-1071526575</ListID>
+<FullName>Ruff, Bryan:Sun Room</FullName>
+</CustomerRef>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+</PurchaseOrderRet>
+<PurchaseOrderRet>
+<TxnID>69ED-1197780121</TxnID>
+<TimeCreated>2007-12-16T09:42:01+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:37:47+05:00</TimeModified>
+<EditSequence>1765784267</EditSequence>
+<TxnNumber>1369</TxnNumber>
+<VendorRef>
+<ListID>7B0000-1071524812</ListID>
+<FullName>Custom Kitchens of Bayshore</FullName>
+</VendorRef>
+<ClassRef>
+<ListID>40000-933272658</ListID>
+<FullName>Remodel</FullName>
+</ClassRef>
+<ShipToEntityRef>
+<ListID>800000B3-1197778093</ListID>
+<FullName>Vasquez, Anabel:Basement Remodel</FullName>
+</ShipToEntityRef>
+<TemplateRef>
+<ListID>80000023-1324002806</ListID>
+<FullName>Custom Purchase Order Template</FullName>
+</TemplateRef>
+<TxnDate>2026-01-04</TxnDate>
+<RefNumber>6201</RefNumber>
+<VendorAddress>
+<Addr1>Custom Kitchens of Bayshore</Addr1>
+<Addr2>Butch Brown</Addr2>
+<Addr3>923 S. Industrial Way</Addr3>
+<Addr4>Suite 101</Addr4>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Custom Kitchens of Bayshore</Addr1>
+<Addr2>Butch Brown</Addr2>
+<Addr3>923 S. Industrial Way</Addr3>
+<Addr4>Suite 101</Addr4>
+<Addr5>Bayshore, CA  94326</Addr5>
+</VendorAddressBlock>
+<ShipAddress>
+<Addr1>Laura Vetter</Addr1>
+<Addr2>5601 Legacy Parkway</Addr2>
+<City>San Mateo</City>
+<State>CA</State>
+<PostalCode>09402</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Laura Vetter</Addr1>
+<Addr2>5601 Legacy Parkway</Addr2>
+<Addr3>San Mateo, CA 09402</Addr3>
+</ShipAddressBlock>
+<TermsRef>
+<ListID>60000-933272660</ListID>
+<FullName>Net 60</FullName>
+</TermsRef>
+<DueDate>2027-03-05</DueDate>
+<ExpectedDate>2026-01-04</ExpectedDate>
+<TotalAmount>435.00</TotalAmount>
+<IsManuallyClosed>false</IsManuallyClosed>
+<IsFullyReceived>true</IsFullyReceived>
+<Memo>Estimate 35: Basement Remodel</Memo>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<PurchaseOrderLineRet>
+<TxnLineID>69EF-1197780121</TxnLineID>
+<ItemRef>
+<ListID>440001-1071511796</ListID>
+<FullName>Door Frame</FullName>
+</ItemRef>
+<Desc>standard interior door frame</Desc>
+<Quantity>10</Quantity>
+<Rate>12.00</Rate>
+<ClassRef>
+<ListID>40000-933272658</ListID>
+<FullName>Remodel</FullName>
+</ClassRef>
+<Amount>120.00</Amount>
+<CustomerRef>
+<ListID>800000B3-1197778093</ListID>
+<FullName>Vasquez, Anabel:Basement Remodel</FullName>
+</CustomerRef>
+<ReceivedQuantity>10</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>69F0-1197780121</TxnLineID>
+<ItemRef>
+<ListID>160000-933272656</ListID>
+<FullName>Wood Door:Exterior</FullName>
+</ItemRef>
+<Desc>Exterior door - #P-10981</Desc>
+<Quantity>3</Quantity>
+<Rate>105.00</Rate>
+<ClassRef>
+<ListID>40000-933272658</ListID>
+<FullName>Remodel</FullName>
+</ClassRef>
+<Amount>315.00</Amount>
+<CustomerRef>
+<ListID>800000B3-1197778093</ListID>
+<FullName>Vasquez, Anabel:Basement Remodel</FullName>
+</CustomerRef>
+<ReceivedQuantity>3</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+</PurchaseOrderRet>
+<PurchaseOrderRet>
+<TxnID>330-933281567</TxnID>
+<TimeCreated>1999-07-30T01:52:47+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:35:38+05:00</TimeModified>
+<EditSequence>1765784131</EditSequence>
+<TxnNumber>55</TxnNumber>
+<VendorRef>
+<ListID>A0000-933272656</ListID>
+<FullName>Thomas Kitchen &amp; Bath</FullName>
+</VendorRef>
+<TemplateRef>
+<ListID>80000023-1324002806</ListID>
+<FullName>Custom Purchase Order Template</FullName>
+</TemplateRef>
+<TxnDate>2026-01-15</TxnDate>
+<RefNumber>6202</RefNumber>
+<VendorAddress>
+<Addr1>Thomas Kitchen &amp; Bath</Addr1>
+<Addr2>608 Main St</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Thomas Kitchen &amp; Bath</Addr1>
+<Addr2>608 Main St</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<ShipAddress>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>1735 County Road</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>1735 County Road</Addr2>
+<Addr3>Bayshore, CA 94326</Addr3>
+</ShipAddressBlock>
+<DueDate>2027-01-15</DueDate>
+<ExpectedDate>2026-01-15</ExpectedDate>
+<TotalAmount>2320.00</TotalAmount>
+<IsManuallyClosed>false</IsManuallyClosed>
+<IsFullyReceived>true</IsFullyReceived>
+<Memo>Abercrombie bathroom remodel</Memo>
+<VendorMsg>Toilets, Tub and sink are almond color #11</VendorMsg>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<PurchaseOrderLineRet>
+<TxnLineID>332-933281567</TxnLineID>
+<Desc>See attached specifications for the following.</Desc>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>333-933281567</TxnLineID>
+<ItemRef>
+<ListID>1E0000-933272656</ListID>
+<FullName>Plumb Fixtrs</FullName>
+</ItemRef>
+<Desc>Toilets-#1098-J6</Desc>
+<Quantity>2</Quantity>
+<Rate>340.00</Rate>
+<Amount>680.00</Amount>
+<ReceivedQuantity>2</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>334-933281567</TxnLineID>
+<ItemRef>
+<ListID>1E0000-933272656</ListID>
+<FullName>Plumb Fixtrs</FullName>
+</ItemRef>
+<Desc>Sinks-#78-J6</Desc>
+<Quantity>3</Quantity>
+<Rate>165.00</Rate>
+<Amount>495.00</Amount>
+<ReceivedQuantity>3</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>335-933281567</TxnLineID>
+<ItemRef>
+<ListID>1E0000-933272656</ListID>
+<FullName>Plumb Fixtrs</FullName>
+</ItemRef>
+<Desc>Faucets for sinks-#1097H6</Desc>
+<Quantity>3</Quantity>
+<Rate>55.00</Rate>
+<Amount>165.00</Amount>
+<ReceivedQuantity>3</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>336-933281567</TxnLineID>
+<ItemRef>
+<ListID>1E0000-933272656</ListID>
+<FullName>Plumb Fixtrs</FullName>
+</ItemRef>
+<Desc>Whirlpool bathtub with faucet-#198k0</Desc>
+<Quantity>1</Quantity>
+<Rate>600.00</Rate>
+<Amount>600.00</Amount>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>337-933281567</TxnLineID>
+<ItemRef>
+<ListID>1E0000-933272656</ListID>
+<FullName>Plumb Fixtrs</FullName>
+</ItemRef>
+<Desc>Glass doors for shower</Desc>
+<Quantity>2</Quantity>
+<Rate>125.00</Rate>
+<Amount>250.00</Amount>
+<ReceivedQuantity>2</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>338-933281567</TxnLineID>
+<ItemRef>
+<ListID>1E0000-933272656</ListID>
+<FullName>Plumb Fixtrs</FullName>
+</ItemRef>
+<Desc>Shower hardware-#6789H</Desc>
+<Quantity>2</Quantity>
+<Rate>65.00</Rate>
+<Amount>130.00</Amount>
+<ReceivedQuantity>2</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+</PurchaseOrderRet>
+<PurchaseOrderRet>
+<TxnID>271F-1071514297</TxnID>
+<TimeCreated>2003-12-15T23:51:37+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:36:05+05:00</TimeModified>
+<EditSequence>1765784165</EditSequence>
+<TxnNumber>470</TxnNumber>
+<VendorRef>
+<ListID>A0000-933272656</ListID>
+<FullName>Thomas Kitchen &amp; Bath</FullName>
+</VendorRef>
+<ShipToEntityRef>
+<ListID>580000-1071526281</ListID>
+<FullName>Luke, Noelani:Kitchen</FullName>
+</ShipToEntityRef>
+<TemplateRef>
+<ListID>80000023-1324002806</ListID>
+<FullName>Custom Purchase Order Template</FullName>
+</TemplateRef>
+<TxnDate>2026-07-14</TxnDate>
+<RefNumber>6203</RefNumber>
+<VendorAddress>
+<Addr1>Thomas Kitchen &amp; Bath</Addr1>
+<Addr2>608 Main St</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Thomas Kitchen &amp; Bath</Addr1>
+<Addr2>608 Main St</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<ShipAddress>
+<Addr1>Noelani Luke</Addr1>
+<Addr2>913 Bay View</Addr2>
+<City>East Bayshore</City>
+<State>CA</State>
+<PostalCode>94327</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Noelani Luke</Addr1>
+<Addr2>913 Bay View</Addr2>
+<Addr3>East Bayshore CA 94327</Addr3>
+</ShipAddressBlock>
+<TermsRef>
+<ListID>10000-933272658</ListID>
+<FullName>Net 30</FullName>
+</TermsRef>
+<DueDate>2027-08-13</DueDate>
+<ExpectedDate>2026-07-14</ExpectedDate>
+<TotalAmount>4487.45</TotalAmount>
+<IsManuallyClosed>false</IsManuallyClosed>
+<IsFullyReceived>true</IsFullyReceived>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<PurchaseOrderLineRet>
+<TxnLineID>2721-1071514297</TxnLineID>
+<ItemRef>
+<ListID>330000-1071527659</ListID>
+<FullName>Cabinets - Custom</FullName>
+</ItemRef>
+<Desc>see attached for specs.</Desc>
+<Rate>4197.45</Rate>
+<Amount>4197.45</Amount>
+<CustomerRef>
+<ListID>580000-1071526281</ListID>
+<FullName>Luke, Noelani:Kitchen</FullName>
+</CustomerRef>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>2727-1071514297</TxnLineID>
+<ItemRef>
+<ListID>1E0000-933272656</ListID>
+<FullName>Plumb Fixtrs</FullName>
+</ItemRef>
+<Desc>Plumbing fixtures</Desc>
+<Rate>290.00</Rate>
+<Amount>290.00</Amount>
+<CustomerRef>
+<ListID>580000-1071526281</ListID>
+<FullName>Luke, Noelani:Kitchen</FullName>
+</CustomerRef>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+</PurchaseOrderRet>
+<PurchaseOrderRet>
+<TxnID>2723-1071514563</TxnID>
+<TimeCreated>2003-12-15T23:56:03+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:36:05+05:00</TimeModified>
+<EditSequence>1765784165</EditSequence>
+<TxnNumber>471</TxnNumber>
+<VendorRef>
+<ListID>A0000-933272656</ListID>
+<FullName>Thomas Kitchen &amp; Bath</FullName>
+</VendorRef>
+<ShipToEntityRef>
+<ListID>5E0000-1071526675</ListID>
+<FullName>Luke, Noelani:Remodel Bathroom</FullName>
+</ShipToEntityRef>
+<TemplateRef>
+<ListID>80000023-1324002806</ListID>
+<FullName>Custom Purchase Order Template</FullName>
+</TemplateRef>
+<TxnDate>2026-07-14</TxnDate>
+<RefNumber>6204</RefNumber>
+<VendorAddress>
+<Addr1>Thomas Kitchen &amp; Bath</Addr1>
+<Addr2>608 Main St</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Thomas Kitchen &amp; Bath</Addr1>
+<Addr2>608 Main St</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<ShipAddress>
+<Addr1>Noelani Luke</Addr1>
+<Addr2>913 Bay View</Addr2>
+<City>East Bayshore</City>
+<State>CA</State>
+<PostalCode>94327</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Noelani Luke</Addr1>
+<Addr2>913 Bay View</Addr2>
+<Addr3>East Bayshore CA 94327</Addr3>
+</ShipAddressBlock>
+<TermsRef>
+<ListID>10000-933272658</ListID>
+<FullName>Net 30</FullName>
+</TermsRef>
+<DueDate>2027-08-13</DueDate>
+<ExpectedDate>2026-07-14</ExpectedDate>
+<TotalAmount>1672.50</TotalAmount>
+<IsManuallyClosed>false</IsManuallyClosed>
+<IsFullyReceived>true</IsFullyReceived>
+<VendorMsg>See attached list for detail of items</VendorMsg>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<PurchaseOrderLineRet>
+<TxnLineID>2725-1071514563</TxnLineID>
+<ItemRef>
+<ListID>330000-1071527659</ListID>
+<FullName>Cabinets - Custom</FullName>
+</ItemRef>
+<Rate>975.00</Rate>
+<Amount>975.00</Amount>
+<CustomerRef>
+<ListID>5E0000-1071526675</ListID>
+<FullName>Luke, Noelani:Remodel Bathroom</FullName>
+</CustomerRef>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>2726-1071514563</TxnLineID>
+<ItemRef>
+<ListID>1E0000-933272656</ListID>
+<FullName>Plumb Fixtrs</FullName>
+</ItemRef>
+<Desc>Plumbing fixtures</Desc>
+<Rate>697.50</Rate>
+<Amount>697.50</Amount>
+<CustomerRef>
+<ListID>5E0000-1071526675</ListID>
+<FullName>Luke, Noelani:Remodel Bathroom</FullName>
+</CustomerRef>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+</PurchaseOrderRet>
+<PurchaseOrderRet>
+<TxnID>2728-1071515000</TxnID>
+<TimeCreated>2003-12-16T00:03:20+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:36:05+05:00</TimeModified>
+<EditSequence>1765784165</EditSequence>
+<TxnNumber>472</TxnNumber>
+<VendorRef>
+<ListID>D0000-933272656</ListID>
+<FullName>McClain Appliances</FullName>
+</VendorRef>
+<ShipToEntityRef>
+<ListID>580000-1071526281</ListID>
+<FullName>Luke, Noelani:Kitchen</FullName>
+</ShipToEntityRef>
+<TemplateRef>
+<ListID>80000023-1324002806</ListID>
+<FullName>Custom Purchase Order Template</FullName>
+</TemplateRef>
+<TxnDate>2026-07-14</TxnDate>
+<RefNumber>6205</RefNumber>
+<VendorAddress>
+<Addr1>McClain Appliances</Addr1>
+<Addr2>740 Washington Rd</Addr2>
+<City>Middlefield</City>
+<State>CA</State>
+<PostalCode>94482</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>McClain Appliances</Addr1>
+<Addr2>740 Washington Rd</Addr2>
+<Addr3>Middlefield CA 94482</Addr3>
+</VendorAddressBlock>
+<ShipAddress>
+<Addr1>Noelani Luke</Addr1>
+<Addr2>913 Bay View</Addr2>
+<City>East Bayshore</City>
+<State>CA</State>
+<PostalCode>94327</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Noelani Luke</Addr1>
+<Addr2>913 Bay View</Addr2>
+<Addr3>East Bayshore CA 94327</Addr3>
+</ShipAddressBlock>
+<TermsRef>
+<ListID>40000-933272659</ListID>
+<FullName>2% 10 Net 30</FullName>
+</TermsRef>
+<DueDate>2027-08-13</DueDate>
+<ExpectedDate>2026-07-14</ExpectedDate>
+<TotalAmount>3690.00</TotalAmount>
+<IsManuallyClosed>false</IsManuallyClosed>
+<IsFullyReceived>true</IsFullyReceived>
+<VendorMsg>See attached for model #&apos;s</VendorMsg>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<PurchaseOrderLineRet>
+<TxnLineID>272A-1071515000</TxnLineID>
+<ItemRef>
+<ListID>180000-933272656</ListID>
+<FullName>Appliance</FullName>
+</ItemRef>
+<Desc>Refrigerator/Frezzer</Desc>
+<Quantity>1</Quantity>
+<Rate>1700.00</Rate>
+<Amount>1700.00</Amount>
+<CustomerRef>
+<ListID>580000-1071526281</ListID>
+<FullName>Luke, Noelani:Kitchen</FullName>
+</CustomerRef>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>272B-1071515000</TxnLineID>
+<ItemRef>
+<ListID>180000-933272656</ListID>
+<FullName>Appliance</FullName>
+</ItemRef>
+<Desc>Dishwasher</Desc>
+<Quantity>1</Quantity>
+<Rate>250.00</Rate>
+<Amount>250.00</Amount>
+<CustomerRef>
+<ListID>580000-1071526281</ListID>
+<FullName>Luke, Noelani:Kitchen</FullName>
+</CustomerRef>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>272C-1071515000</TxnLineID>
+<ItemRef>
+<ListID>180000-933272656</ListID>
+<FullName>Appliance</FullName>
+</ItemRef>
+<Desc>Trash Compactor</Desc>
+<Quantity>1</Quantity>
+<Rate>200.00</Rate>
+<Amount>200.00</Amount>
+<CustomerRef>
+<ListID>580000-1071526281</ListID>
+<FullName>Luke, Noelani:Kitchen</FullName>
+</CustomerRef>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>272D-1071515000</TxnLineID>
+<ItemRef>
+<ListID>180000-933272656</ListID>
+<FullName>Appliance</FullName>
+</ItemRef>
+<Desc>Double Oven</Desc>
+<Quantity>1</Quantity>
+<Rate>1200.00</Rate>
+<Amount>1200.00</Amount>
+<CustomerRef>
+<ListID>580000-1071526281</ListID>
+<FullName>Luke, Noelani:Kitchen</FullName>
+</CustomerRef>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>272E-1071515000</TxnLineID>
+<ItemRef>
+<ListID>180000-933272656</ListID>
+<FullName>Appliance</FullName>
+</ItemRef>
+<Desc>Microwave</Desc>
+<Quantity>1</Quantity>
+<Rate>340.00</Rate>
+<Amount>340.00</Amount>
+<CustomerRef>
+<ListID>580000-1071526281</ListID>
+<FullName>Luke, Noelani:Kitchen</FullName>
+</CustomerRef>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+</PurchaseOrderRet>
+<PurchaseOrderRet>
+<TxnID>2770-1071519624</TxnID>
+<TimeCreated>2003-12-16T01:20:24+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:36:06+05:00</TimeModified>
+<EditSequence>1765784166</EditSequence>
+<TxnNumber>476</TxnNumber>
+<VendorRef>
+<ListID>A0000-933272656</ListID>
+<FullName>Thomas Kitchen &amp; Bath</FullName>
+</VendorRef>
+<ShipToEntityRef>
+<ListID>5E0000-1071526675</ListID>
+<FullName>Luke, Noelani:Remodel Bathroom</FullName>
+</ShipToEntityRef>
+<TemplateRef>
+<ListID>80000023-1324002806</ListID>
+<FullName>Custom Purchase Order Template</FullName>
+</TemplateRef>
+<TxnDate>2026-07-14</TxnDate>
+<RefNumber>6206</RefNumber>
+<VendorAddress>
+<Addr1>Thomas Kitchen &amp; Bath</Addr1>
+<Addr2>608 Main St</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Thomas Kitchen &amp; Bath</Addr1>
+<Addr2>608 Main St</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<ShipAddress>
+<Addr1>Noelani Luke</Addr1>
+<Addr2>913 Bay View</Addr2>
+<City>East Bayshore</City>
+<State>CA</State>
+<PostalCode>94327</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Noelani Luke</Addr1>
+<Addr2>913 Bay View</Addr2>
+<Addr3>East Bayshore CA 94327</Addr3>
+</ShipAddressBlock>
+<TermsRef>
+<ListID>10000-933272658</ListID>
+<FullName>Net 30</FullName>
+</TermsRef>
+<DueDate>2027-08-13</DueDate>
+<ExpectedDate>2026-07-14</ExpectedDate>
+<TotalAmount>1390.00</TotalAmount>
+<IsManuallyClosed>false</IsManuallyClosed>
+<IsFullyReceived>true</IsFullyReceived>
+<Memo>Luke, bathroom</Memo>
+<VendorMsg>See attached for model #</VendorMsg>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<PurchaseOrderLineRet>
+<TxnLineID>2772-1071519624</TxnLineID>
+<ItemRef>
+<ListID>1E0000-933272656</ListID>
+<FullName>Plumb Fixtrs</FullName>
+</ItemRef>
+<Desc>Jacuzzi tub</Desc>
+<Quantity>1</Quantity>
+<Rate>1390.00</Rate>
+<Amount>1390.00</Amount>
+<CustomerRef>
+<ListID>5E0000-1071526675</ListID>
+<FullName>Luke, Noelani:Remodel Bathroom</FullName>
+</CustomerRef>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+</PurchaseOrderRet>
+<PurchaseOrderRet>
+<TxnID>3258-1071513042</TxnID>
+<TimeCreated>2003-12-15T23:30:42+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:36:21+05:00</TimeModified>
+<EditSequence>1765784181</EditSequence>
+<TxnNumber>546</TxnNumber>
+<VendorRef>
+<ListID>B0000-933272656</ListID>
+<FullName>Patton Hardware Supplies</FullName>
+</VendorRef>
+<TemplateRef>
+<ListID>80000023-1324002806</ListID>
+<FullName>Custom Purchase Order Template</FullName>
+</TemplateRef>
+<TxnDate>2026-07-23</TxnDate>
+<RefNumber>6207</RefNumber>
+<VendorAddress>
+<Addr1>Patton Hardware Supplies</Addr1>
+<Addr2>4872 County Rd</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Patton Hardware Supplies</Addr1>
+<Addr2>4872 County Rd</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<ShipAddress>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>1735 County Road</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>1735 County Road</Addr2>
+<Addr3>Bayshore, CA 94326</Addr3>
+</ShipAddressBlock>
+<TermsRef>
+<ListID>10000-933272658</ListID>
+<FullName>Net 30</FullName>
+</TermsRef>
+<DueDate>2027-08-22</DueDate>
+<ExpectedDate>2026-07-23</ExpectedDate>
+<TotalAmount>754.50</TotalAmount>
+<IsManuallyClosed>false</IsManuallyClosed>
+<IsFullyReceived>true</IsFullyReceived>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<PurchaseOrderLineRet>
+<TxnLineID>325A-1071513042</TxnLineID>
+<ItemRef>
+<ListID>130000-933272656</ListID>
+<FullName>Hardware:Doorknobs Std</FullName>
+</ItemRef>
+<Desc>Doorknobs Part # DK 3704</Desc>
+<Quantity>15</Quantity>
+<Rate>27.00</Rate>
+<Amount>405.00</Amount>
+<ReceivedQuantity>15</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>325B-1071513042</TxnLineID>
+<ItemRef>
+<ListID>140000-933272656</ListID>
+<FullName>Hardware:Lk Doorknobs</FullName>
+</ItemRef>
+<Desc>Locking interior doorknobs  Part # DK415</Desc>
+<Quantity>10</Quantity>
+<Rate>34.95</Rate>
+<Amount>349.50</Amount>
+<ReceivedQuantity>10</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+</PurchaseOrderRet>
+<PurchaseOrderRet>
+<TxnID>247C-1071504659</TxnID>
+<TimeCreated>2003-12-15T21:10:59+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:35:59+05:00</TimeModified>
+<EditSequence>1765784158</EditSequence>
+<TxnNumber>424</TxnNumber>
+<VendorRef>
+<ListID>D0000-933272656</ListID>
+<FullName>McClain Appliances</FullName>
+</VendorRef>
+<ShipToEntityRef>
+<ListID>620000-1071526513</ListID>
+<FullName>Smith, Lee:Patio</FullName>
+</ShipToEntityRef>
+<TemplateRef>
+<ListID>80000023-1324002806</ListID>
+<FullName>Custom Purchase Order Template</FullName>
+</TemplateRef>
+<TxnDate>2026-08-11</TxnDate>
+<RefNumber>6208</RefNumber>
+<VendorAddress>
+<Addr1>McClain Appliances</Addr1>
+<Addr2>740 Washington Rd</Addr2>
+<City>Middlefield</City>
+<State>CA</State>
+<PostalCode>94482</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>McClain Appliances</Addr1>
+<Addr2>740 Washington Rd</Addr2>
+<Addr3>Middlefield CA 94482</Addr3>
+</VendorAddressBlock>
+<ShipAddress>
+<Addr1>Smith Photography</Addr1>
+<Addr2>910 Grapevine Ave</Addr2>
+<City>East Bayshore</City>
+<State>CA</State>
+<PostalCode>94327</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Smith Photography</Addr1>
+<Addr2>910 Grapevine Ave</Addr2>
+<Addr3>East Bayshore CA 94327</Addr3>
+</ShipAddressBlock>
+<TermsRef>
+<ListID>40000-933272659</ListID>
+<FullName>2% 10 Net 30</FullName>
+</TermsRef>
+<DueDate>2027-09-10</DueDate>
+<ExpectedDate>2026-08-11</ExpectedDate>
+<TotalAmount>380.50</TotalAmount>
+<IsManuallyClosed>false</IsManuallyClosed>
+<IsFullyReceived>true</IsFullyReceived>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<PurchaseOrderLineRet>
+<TxnLineID>247E-1071504659</TxnLineID>
+<ItemRef>
+<ListID>180000-933272656</ListID>
+<FullName>Appliance</FullName>
+</ItemRef>
+<Desc>Gas Grill - G2392a</Desc>
+<Rate>380.50</Rate>
+<Amount>380.50</Amount>
+<CustomerRef>
+<ListID>620000-1071526513</ListID>
+<FullName>Smith, Lee:Patio</FullName>
+</CustomerRef>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+</PurchaseOrderRet>
+<PurchaseOrderRet>
+<TxnID>247F-1071504803</TxnID>
+<TimeCreated>2003-12-15T21:13:23+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:35:58+05:00</TimeModified>
+<EditSequence>1765784158</EditSequence>
+<TxnNumber>425</TxnNumber>
+<VendorRef>
+<ListID>E0000-933272656</ListID>
+<FullName>Timberloft Lumber</FullName>
+</VendorRef>
+<ShipToEntityRef>
+<ListID>620000-1071526513</ListID>
+<FullName>Smith, Lee:Patio</FullName>
+</ShipToEntityRef>
+<TemplateRef>
+<ListID>80000023-1324002806</ListID>
+<FullName>Custom Purchase Order Template</FullName>
+</TemplateRef>
+<TxnDate>2026-08-11</TxnDate>
+<RefNumber>6209</RefNumber>
+<VendorAddress>
+<Addr1>Timberloft Lumber</Addr1>
+<Addr2>456 Old Bayshore Rd</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Timberloft Lumber</Addr1>
+<Addr2>456 Old Bayshore Rd</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<ShipAddress>
+<Addr1>Smith Photography</Addr1>
+<Addr2>910 Grapevine Ave</Addr2>
+<City>East Bayshore</City>
+<State>CA</State>
+<PostalCode>94327</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Smith Photography</Addr1>
+<Addr2>910 Grapevine Ave</Addr2>
+<Addr3>East Bayshore CA 94327</Addr3>
+</ShipAddressBlock>
+<TermsRef>
+<ListID>50000-933272659</ListID>
+<FullName>1% 10 Net 30</FullName>
+</TermsRef>
+<DueDate>2027-09-10</DueDate>
+<ExpectedDate>2026-08-11</ExpectedDate>
+<TotalAmount>563.00</TotalAmount>
+<IsManuallyClosed>false</IsManuallyClosed>
+<IsFullyReceived>true</IsFullyReceived>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<PurchaseOrderLineRet>
+<TxnLineID>2481-1071504803</TxnLineID>
+<ItemRef>
+<ListID>330000-1071527659</ListID>
+<FullName>Cabinets - Custom</FullName>
+</ItemRef>
+<Desc>Cedar - see attached plans</Desc>
+<Rate>563.00</Rate>
+<Amount>563.00</Amount>
+<CustomerRef>
+<ListID>620000-1071526513</ListID>
+<FullName>Smith, Lee:Patio</FullName>
+</CustomerRef>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+</PurchaseOrderRet>
+<PurchaseOrderRet>
+<TxnID>310-933279829</TxnID>
+<TimeCreated>1999-07-30T01:23:49+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:35:33+05:00</TimeModified>
+<EditSequence>1765784130</EditSequence>
+<TxnNumber>50</TxnNumber>
+<VendorRef>
+<ListID>D0000-933272656</ListID>
+<FullName>McClain Appliances</FullName>
+</VendorRef>
+<TemplateRef>
+<ListID>80000023-1324002806</ListID>
+<FullName>Custom Purchase Order Template</FullName>
+</TemplateRef>
+<TxnDate>2026-10-01</TxnDate>
+<RefNumber>6210</RefNumber>
+<VendorAddress>
+<Addr1>McClain Appliances</Addr1>
+<Addr2>740 Washington Rd</Addr2>
+<City>Middlefield</City>
+<State>CA</State>
+<PostalCode>94482</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>McClain Appliances</Addr1>
+<Addr2>740 Washington Rd</Addr2>
+<Addr3>Middlefield CA 94482</Addr3>
+</VendorAddressBlock>
+<ShipAddress>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>1735 County Road</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>1735 County Road</Addr2>
+<Addr3>Bayshore, CA 94326</Addr3>
+</ShipAddressBlock>
+<DueDate>2027-10-01</DueDate>
+<ExpectedDate>2026-10-01</ExpectedDate>
+<TotalAmount>2100.00</TotalAmount>
+<IsManuallyClosed>false</IsManuallyClosed>
+<IsFullyReceived>true</IsFullyReceived>
+<Memo>Jacobsen Kitchen Job</Memo>
+<VendorMsg>All appliances are bright white #10-W</VendorMsg>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<PurchaseOrderLineRet>
+<TxnLineID>312-933279829</TxnLineID>
+<ItemRef>
+<ListID>180000-933272656</ListID>
+<FullName>Appliance</FullName>
+</ItemRef>
+<Desc>Gas cooktop
+RG 9-764</Desc>
+<Quantity>1</Quantity>
+<Rate>450.00</Rate>
+<Amount>450.00</Amount>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>313-933279829</TxnLineID>
+<ItemRef>
+<ListID>180000-933272656</ListID>
+<FullName>Appliance</FullName>
+</ItemRef>
+<Desc>2 Door
+refrigerator/freezer MZW 760</Desc>
+<Quantity>1</Quantity>
+<Rate>600.00</Rate>
+<Amount>600.00</Amount>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>314-933279829</TxnLineID>
+<ItemRef>
+<ListID>180000-933272656</ListID>
+<FullName>Appliance</FullName>
+</ItemRef>
+<Desc>Double oven
+T20-63</Desc>
+<Quantity>1</Quantity>
+<Rate>500.00</Rate>
+<Amount>500.00</Amount>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>315-933279829</TxnLineID>
+<ItemRef>
+<ListID>180000-933272656</ListID>
+<FullName>Appliance</FullName>
+</ItemRef>
+<Desc>Dishwasher GA 970</Desc>
+<Quantity>1</Quantity>
+<Rate>400.00</Rate>
+<Amount>400.00</Amount>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>316-933279829</TxnLineID>
+<ItemRef>
+<ListID>180000-933272656</ListID>
+<FullName>Appliance</FullName>
+</ItemRef>
+<Desc>Trash Compactor GAT 55</Desc>
+<Quantity>1</Quantity>
+<Rate>150.00</Rate>
+<Amount>150.00</Amount>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+</PurchaseOrderRet>
+<PurchaseOrderRet>
+<TxnID>317-933280762</TxnID>
+<TimeCreated>1999-07-30T01:39:22+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:35:32+05:00</TimeModified>
+<EditSequence>1765784130</EditSequence>
+<TxnNumber>51</TxnNumber>
+<VendorRef>
+<ListID>D0000-933272656</ListID>
+<FullName>McClain Appliances</FullName>
+</VendorRef>
+<TemplateRef>
+<ListID>80000023-1324002806</ListID>
+<FullName>Custom Purchase Order Template</FullName>
+</TemplateRef>
+<TxnDate>2026-10-01</TxnDate>
+<RefNumber>6211</RefNumber>
+<VendorAddress>
+<Addr1>McClain Appliances</Addr1>
+<Addr2>740 Washington Rd</Addr2>
+<City>Middlefield</City>
+<State>CA</State>
+<PostalCode>94482</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>McClain Appliances</Addr1>
+<Addr2>740 Washington Rd</Addr2>
+<Addr3>Middlefield CA 94482</Addr3>
+</VendorAddressBlock>
+<ShipAddress>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>1735 County Road</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>1735 County Road</Addr2>
+<Addr3>Bayshore, CA 94326</Addr3>
+</ShipAddressBlock>
+<DueDate>2027-10-01</DueDate>
+<ExpectedDate>2026-10-01</ExpectedDate>
+<TotalAmount>1780.00</TotalAmount>
+<IsManuallyClosed>false</IsManuallyClosed>
+<IsFullyReceived>true</IsFullyReceived>
+<Memo>Cook Kitchen</Memo>
+<VendorMsg>All appliances in midnight black #100</VendorMsg>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<PurchaseOrderLineRet>
+<TxnLineID>319-933280762</TxnLineID>
+<Desc>See attached specifications for the following:</Desc>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>31A-933280762</TxnLineID>
+<ItemRef>
+<ListID>180000-933272656</ListID>
+<FullName>Appliance</FullName>
+</ItemRef>
+<Desc>Refrigerator w/self-clean freezer</Desc>
+<Quantity>1</Quantity>
+<Rate>475.00</Rate>
+<Amount>475.00</Amount>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>31B-933280762</TxnLineID>
+<ItemRef>
+<ListID>180000-933272656</ListID>
+<FullName>Appliance</FullName>
+</ItemRef>
+<Desc>Microwave and double oven combo</Desc>
+<Quantity>1</Quantity>
+<Rate>385.00</Rate>
+<Amount>385.00</Amount>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>31C-933280762</TxnLineID>
+<ItemRef>
+<ListID>180000-933272656</ListID>
+<FullName>Appliance</FullName>
+</ItemRef>
+<Desc>Electric rangetop</Desc>
+<Quantity>1</Quantity>
+<Rate>255.00</Rate>
+<Amount>255.00</Amount>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>31D-933280762</TxnLineID>
+<ItemRef>
+<ListID>180000-933272656</ListID>
+<FullName>Appliance</FullName>
+</ItemRef>
+<Desc>Dishwasher</Desc>
+<Quantity>1</Quantity>
+<Rate>375.00</Rate>
+<Amount>375.00</Amount>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>31E-933280762</TxnLineID>
+<ItemRef>
+<ListID>180000-933272656</ListID>
+<FullName>Appliance</FullName>
+</ItemRef>
+<Desc>Trash compactor</Desc>
+<Quantity>1</Quantity>
+<Rate>195.00</Rate>
+<Amount>195.00</Amount>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>31F-933280762</TxnLineID>
+<ItemRef>
+<ListID>180000-933272656</ListID>
+<FullName>Appliance</FullName>
+</ItemRef>
+<Desc>Garbage disposal</Desc>
+<Quantity>1</Quantity>
+<Rate>95.00</Rate>
+<Amount>95.00</Amount>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+</PurchaseOrderRet>
+<PurchaseOrderRet>
+<TxnID>320-933280820</TxnID>
+<TimeCreated>1999-07-30T01:40:20+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:35:36+05:00</TimeModified>
+<EditSequence>1765784130</EditSequence>
+<TxnNumber>52</TxnNumber>
+<VendorRef>
+<ListID>C0000-933272656</ListID>
+<FullName>Perry Windows &amp; Doors</FullName>
+</VendorRef>
+<TemplateRef>
+<ListID>80000023-1324002806</ListID>
+<FullName>Custom Purchase Order Template</FullName>
+</TemplateRef>
+<TxnDate>2026-10-05</TxnDate>
+<RefNumber>6212</RefNumber>
+<VendorAddress>
+<Addr1>Perry Windows &amp; Doors</Addr1>
+<Addr2>P.O. Box 5033</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Perry Windows &amp; Doors</Addr1>
+<Addr2>P.O. Box 5033</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<ShipAddress>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>1735 County Road</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>1735 County Road</Addr2>
+<Addr3>Bayshore, CA 94326</Addr3>
+</ShipAddressBlock>
+<DueDate>2027-10-05</DueDate>
+<ExpectedDate>2026-10-05</ExpectedDate>
+<TotalAmount>1800.00</TotalAmount>
+<IsManuallyClosed>false</IsManuallyClosed>
+<IsFullyReceived>true</IsFullyReceived>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<PurchaseOrderLineRet>
+<TxnLineID>322-933280820</TxnLineID>
+<ItemRef>
+<ListID>160000-933272656</ListID>
+<FullName>Wood Door:Exterior</FullName>
+</ItemRef>
+<Desc>Exterior door - #P-10981</Desc>
+<Quantity>8</Quantity>
+<Rate>105.00</Rate>
+<Amount>840.00</Amount>
+<ReceivedQuantity>8</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>323-933280820</TxnLineID>
+<ItemRef>
+<ListID>170000-933272656</ListID>
+<FullName>Wood Door:Interior</FullName>
+</ItemRef>
+<Desc>Interior door - P-187055T</Desc>
+<Quantity>16</Quantity>
+<Rate>60.00</Rate>
+<Amount>960.00</Amount>
+<ReceivedQuantity>16</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+</PurchaseOrderRet>
+<PurchaseOrderRet>
+<TxnID>324-933280941</TxnID>
+<TimeCreated>1999-07-30T01:42:21+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:35:34+05:00</TimeModified>
+<EditSequence>1765784131</EditSequence>
+<TxnNumber>53</TxnNumber>
+<VendorRef>
+<ListID>10000-933272655</ListID>
+<FullName>Larson Flooring</FullName>
+</VendorRef>
+<TemplateRef>
+<ListID>80000023-1324002806</ListID>
+<FullName>Custom Purchase Order Template</FullName>
+</TemplateRef>
+<TxnDate>2026-10-06</TxnDate>
+<RefNumber>6213</RefNumber>
+<VendorAddress>
+<Addr1>Larson Flooring</Addr1>
+<Addr2>2780 County Rd</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Larson Flooring</Addr1>
+<Addr2>2780 County Rd</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<ShipAddress>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>1735 County Road</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>1735 County Road</Addr2>
+<Addr3>Bayshore, CA 94326</Addr3>
+</ShipAddressBlock>
+<DueDate>2027-10-06</DueDate>
+<ExpectedDate>2026-10-06</ExpectedDate>
+<TotalAmount>6400.00</TotalAmount>
+<IsManuallyClosed>false</IsManuallyClosed>
+<IsFullyReceived>true</IsFullyReceived>
+<Memo>Pretell-155 Wilks Blvd.</Memo>
+<VendorMsg>Office building at 155 Wilks Blvd., Bayshore</VendorMsg>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<PurchaseOrderLineRet>
+<TxnLineID>326-933280941</TxnLineID>
+<ItemRef>
+<ListID>60000-933272656</ListID>
+<FullName>Subs:Carpet</FullName>
+</ItemRef>
+<Desc>Install carpeting
+See attached specifications for carpet weight, color and brand for each floor</Desc>
+<Rate>6400.00</Rate>
+<Amount>6400.00</Amount>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+</PurchaseOrderRet>
+<PurchaseOrderRet>
+<TxnID>327-933281305</TxnID>
+<TimeCreated>1999-07-30T01:48:25+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:35:36+05:00</TimeModified>
+<EditSequence>1765784131</EditSequence>
+<TxnNumber>54</TxnNumber>
+<VendorRef>
+<ListID>E0000-933272656</ListID>
+<FullName>Timberloft Lumber</FullName>
+</VendorRef>
+<TemplateRef>
+<ListID>80000023-1324002806</ListID>
+<FullName>Custom Purchase Order Template</FullName>
+</TemplateRef>
+<TxnDate>2026-10-10</TxnDate>
+<RefNumber>6214</RefNumber>
+<VendorAddress>
+<Addr1>Timberloft Lumber</Addr1>
+<Addr2>456 Old Bayshore Rd</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Timberloft Lumber</Addr1>
+<Addr2>456 Old Bayshore Rd</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<ShipAddress>
+<Addr1>Phil Carpenter</Addr1>
+<Addr2>Attn: Rock Castle Construction</Addr2>
+<Addr3>345 Cherry Lane</Addr3>
+<City>Middlefield</City>
+<State>CA</State>
+<PostalCode>94482</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Phil Carpenter</Addr1>
+<Addr2>Attn: Rock Castle Construction</Addr2>
+<Addr3>345 Cherry Lane</Addr3>
+<Addr4>Middlefield, CA 94482</Addr4>
+</ShipAddressBlock>
+<DueDate>2027-10-10</DueDate>
+<ExpectedDate>2026-10-10</ExpectedDate>
+<TotalAmount>14790.00</TotalAmount>
+<IsManuallyClosed>false</IsManuallyClosed>
+<IsFullyReceived>true</IsFullyReceived>
+<Memo>Carpenter 2nd story addition</Memo>
+<VendorMsg>Please ship to Carpenter residence-
+Thank You!</VendorMsg>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<PurchaseOrderLineRet>
+<TxnLineID>329-933281305</TxnLineID>
+<Desc>See attached specifications for the following.</Desc>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>32A-933281305</TxnLineID>
+<ItemRef>
+<ListID>1C0000-933272656</ListID>
+<FullName>Lumber:Rough</FullName>
+</ItemRef>
+<Desc>Rough lumber</Desc>
+<Rate>11250.00</Rate>
+<Amount>11250.00</Amount>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>32B-933281305</TxnLineID>
+<ItemRef>
+<ListID>1D0000-933272656</ListID>
+<FullName>Lumber:Trim</FullName>
+</ItemRef>
+<Desc>Trim lumber</Desc>
+<Rate>1230.00</Rate>
+<Amount>1230.00</Amount>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>32C-933281305</TxnLineID>
+<ItemRef>
+<ListID>170000-933272656</ListID>
+<FullName>Wood Door:Interior</FullName>
+</ItemRef>
+<Desc>Interior door - P-187055T</Desc>
+<Quantity>4</Quantity>
+<Rate>165.00</Rate>
+<Amount>660.00</Amount>
+<ReceivedQuantity>4</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>32D-933281305</TxnLineID>
+<ItemRef>
+<ListID>160000-933272656</ListID>
+<FullName>Wood Door:Exterior</FullName>
+</ItemRef>
+<Desc>Exterior door - #P-10981</Desc>
+<Quantity>1</Quantity>
+<Rate>350.00</Rate>
+<Amount>350.00</Amount>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>32E-933281305</TxnLineID>
+<ItemRef>
+<ListID>1F0000-933272656</ListID>
+<FullName>Window</FullName>
+</ItemRef>
+<Desc>Window, single width</Desc>
+<Quantity>2</Quantity>
+<Rate>250.00</Rate>
+<Amount>500.00</Amount>
+<ReceivedQuantity>2</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>32F-933281305</TxnLineID>
+<ItemRef>
+<ListID>1F0000-933272656</ListID>
+<FullName>Window</FullName>
+</ItemRef>
+<Desc>Window, double width</Desc>
+<Quantity>2</Quantity>
+<Rate>400.00</Rate>
+<Amount>800.00</Amount>
+<ReceivedQuantity>2</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+</PurchaseOrderRet>
+<PurchaseOrderRet>
+<TxnID>2F60-1071504696</TxnID>
+<TimeCreated>2003-12-15T21:11:36+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:36:18+05:00</TimeModified>
+<EditSequence>1765784177</EditSequence>
+<TxnNumber>524</TxnNumber>
+<VendorRef>
+<ListID>90000-933272656</ListID>
+<FullName>Wheeler&apos;s Tile Etc.</FullName>
+</VendorRef>
+<ShipToEntityRef>
+<ListID>680000-1071498245</ListID>
+<FullName>Teichman, Tim:Kitchen</FullName>
+</ShipToEntityRef>
+<TemplateRef>
+<ListID>80000023-1324002806</ListID>
+<FullName>Custom Purchase Order Template</FullName>
+</TemplateRef>
+<TxnDate>2026-10-17</TxnDate>
+<RefNumber>6215</RefNumber>
+<VendorAddress>
+<Addr1>Wheeler&apos;s Tile Etc.</Addr1>
+<Addr2>650 Old Bayshore Rd</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Wheeler&apos;s Tile Etc.</Addr1>
+<Addr2>650 Old Bayshore Rd</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<ShipAddress>
+<Addr1>Tim Teichman</Addr1>
+<Addr2>2353 Lisa lane</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Tim Teichman</Addr1>
+<Addr2>2353 Lisa lane</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</ShipAddressBlock>
+<TermsRef>
+<ListID>10000-933272658</ListID>
+<FullName>Net 30</FullName>
+</TermsRef>
+<DueDate>2027-11-16</DueDate>
+<ExpectedDate>2026-10-17</ExpectedDate>
+<TotalAmount>286.00</TotalAmount>
+<IsManuallyClosed>false</IsManuallyClosed>
+<IsFullyReceived>true</IsFullyReceived>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<PurchaseOrderLineRet>
+<TxnLineID>2F62-1071504696</TxnLineID>
+<ItemRef>
+<ListID>310000-1071509547</ListID>
+<FullName>Flooring</FullName>
+</ItemRef>
+<Desc>Tile - See attached for style/color</Desc>
+<Rate>286.00</Rate>
+<Amount>286.00</Amount>
+<CustomerRef>
+<ListID>680000-1071498245</ListID>
+<FullName>Teichman, Tim:Kitchen</FullName>
+</CustomerRef>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+</PurchaseOrderRet>
+<PurchaseOrderRet>
+<TxnID>2F63-1071504907</TxnID>
+<TimeCreated>2003-12-15T21:15:07+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:36:18+05:00</TimeModified>
+<EditSequence>1765784177</EditSequence>
+<TxnNumber>525</TxnNumber>
+<VendorRef>
+<ListID>D0000-933272656</ListID>
+<FullName>McClain Appliances</FullName>
+</VendorRef>
+<ShipToEntityRef>
+<ListID>680000-1071498245</ListID>
+<FullName>Teichman, Tim:Kitchen</FullName>
+</ShipToEntityRef>
+<TemplateRef>
+<ListID>80000023-1324002806</ListID>
+<FullName>Custom Purchase Order Template</FullName>
+</TemplateRef>
+<TxnDate>2026-10-17</TxnDate>
+<RefNumber>6216</RefNumber>
+<VendorAddress>
+<Addr1>McClain Appliances</Addr1>
+<Addr2>740 Washington Rd</Addr2>
+<City>Middlefield</City>
+<State>CA</State>
+<PostalCode>94482</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>McClain Appliances</Addr1>
+<Addr2>740 Washington Rd</Addr2>
+<Addr3>Middlefield CA 94482</Addr3>
+</VendorAddressBlock>
+<ShipAddress>
+<Addr1>Tim Teichman</Addr1>
+<Addr2>2353 Lisa lane</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Tim Teichman</Addr1>
+<Addr2>2353 Lisa lane</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</ShipAddressBlock>
+<TermsRef>
+<ListID>40000-933272659</ListID>
+<FullName>2% 10 Net 30</FullName>
+</TermsRef>
+<DueDate>2027-11-16</DueDate>
+<ExpectedDate>2026-10-17</ExpectedDate>
+<TotalAmount>3065.00</TotalAmount>
+<IsManuallyClosed>false</IsManuallyClosed>
+<IsFullyReceived>true</IsFullyReceived>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<PurchaseOrderLineRet>
+<TxnLineID>2F65-1071504907</TxnLineID>
+<ItemRef>
+<ListID>180000-933272656</ListID>
+<FullName>Appliance</FullName>
+</ItemRef>
+<Desc>Cook top</Desc>
+<Rate>250.00</Rate>
+<Amount>250.00</Amount>
+<CustomerRef>
+<ListID>680000-1071498245</ListID>
+<FullName>Teichman, Tim:Kitchen</FullName>
+</CustomerRef>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>2F66-1071504907</TxnLineID>
+<ItemRef>
+<ListID>180000-933272656</ListID>
+<FullName>Appliance</FullName>
+</ItemRef>
+<Desc>Refridgerator</Desc>
+<Rate>850.00</Rate>
+<Amount>850.00</Amount>
+<CustomerRef>
+<ListID>680000-1071498245</ListID>
+<FullName>Teichman, Tim:Kitchen</FullName>
+</CustomerRef>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>2F67-1071504907</TxnLineID>
+<ItemRef>
+<ListID>180000-933272656</ListID>
+<FullName>Appliance</FullName>
+</ItemRef>
+<Desc>Trash compactor</Desc>
+<Rate>180.00</Rate>
+<Amount>180.00</Amount>
+<CustomerRef>
+<ListID>680000-1071498245</ListID>
+<FullName>Teichman, Tim:Kitchen</FullName>
+</CustomerRef>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>2F68-1071504907</TxnLineID>
+<ItemRef>
+<ListID>180000-933272656</ListID>
+<FullName>Appliance</FullName>
+</ItemRef>
+<Desc>Double oven</Desc>
+<Rate>425.00</Rate>
+<Amount>425.00</Amount>
+<CustomerRef>
+<ListID>680000-1071498245</ListID>
+<FullName>Teichman, Tim:Kitchen</FullName>
+</CustomerRef>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>2F69-1071504907</TxnLineID>
+<ItemRef>
+<ListID>180000-933272656</ListID>
+<FullName>Appliance</FullName>
+</ItemRef>
+<Desc>Freezer</Desc>
+<Rate>500.00</Rate>
+<Amount>500.00</Amount>
+<CustomerRef>
+<ListID>680000-1071498245</ListID>
+<FullName>Teichman, Tim:Kitchen</FullName>
+</CustomerRef>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>2F6B-1071504907</TxnLineID>
+<ItemRef>
+<ListID>180000-933272656</ListID>
+<FullName>Appliance</FullName>
+</ItemRef>
+<Desc>Dishwasher</Desc>
+<Rate>260.00</Rate>
+<Amount>260.00</Amount>
+<CustomerRef>
+<ListID>680000-1071498245</ListID>
+<FullName>Teichman, Tim:Kitchen</FullName>
+</CustomerRef>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>2F6C-1071504907</TxnLineID>
+<ItemRef>
+<ListID>180000-933272656</ListID>
+<FullName>Appliance</FullName>
+</ItemRef>
+<Desc>Washer</Desc>
+<Rate>300.00</Rate>
+<Amount>300.00</Amount>
+<CustomerRef>
+<ListID>680000-1071498245</ListID>
+<FullName>Teichman, Tim:Kitchen</FullName>
+</CustomerRef>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>2F6D-1071504907</TxnLineID>
+<ItemRef>
+<ListID>180000-933272656</ListID>
+<FullName>Appliance</FullName>
+</ItemRef>
+<Desc>Dryer</Desc>
+<Rate>300.00</Rate>
+<Amount>300.00</Amount>
+<CustomerRef>
+<ListID>680000-1071498245</ListID>
+<FullName>Teichman, Tim:Kitchen</FullName>
+</CustomerRef>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>2F6A-1071504907</TxnLineID>
+<Desc>See attached for model/style information</Desc>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+</PurchaseOrderRet>
+<PurchaseOrderRet>
+<TxnID>2F71-1071505429</TxnID>
+<TimeCreated>2003-12-15T21:23:49+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:36:18+05:00</TimeModified>
+<EditSequence>1765784177</EditSequence>
+<TxnNumber>527</TxnNumber>
+<VendorRef>
+<ListID>A0000-933272656</ListID>
+<FullName>Thomas Kitchen &amp; Bath</FullName>
+</VendorRef>
+<ShipToEntityRef>
+<ListID>680000-1071498245</ListID>
+<FullName>Teichman, Tim:Kitchen</FullName>
+</ShipToEntityRef>
+<TemplateRef>
+<ListID>80000023-1324002806</ListID>
+<FullName>Custom Purchase Order Template</FullName>
+</TemplateRef>
+<TxnDate>2026-10-17</TxnDate>
+<RefNumber>6217</RefNumber>
+<VendorAddress>
+<Addr1>Thomas Kitchen &amp; Bath</Addr1>
+<Addr2>608 Main St</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Thomas Kitchen &amp; Bath</Addr1>
+<Addr2>608 Main St</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<ShipAddress>
+<Addr1>Tim Teichman</Addr1>
+<Addr2>2353 Lisa lane</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Tim Teichman</Addr1>
+<Addr2>2353 Lisa lane</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</ShipAddressBlock>
+<TermsRef>
+<ListID>10000-933272658</ListID>
+<FullName>Net 30</FullName>
+</TermsRef>
+<DueDate>2027-11-16</DueDate>
+<ExpectedDate>2026-10-17</ExpectedDate>
+<TotalAmount>1897.00</TotalAmount>
+<IsManuallyClosed>false</IsManuallyClosed>
+<IsFullyReceived>true</IsFullyReceived>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<PurchaseOrderLineRet>
+<TxnLineID>2F73-1071505429</TxnLineID>
+<ItemRef>
+<ListID>330000-1071527659</ListID>
+<FullName>Cabinets - Custom</FullName>
+</ItemRef>
+<Desc>Custom cabinets - see attached specifications</Desc>
+<Rate>1897.00</Rate>
+<Amount>1897.00</Amount>
+<CustomerRef>
+<ListID>680000-1071498245</ListID>
+<FullName>Teichman, Tim:Kitchen</FullName>
+</CustomerRef>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+</PurchaseOrderRet>
+<PurchaseOrderRet>
+<TxnID>2F74-1071505585</TxnID>
+<TimeCreated>2003-12-15T21:26:25+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:36:17+05:00</TimeModified>
+<EditSequence>1765784177</EditSequence>
+<TxnNumber>528</TxnNumber>
+<VendorRef>
+<ListID>C0000-933272656</ListID>
+<FullName>Perry Windows &amp; Doors</FullName>
+</VendorRef>
+<ShipToEntityRef>
+<ListID>680000-1071498245</ListID>
+<FullName>Teichman, Tim:Kitchen</FullName>
+</ShipToEntityRef>
+<TemplateRef>
+<ListID>80000023-1324002806</ListID>
+<FullName>Custom Purchase Order Template</FullName>
+</TemplateRef>
+<TxnDate>2026-10-17</TxnDate>
+<RefNumber>6218</RefNumber>
+<VendorAddress>
+<Addr1>Perry Windows &amp; Doors</Addr1>
+<Addr2>P.O. Box 5033</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Perry Windows &amp; Doors</Addr1>
+<Addr2>P.O. Box 5033</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<ShipAddress>
+<Addr1>Tim Teichman</Addr1>
+<Addr2>2353 Lisa lane</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Tim Teichman</Addr1>
+<Addr2>2353 Lisa lane</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</ShipAddressBlock>
+<TermsRef>
+<ListID>10000-933272658</ListID>
+<FullName>Net 30</FullName>
+</TermsRef>
+<DueDate>2027-11-16</DueDate>
+<ExpectedDate>2026-10-17</ExpectedDate>
+<TotalAmount>180.75</TotalAmount>
+<IsManuallyClosed>false</IsManuallyClosed>
+<IsFullyReceived>true</IsFullyReceived>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<PurchaseOrderLineRet>
+<TxnLineID>2F76-1071505585</TxnLineID>
+<ItemRef>
+<ListID>1F0000-933272656</ListID>
+<FullName>Window</FullName>
+</ItemRef>
+<Desc>Window</Desc>
+<Rate>56.00</Rate>
+<Amount>56.00</Amount>
+<CustomerRef>
+<ListID>680000-1071498245</ListID>
+<FullName>Teichman, Tim:Kitchen</FullName>
+</CustomerRef>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>2F77-1071505585</TxnLineID>
+<ItemRef>
+<ListID>3A0000-1071506378</ListID>
+<FullName>Patio Door</FullName>
+</ItemRef>
+<Desc>See attached specifications</Desc>
+<Rate>124.75</Rate>
+<Amount>124.75</Amount>
+<CustomerRef>
+<ListID>680000-1071498245</ListID>
+<FullName>Teichman, Tim:Kitchen</FullName>
+</CustomerRef>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+</PurchaseOrderRet>
+<PurchaseOrderRet>
+<TxnID>2447-1071521687</TxnID>
+<TimeCreated>2003-12-16T01:54:47+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:35:58+05:00</TimeModified>
+<EditSequence>1765784158</EditSequence>
+<TxnNumber>415</TxnNumber>
+<VendorRef>
+<ListID>C0000-933272656</ListID>
+<FullName>Perry Windows &amp; Doors</FullName>
+</VendorRef>
+<TemplateRef>
+<ListID>80000023-1324002806</ListID>
+<FullName>Custom Purchase Order Template</FullName>
+</TemplateRef>
+<TxnDate>2026-10-22</TxnDate>
+<RefNumber>6219</RefNumber>
+<VendorAddress>
+<Addr1>Perry Windows &amp; Doors</Addr1>
+<Addr2>P.O. Box 5033</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Perry Windows &amp; Doors</Addr1>
+<Addr2>P.O. Box 5033</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<ShipAddress>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>1735 County Road</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>1735 County Road</Addr2>
+<Addr3>Bayshore, CA 94326</Addr3>
+</ShipAddressBlock>
+<TermsRef>
+<ListID>10000-933272658</ListID>
+<FullName>Net 30</FullName>
+</TermsRef>
+<DueDate>2027-11-21</DueDate>
+<ExpectedDate>2026-10-22</ExpectedDate>
+<TotalAmount>3530.00</TotalAmount>
+<IsManuallyClosed>false</IsManuallyClosed>
+<IsFullyReceived>false</IsFullyReceived>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<PurchaseOrderLineRet>
+<TxnLineID>2449-1071521687</TxnLineID>
+<ItemRef>
+<ListID>1F0000-933272656</ListID>
+<FullName>Window</FullName>
+</ItemRef>
+<Desc>Window - Basic Picture</Desc>
+<Quantity>5</Quantity>
+<Rate>456.00</Rate>
+<Amount>2280.00</Amount>
+<ReceivedQuantity>2</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>244A-1071521687</TxnLineID>
+<ItemRef>
+<ListID>1F0000-933272656</ListID>
+<FullName>Window</FullName>
+</ItemRef>
+<Desc>Window - Standard Bedroom</Desc>
+<Quantity>10</Quantity>
+<Rate>125.00</Rate>
+<Amount>1250.00</Amount>
+<ReceivedQuantity>3</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+</PurchaseOrderRet>
+<PurchaseOrderRet>
+<TxnID>339-933281605</TxnID>
+<TimeCreated>1999-07-30T01:53:25+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:35:41+05:00</TimeModified>
+<EditSequence>1765784131</EditSequence>
+<TxnNumber>56</TxnNumber>
+<VendorRef>
+<ListID>C0000-933272656</ListID>
+<FullName>Perry Windows &amp; Doors</FullName>
+</VendorRef>
+<TemplateRef>
+<ListID>80000023-1324002806</ListID>
+<FullName>Custom Purchase Order Template</FullName>
+</TemplateRef>
+<TxnDate>2026-10-24</TxnDate>
+<RefNumber>6220</RefNumber>
+<VendorAddress>
+<Addr1>Perry Windows &amp; Doors</Addr1>
+<Addr2>P.O. Box 5033</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Perry Windows &amp; Doors</Addr1>
+<Addr2>P.O. Box 5033</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<ShipAddress>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>1735 County Road</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>1735 County Road</Addr2>
+<Addr3>Bayshore, CA 94326</Addr3>
+</ShipAddressBlock>
+<DueDate>2027-10-24</DueDate>
+<ExpectedDate>2026-10-24</ExpectedDate>
+<TotalAmount>810.00</TotalAmount>
+<IsManuallyClosed>false</IsManuallyClosed>
+<IsFullyReceived>true</IsFullyReceived>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<PurchaseOrderLineRet>
+<TxnLineID>33B-933281605</TxnLineID>
+<ItemRef>
+<ListID>160000-933272656</ListID>
+<FullName>Wood Door:Exterior</FullName>
+</ItemRef>
+<Desc>Exterior door - #P-10981</Desc>
+<Quantity>6</Quantity>
+<Rate>135.00</Rate>
+<Amount>810.00</Amount>
+<ReceivedQuantity>6</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+</PurchaseOrderRet>
+<PurchaseOrderRet>
+<TxnID>341-933281845</TxnID>
+<TimeCreated>1999-07-30T01:57:25+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:35:42+05:00</TimeModified>
+<EditSequence>1765784131</EditSequence>
+<TxnNumber>58</TxnNumber>
+<VendorRef>
+<ListID>C0000-933272656</ListID>
+<FullName>Perry Windows &amp; Doors</FullName>
+</VendorRef>
+<TemplateRef>
+<ListID>80000023-1324002806</ListID>
+<FullName>Custom Purchase Order Template</FullName>
+</TemplateRef>
+<TxnDate>2026-11-18</TxnDate>
+<RefNumber>6221</RefNumber>
+<VendorAddress>
+<Addr1>Perry Windows &amp; Doors</Addr1>
+<Addr2>P.O. Box 5033</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Perry Windows &amp; Doors</Addr1>
+<Addr2>P.O. Box 5033</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<ShipAddress>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>75 Sunset Road</Addr2>
+<City>Middlefield</City>
+<State>CA</State>
+<PostalCode>94482</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>75 Sunset Road</Addr2>
+<Addr3>Middlefield, CA 94482</Addr3>
+</ShipAddressBlock>
+<DueDate>2027-11-18</DueDate>
+<ExpectedDate>2026-11-18</ExpectedDate>
+<TotalAmount>7820.00</TotalAmount>
+<IsManuallyClosed>true</IsManuallyClosed>
+<IsFullyReceived>false</IsFullyReceived>
+<Memo>Pretell 75 Sunset office building</Memo>
+<VendorMsg>Please deliver to job site</VendorMsg>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<PurchaseOrderLineRet>
+<TxnLineID>343-933281845</TxnLineID>
+<Desc>See attached specifications</Desc>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>344-933281845</TxnLineID>
+<ItemRef>
+<ListID>1F0000-933272656</ListID>
+<FullName>Window</FullName>
+</ItemRef>
+<Desc>Window</Desc>
+<Quantity>24</Quantity>
+<Rate>220.00</Rate>
+<Amount>5280.00</Amount>
+<ReceivedQuantity>18</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>true</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>345-933281845</TxnLineID>
+<ItemRef>
+<ListID>170000-933272656</ListID>
+<FullName>Wood Door:Interior</FullName>
+</ItemRef>
+<Desc>Interior door - P-187055T</Desc>
+<Quantity>15</Quantity>
+<Rate>115.00</Rate>
+<Amount>1725.00</Amount>
+<ReceivedQuantity>10</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>true</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>346-933281845</TxnLineID>
+<ItemRef>
+<ListID>160000-933272656</ListID>
+<FullName>Wood Door:Exterior</FullName>
+</ItemRef>
+<Desc>Exterior door - #P-10981</Desc>
+<Quantity>2</Quantity>
+<Rate>300.00</Rate>
+<Amount>600.00</Amount>
+<ReceivedQuantity>2</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>347-933281845</TxnLineID>
+<ItemRef>
+<ListID>160000-933272656</ListID>
+<FullName>Wood Door:Exterior</FullName>
+</ItemRef>
+<Desc>Exterior door - #K-7904</Desc>
+<Quantity>1</Quantity>
+<Rate>215.00</Rate>
+<Amount>215.00</Amount>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+</PurchaseOrderRet>
+<PurchaseOrderRet>
+<TxnID>348-933281919</TxnID>
+<TimeCreated>1999-07-30T01:58:39+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:35:41+05:00</TimeModified>
+<EditSequence>1765784132</EditSequence>
+<TxnNumber>59</TxnNumber>
+<VendorRef>
+<ListID>C0000-933272656</ListID>
+<FullName>Perry Windows &amp; Doors</FullName>
+</VendorRef>
+<TemplateRef>
+<ListID>80000023-1324002806</ListID>
+<FullName>Custom Purchase Order Template</FullName>
+</TemplateRef>
+<TxnDate>2026-11-18</TxnDate>
+<RefNumber>6222</RefNumber>
+<VendorAddress>
+<Addr1>Perry Windows &amp; Doors</Addr1>
+<Addr2>P.O. Box 5033</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Perry Windows &amp; Doors</Addr1>
+<Addr2>P.O. Box 5033</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<ShipAddress>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>1735 County Road</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>1735 County Road</Addr2>
+<Addr3>Bayshore, CA 94326</Addr3>
+</ShipAddressBlock>
+<DueDate>2027-11-18</DueDate>
+<ExpectedDate>2026-11-18</ExpectedDate>
+<TotalAmount>2325.00</TotalAmount>
+<IsManuallyClosed>false</IsManuallyClosed>
+<IsFullyReceived>true</IsFullyReceived>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<PurchaseOrderLineRet>
+<TxnLineID>34A-933281919</TxnLineID>
+<ItemRef>
+<ListID>1F0000-933272656</ListID>
+<FullName>Window</FullName>
+</ItemRef>
+<Desc>Window</Desc>
+<Quantity>4</Quantity>
+<Rate>125.00</Rate>
+<Amount>500.00</Amount>
+<ReceivedQuantity>4</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>34B-933281919</TxnLineID>
+<ItemRef>
+<ListID>150000-933272656</ListID>
+<FullName>Wood Door</FullName>
+</ItemRef>
+<Desc>French Door</Desc>
+<Quantity>1</Quantity>
+<Rate>1750.00</Rate>
+<Amount>1750.00</Amount>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>34C-933281919</TxnLineID>
+<ItemRef>
+<ListID>140000-933272656</ListID>
+<FullName>Hardware:Lk Doorknobs</FullName>
+</ItemRef>
+<Desc>Locking interior doorknobs  Part # DK415</Desc>
+<Quantity>1</Quantity>
+<Rate>75.00</Rate>
+<Amount>75.00</Amount>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+</PurchaseOrderRet>
+<PurchaseOrderRet>
+<TxnID>2423-1071509427</TxnID>
+<TimeCreated>2003-12-15T22:30:27+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:35:58+05:00</TimeModified>
+<EditSequence>1765784157</EditSequence>
+<TxnNumber>409</TxnNumber>
+<VendorRef>
+<ListID>C0000-933272656</ListID>
+<FullName>Perry Windows &amp; Doors</FullName>
+</VendorRef>
+<ShipToEntityRef>
+<ListID>570000-1071525616</ListID>
+<FullName>Prentice, Adelaide:Guest Villa</FullName>
+</ShipToEntityRef>
+<TemplateRef>
+<ListID>80000023-1324002806</ListID>
+<FullName>Custom Purchase Order Template</FullName>
+</TemplateRef>
+<TxnDate>2026-11-26</TxnDate>
+<RefNumber>6223</RefNumber>
+<VendorAddress>
+<Addr1>Perry Windows &amp; Doors</Addr1>
+<Addr2>P.O. Box 5033</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Perry Windows &amp; Doors</Addr1>
+<Addr2>P.O. Box 5033</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<ShipAddress>
+<Addr1>Adelaide Prentice</Addr1>
+<Addr2>1800 Appleseed Court</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Adelaide Prentice</Addr1>
+<Addr2>1800 Appleseed Court</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</ShipAddressBlock>
+<TermsRef>
+<ListID>10000-933272658</ListID>
+<FullName>Net 30</FullName>
+</TermsRef>
+<DueDate>2027-12-26</DueDate>
+<ExpectedDate>2026-11-26</ExpectedDate>
+<TotalAmount>50.00</TotalAmount>
+<IsManuallyClosed>false</IsManuallyClosed>
+<IsFullyReceived>true</IsFullyReceived>
+<Memo>playhouse</Memo>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<PurchaseOrderLineRet>
+<TxnLineID>2425-1071509427</TxnLineID>
+<ItemRef>
+<ListID>1F0000-933272656</ListID>
+<FullName>Window</FullName>
+</ItemRef>
+<Desc>Window</Desc>
+<Quantity>2</Quantity>
+<Rate>25.00</Rate>
+<Amount>50.00</Amount>
+<CustomerRef>
+<ListID>570000-1071525616</ListID>
+<FullName>Prentice, Adelaide:Guest Villa</FullName>
+</CustomerRef>
+<ReceivedQuantity>2</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+</PurchaseOrderRet>
+<PurchaseOrderRet>
+<TxnID>2429-1071509706</TxnID>
+<TimeCreated>2003-12-15T22:35:06+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:35:57+05:00</TimeModified>
+<EditSequence>1765784157</EditSequence>
+<TxnNumber>411</TxnNumber>
+<VendorRef>
+<ListID>E0000-933272656</ListID>
+<FullName>Timberloft Lumber</FullName>
+</VendorRef>
+<ShipToEntityRef>
+<ListID>570000-1071525616</ListID>
+<FullName>Prentice, Adelaide:Guest Villa</FullName>
+</ShipToEntityRef>
+<TemplateRef>
+<ListID>80000023-1324002806</ListID>
+<FullName>Custom Purchase Order Template</FullName>
+</TemplateRef>
+<TxnDate>2026-11-26</TxnDate>
+<RefNumber>6224</RefNumber>
+<VendorAddress>
+<Addr1>Timberloft Lumber</Addr1>
+<Addr2>456 Old Bayshore Rd</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Timberloft Lumber</Addr1>
+<Addr2>456 Old Bayshore Rd</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<ShipAddress>
+<Addr1>Adelaide Prentice</Addr1>
+<Addr2>1800 Appleseed Court</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Adelaide Prentice</Addr1>
+<Addr2>1800 Appleseed Court</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</ShipAddressBlock>
+<TermsRef>
+<ListID>50000-933272659</ListID>
+<FullName>1% 10 Net 30</FullName>
+</TermsRef>
+<DueDate>2027-12-26</DueDate>
+<ExpectedDate>2026-11-26</ExpectedDate>
+<TotalAmount>80.50</TotalAmount>
+<IsManuallyClosed>false</IsManuallyClosed>
+<IsFullyReceived>true</IsFullyReceived>
+<Memo>playhouse</Memo>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<PurchaseOrderLineRet>
+<TxnLineID>242B-1071509706</TxnLineID>
+<ItemRef>
+<ListID>1C0000-933272656</ListID>
+<FullName>Lumber:Rough</FullName>
+</ItemRef>
+<Desc>Rough lumber</Desc>
+<Rate>45.50</Rate>
+<Amount>45.50</Amount>
+<CustomerRef>
+<ListID>570000-1071525616</ListID>
+<FullName>Prentice, Adelaide:Guest Villa</FullName>
+</CustomerRef>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>242C-1071509706</TxnLineID>
+<ItemRef>
+<ListID>1D0000-933272656</ListID>
+<FullName>Lumber:Trim</FullName>
+</ItemRef>
+<Desc>Trim lumber</Desc>
+<Rate>35.00</Rate>
+<Amount>35.00</Amount>
+<CustomerRef>
+<ListID>570000-1071525616</ListID>
+<FullName>Prentice, Adelaide:Guest Villa</FullName>
+</CustomerRef>
+<ReceivedQuantity>1</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+</PurchaseOrderRet>
+<PurchaseOrderRet>
+<TxnID>3684-1071520443</TxnID>
+<TimeCreated>2003-12-16T01:34:03+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:36:30+05:00</TimeModified>
+<EditSequence>1765784189</EditSequence>
+<TxnNumber>610</TxnNumber>
+<VendorRef>
+<ListID>B0000-933272656</ListID>
+<FullName>Patton Hardware Supplies</FullName>
+</VendorRef>
+<TemplateRef>
+<ListID>80000023-1324002806</ListID>
+<FullName>Custom Purchase Order Template</FullName>
+</TemplateRef>
+<TxnDate>2026-11-26</TxnDate>
+<RefNumber>6225</RefNumber>
+<VendorAddress>
+<Addr1>Patton Hardware Supplies</Addr1>
+<Addr2>4872 County Rd</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Patton Hardware Supplies</Addr1>
+<Addr2>4872 County Rd</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<ShipAddress>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>1735 County Road</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>1735 County Road</Addr2>
+<Addr3>Bayshore, CA 94326</Addr3>
+</ShipAddressBlock>
+<TermsRef>
+<ListID>10000-933272658</ListID>
+<FullName>Net 30</FullName>
+</TermsRef>
+<DueDate>2027-12-26</DueDate>
+<ExpectedDate>2026-11-26</ExpectedDate>
+<TotalAmount>13695.00</TotalAmount>
+<IsManuallyClosed>false</IsManuallyClosed>
+<IsFullyReceived>true</IsFullyReceived>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<PurchaseOrderLineRet>
+<TxnLineID>3686-1071520443</TxnLineID>
+<ItemRef>
+<ListID>110000-933272656</ListID>
+<FullName>Cabinets:Light Pine</FullName>
+</ItemRef>
+<Desc>Light pine kitchen cabinet wall unit 
+#CLD- 1235-p</Desc>
+<Quantity>5</Quantity>
+<Rate>1500.00</Rate>
+<Amount>7500.00</Amount>
+<ReceivedQuantity>5</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>3687-1071520443</TxnLineID>
+<ItemRef>
+<ListID>130000-933272656</ListID>
+<FullName>Hardware:Doorknobs Std</FullName>
+</ItemRef>
+<Desc>Doorknobs Part # DK 3704</Desc>
+<Quantity>100</Quantity>
+<Rate>27.00</Rate>
+<Amount>2700.00</Amount>
+<ReceivedQuantity>100</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>3688-1071520443</TxnLineID>
+<ItemRef>
+<ListID>140000-933272656</ListID>
+<FullName>Hardware:Lk Doorknobs</FullName>
+</ItemRef>
+<Desc>Locking interior doorknobs  Part # DK415</Desc>
+<Quantity>100</Quantity>
+<Rate>34.95</Rate>
+<Amount>3495.00</Amount>
+<ReceivedQuantity>100</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+</PurchaseOrderRet>
+<PurchaseOrderRet>
+<TxnID>33C-933281703</TxnID>
+<TimeCreated>1999-07-30T01:55:03+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:35:31+05:00</TimeModified>
+<EditSequence>1765784131</EditSequence>
+<TxnNumber>57</TxnNumber>
+<VendorRef>
+<ListID>E0000-933272656</ListID>
+<FullName>Timberloft Lumber</FullName>
+</VendorRef>
+<TemplateRef>
+<ListID>80000023-1324002806</ListID>
+<FullName>Custom Purchase Order Template</FullName>
+</TemplateRef>
+<TxnDate>2026-11-28</TxnDate>
+<RefNumber>6226</RefNumber>
+<VendorAddress>
+<Addr1>Timberloft Lumber</Addr1>
+<Addr2>456 Old Bayshore Rd</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Timberloft Lumber</Addr1>
+<Addr2>456 Old Bayshore Rd</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<ShipAddress>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>75 Sunset Blvd.</Addr2>
+<City>Middlefield</City>
+<State>CA</State>
+<PostalCode>94482</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>75 Sunset Blvd.</Addr2>
+<Addr3>Middlefield, CA 94482</Addr3>
+</ShipAddressBlock>
+<DueDate>2027-11-28</DueDate>
+<ExpectedDate>2026-11-28</ExpectedDate>
+<TotalAmount>6075.00</TotalAmount>
+<IsManuallyClosed>false</IsManuallyClosed>
+<IsFullyReceived>false</IsFullyReceived>
+<Memo>Pretell- 75 Sunset office building</Memo>
+<VendorMsg>Please deliver to job site</VendorMsg>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<PurchaseOrderLineRet>
+<TxnLineID>33E-933281703</TxnLineID>
+<Desc>See attached specifications</Desc>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>33F-933281703</TxnLineID>
+<ItemRef>
+<ListID>1C0000-933272656</ListID>
+<FullName>Lumber:Rough</FullName>
+</ItemRef>
+<Desc>Rough lumber</Desc>
+<Rate>5200.00</Rate>
+<Amount>5200.00</Amount>
+<ReceivedQuantity>0</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>340-933281703</TxnLineID>
+<ItemRef>
+<ListID>1D0000-933272656</ListID>
+<FullName>Lumber:Trim</FullName>
+</ItemRef>
+<Desc>Trim lumber</Desc>
+<Rate>875.00</Rate>
+<Amount>875.00</Amount>
+<ReceivedQuantity>0</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+</PurchaseOrderRet>
+<PurchaseOrderRet>
+<TxnID>3689-1071520676</TxnID>
+<TimeCreated>2003-12-16T01:37:56+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:36:30+05:00</TimeModified>
+<EditSequence>1765784189</EditSequence>
+<TxnNumber>611</TxnNumber>
+<VendorRef>
+<ListID>C0000-933272656</ListID>
+<FullName>Perry Windows &amp; Doors</FullName>
+</VendorRef>
+<TemplateRef>
+<ListID>80000023-1324002806</ListID>
+<FullName>Custom Purchase Order Template</FullName>
+</TemplateRef>
+<TxnDate>2026-11-28</TxnDate>
+<RefNumber>6227</RefNumber>
+<VendorAddress>
+<Addr1>Perry Windows &amp; Doors</Addr1>
+<Addr2>P.O. Box 5033</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Perry Windows &amp; Doors</Addr1>
+<Addr2>P.O. Box 5033</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<ShipAddress>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>1735 County Road</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>1735 County Road</Addr2>
+<Addr3>Bayshore, CA 94326</Addr3>
+</ShipAddressBlock>
+<TermsRef>
+<ListID>10000-933272658</ListID>
+<FullName>Net 30</FullName>
+</TermsRef>
+<DueDate>2027-12-28</DueDate>
+<ExpectedDate>2026-11-28</ExpectedDate>
+<TotalAmount>2400.00</TotalAmount>
+<IsManuallyClosed>false</IsManuallyClosed>
+<IsFullyReceived>true</IsFullyReceived>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<PurchaseOrderLineRet>
+<TxnLineID>368B-1071520676</TxnLineID>
+<ItemRef>
+<ListID>170000-933272656</ListID>
+<FullName>Wood Door:Interior</FullName>
+</ItemRef>
+<Desc>Interior door - P-187055T</Desc>
+<Quantity>40</Quantity>
+<Rate>60.00</Rate>
+<Amount>2400.00</Amount>
+<ReceivedQuantity>40</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+</PurchaseOrderRet>
+<PurchaseOrderRet>
+<TxnID>34D-933281993</TxnID>
+<TimeCreated>1999-07-30T01:59:53+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:35:48+05:00</TimeModified>
+<EditSequence>1765784132</EditSequence>
+<TxnNumber>60</TxnNumber>
+<VendorRef>
+<ListID>B0000-933272656</ListID>
+<FullName>Patton Hardware Supplies</FullName>
+</VendorRef>
+<TemplateRef>
+<ListID>80000023-1324002806</ListID>
+<FullName>Custom Purchase Order Template</FullName>
+</TemplateRef>
+<TxnDate>2026-11-30</TxnDate>
+<RefNumber>6228</RefNumber>
+<VendorAddress>
+<Addr1>Patton Hardware Supplies</Addr1>
+<Addr2>4872 County Rd</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Patton Hardware Supplies</Addr1>
+<Addr2>4872 County Rd</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<ShipAddress>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>1735 County Road</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>1735 County Road</Addr2>
+<Addr3>Bayshore, CA 94326</Addr3>
+</ShipAddressBlock>
+<DueDate>2027-11-30</DueDate>
+<ExpectedDate>2026-11-30</ExpectedDate>
+<TotalAmount>3459.20</TotalAmount>
+<IsManuallyClosed>false</IsManuallyClosed>
+<IsFullyReceived>true</IsFullyReceived>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<PurchaseOrderLineRet>
+<TxnLineID>34F-933281993</TxnLineID>
+<ItemRef>
+<ListID>100000-933272656</ListID>
+<FullName>Cabinets:Cabinet Pulls</FullName>
+</ItemRef>
+<Desc>Cabinet Pulls</Desc>
+<Quantity>50</Quantity>
+<Rate>1.75</Rate>
+<Amount>87.50</Amount>
+<ReceivedQuantity>50</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>350-933281993</TxnLineID>
+<ItemRef>
+<ListID>110000-933272656</ListID>
+<FullName>Cabinets:Light Pine</FullName>
+</ItemRef>
+<Desc>Light pine kitchen cabinet wall unit 
+#CLD- 1235-p</Desc>
+<Quantity>2</Quantity>
+<Rate>1500.00</Rate>
+<Amount>3000.00</Amount>
+<ReceivedQuantity>2</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>351-933281993</TxnLineID>
+<ItemRef>
+<ListID>130000-933272656</ListID>
+<FullName>Hardware:Doorknobs Std</FullName>
+</ItemRef>
+<Desc>Doorknobs Part # DK 3704</Desc>
+<Quantity>6</Quantity>
+<Rate>27.00</Rate>
+<Amount>162.00</Amount>
+<ReceivedQuantity>6</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>352-933281993</TxnLineID>
+<ItemRef>
+<ListID>140000-933272656</ListID>
+<FullName>Hardware:Lk Doorknobs</FullName>
+</ItemRef>
+<Desc>Locking interior doorknobs  Part # DK415</Desc>
+<Quantity>6</Quantity>
+<Rate>34.95</Rate>
+<Amount>209.70</Amount>
+<ReceivedQuantity>6</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+</PurchaseOrderRet>
+<PurchaseOrderRet>
+<TxnID>2697-1071523792</TxnID>
+<TimeCreated>2003-12-16T02:29:52+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:36:02+05:00</TimeModified>
+<EditSequence>1765784162</EditSequence>
+<TxnNumber>453</TxnNumber>
+<VendorRef>
+<ListID>640000-1071525538</ListID>
+<FullName>Daigle Lighting</FullName>
+</VendorRef>
+<ShipToEntityRef>
+<ListID>610000-1071519006</ListID>
+<FullName>Robson, Darci:Robson Clinic</FullName>
+</ShipToEntityRef>
+<TemplateRef>
+<ListID>80000023-1324002806</ListID>
+<FullName>Custom Purchase Order Template</FullName>
+</TemplateRef>
+<TxnDate>2026-12-01</TxnDate>
+<RefNumber>6229</RefNumber>
+<VendorAddress>
+<Addr1>PO Box 5903</Addr1>
+<City>Middlefield</City>
+<State>CA</State>
+<PostalCode>94482</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>PO Box 5903</Addr1>
+<Addr2>Middlefield CA  94482</Addr2>
+</VendorAddressBlock>
+<ShipAddress>
+<Addr1>Dr. Darci Robson</Addr1>
+<Addr2>300 Main St, Suite 2</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Dr. Darci Robson</Addr1>
+<Addr2>300 Main St, Suite 2</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</ShipAddressBlock>
+<DueDate>2027-12-01</DueDate>
+<ExpectedDate>2026-12-01</ExpectedDate>
+<TotalAmount>571.32</TotalAmount>
+<IsManuallyClosed>false</IsManuallyClosed>
+<IsFullyReceived>true</IsFullyReceived>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<PurchaseOrderLineRet>
+<TxnLineID>2699-1071523792</TxnLineID>
+<ItemRef>
+<ListID>370000-1071525040</ListID>
+<FullName>Fluorescent Ceiling Lighting</FullName>
+</ItemRef>
+<Desc>See Attached for Specs</Desc>
+<Quantity>9</Quantity>
+<Rate>63.48</Rate>
+<Amount>571.32</Amount>
+<CustomerRef>
+<ListID>610000-1071519006</ListID>
+<FullName>Robson, Darci:Robson Clinic</FullName>
+</CustomerRef>
+<ReceivedQuantity>9</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+</PurchaseOrderRet>
+<PurchaseOrderRet>
+<TxnID>271B-1071512692</TxnID>
+<TimeCreated>2003-12-15T23:24:52+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:36:04+05:00</TimeModified>
+<EditSequence>1765784164</EditSequence>
+<TxnNumber>469</TxnNumber>
+<VendorRef>
+<ListID>10000-933272655</ListID>
+<FullName>Larson Flooring</FullName>
+</VendorRef>
+<TemplateRef>
+<ListID>80000023-1324002806</ListID>
+<FullName>Custom Purchase Order Template</FullName>
+</TemplateRef>
+<TxnDate>2026-12-01</TxnDate>
+<RefNumber>6230</RefNumber>
+<VendorAddress>
+<Addr1>Larson Flooring</Addr1>
+<Addr2>2780 County Rd</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Larson Flooring</Addr1>
+<Addr2>2780 County Rd</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<ShipAddress>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>1735 County Road</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>1735 County Road</Addr2>
+<Addr3>Bayshore, CA 94326</Addr3>
+</ShipAddressBlock>
+<TermsRef>
+<ListID>10000-933272658</ListID>
+<FullName>Net 30</FullName>
+</TermsRef>
+<DueDate>2027-12-31</DueDate>
+<ExpectedDate>2026-12-01</ExpectedDate>
+<TotalAmount>341.20</TotalAmount>
+<IsManuallyClosed>false</IsManuallyClosed>
+<IsFullyReceived>false</IsFullyReceived>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<PurchaseOrderLineRet>
+<TxnLineID>271D-1071512692</TxnLineID>
+<ItemRef>
+<ListID>310000-1071509547</ListID>
+<FullName>Flooring</FullName>
+</ItemRef>
+<Desc>see attached for size, color and number</Desc>
+<Quantity>5</Quantity>
+<Rate>45.50</Rate>
+<Amount>227.50</Amount>
+<ReceivedQuantity>0</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>271E-1071512692</TxnLineID>
+<ItemRef>
+<ListID>310000-1071509547</ListID>
+<FullName>Flooring</FullName>
+</ItemRef>
+<Desc>see attached for size, color and number</Desc>
+<Quantity>3</Quantity>
+<Rate>37.90</Rate>
+<Amount>113.70</Amount>
+<ReceivedQuantity>0</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+</PurchaseOrderRet>
+<PurchaseOrderRet>
+<TxnID>353-933282049</TxnID>
+<TimeCreated>1999-07-30T02:00:49+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:35:32+05:00</TimeModified>
+<EditSequence>1765784132</EditSequence>
+<TxnNumber>61</TxnNumber>
+<VendorRef>
+<ListID>10000-933272655</ListID>
+<FullName>Larson Flooring</FullName>
+</VendorRef>
+<TemplateRef>
+<ListID>80000023-1324002806</ListID>
+<FullName>Custom Purchase Order Template</FullName>
+</TemplateRef>
+<TxnDate>2026-12-03</TxnDate>
+<RefNumber>6231</RefNumber>
+<VendorAddress>
+<Addr1>Larson Flooring</Addr1>
+<Addr2>2780 County Rd</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Larson Flooring</Addr1>
+<Addr2>2780 County Rd</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<ShipAddress>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>1735 County Road</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>1735 County Road</Addr2>
+<Addr3>Bayshore, CA 94326</Addr3>
+</ShipAddressBlock>
+<DueDate>2027-12-03</DueDate>
+<ExpectedDate>2026-12-03</ExpectedDate>
+<TotalAmount>4750.00</TotalAmount>
+<IsManuallyClosed>false</IsManuallyClosed>
+<IsFullyReceived>false</IsFullyReceived>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<PurchaseOrderLineRet>
+<TxnLineID>355-933282049</TxnLineID>
+<Desc>See attached specifications for carpet brand, weight and color</Desc>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+<PurchaseOrderLineRet>
+<TxnLineID>356-933282049</TxnLineID>
+<ItemRef>
+<ListID>60000-933272656</ListID>
+<FullName>Subs:Carpet</FullName>
+</ItemRef>
+<Desc>Install carpeting</Desc>
+<Rate>4750.00</Rate>
+<Amount>4750.00</Amount>
+<ReceivedQuantity>0</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+</PurchaseOrderRet>
+<PurchaseOrderRet>
+<TxnID>2F6E-1071505355</TxnID>
+<TimeCreated>2003-12-15T21:22:35+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:36:17+05:00</TimeModified>
+<EditSequence>1765784177</EditSequence>
+<TxnNumber>526</TxnNumber>
+<VendorRef>
+<ListID>640000-1071525538</ListID>
+<FullName>Daigle Lighting</FullName>
+</VendorRef>
+<TemplateRef>
+<ListID>80000023-1324002806</ListID>
+<FullName>Custom Purchase Order Template</FullName>
+</TemplateRef>
+<TxnDate>2026-12-07</TxnDate>
+<RefNumber>6232</RefNumber>
+<VendorAddress>
+<Addr1>PO Box 5903</Addr1>
+<City>Middlefield</City>
+<State>CA</State>
+<PostalCode>94482</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>PO Box 5903</Addr1>
+<Addr2>Middlefield CA  94482</Addr2>
+</VendorAddressBlock>
+<ShipAddress>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>1735 County Road</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>1735 County Road</Addr2>
+<Addr3>Bayshore, CA 94326</Addr3>
+</ShipAddressBlock>
+<DueDate>2027-12-07</DueDate>
+<ExpectedDate>2026-12-07</ExpectedDate>
+<TotalAmount>163.25</TotalAmount>
+<IsManuallyClosed>false</IsManuallyClosed>
+<IsFullyReceived>false</IsFullyReceived>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<PurchaseOrderLineRet>
+<TxnLineID>2F70-1071505355</TxnLineID>
+<ItemRef>
+<ListID>370000-1071525040</ListID>
+<FullName>Fluorescent Ceiling Lighting</FullName>
+</ItemRef>
+<Desc>See attached for specifications</Desc>
+<Rate>163.25</Rate>
+<Amount>163.25</Amount>
+<ReceivedQuantity>0</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+</PurchaseOrderRet>
+<PurchaseOrderRet>
+<TxnID>26B8-1071526064</TxnID>
+<TimeCreated>2003-12-16T03:07:44+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:36:03+05:00</TimeModified>
+<EditSequence>1765784163</EditSequence>
+<TxnNumber>459</TxnNumber>
+<VendorRef>
+<ListID>90000-933272656</ListID>
+<FullName>Wheeler&apos;s Tile Etc.</FullName>
+</VendorRef>
+<TemplateRef>
+<ListID>80000023-1324002806</ListID>
+<FullName>Custom Purchase Order Template</FullName>
+</TemplateRef>
+<TxnDate>2026-12-09</TxnDate>
+<RefNumber>6233</RefNumber>
+<VendorAddress>
+<Addr1>Wheeler&apos;s Tile Etc.</Addr1>
+<Addr2>650 Old Bayshore Rd</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Wheeler&apos;s Tile Etc.</Addr1>
+<Addr2>650 Old Bayshore Rd</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<ShipAddress>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>1735 County Road</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>1735 County Road</Addr2>
+<Addr3>Bayshore, CA 94326</Addr3>
+</ShipAddressBlock>
+<TermsRef>
+<ListID>10000-933272658</ListID>
+<FullName>Net 30</FullName>
+</TermsRef>
+<DueDate>2028-01-08</DueDate>
+<ExpectedDate>2026-12-09</ExpectedDate>
+<TotalAmount>188.40</TotalAmount>
+<IsManuallyClosed>false</IsManuallyClosed>
+<IsFullyReceived>false</IsFullyReceived>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<PurchaseOrderLineRet>
+<TxnLineID>26BA-1071526064</TxnLineID>
+<ItemRef>
+<ListID>310000-1071509547</ListID>
+<FullName>Flooring</FullName>
+</ItemRef>
+<Desc>12&apos; Sq  tile #490-1a</Desc>
+<Quantity>2</Quantity>
+<Rate>94.20</Rate>
+<Amount>188.40</Amount>
+<ReceivedQuantity>0</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+</PurchaseOrderRet>
+<PurchaseOrderRet>
+<TxnID>3CD3-1071525836</TxnID>
+<TimeCreated>2003-12-16T03:03:56+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:36:47+05:00</TimeModified>
+<EditSequence>1765784207</EditSequence>
+<TxnNumber>782</TxnNumber>
+<VendorRef>
+<ListID>90000-933272656</ListID>
+<FullName>Wheeler&apos;s Tile Etc.</FullName>
+</VendorRef>
+<TemplateRef>
+<ListID>80000023-1324002806</ListID>
+<FullName>Custom Purchase Order Template</FullName>
+</TemplateRef>
+<TxnDate>2026-12-10</TxnDate>
+<RefNumber>6234</RefNumber>
+<VendorAddress>
+<Addr1>Wheeler&apos;s Tile Etc.</Addr1>
+<Addr2>650 Old Bayshore Rd</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Wheeler&apos;s Tile Etc.</Addr1>
+<Addr2>650 Old Bayshore Rd</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<ShipAddress>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>1735 County Road</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>1735 County Road</Addr2>
+<Addr3>Bayshore, CA 94326</Addr3>
+</ShipAddressBlock>
+<TermsRef>
+<ListID>10000-933272658</ListID>
+<FullName>Net 30</FullName>
+</TermsRef>
+<DueDate>2028-01-09</DueDate>
+<ExpectedDate>2026-12-10</ExpectedDate>
+<TotalAmount>712.80</TotalAmount>
+<IsManuallyClosed>false</IsManuallyClosed>
+<IsFullyReceived>false</IsFullyReceived>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<PurchaseOrderLineRet>
+<TxnLineID>3CD5-1071525836</TxnLineID>
+<ItemRef>
+<ListID>1B0000-933272656</ListID>
+<FullName>Lumber:Decking</FullName>
+</ItemRef>
+<Desc>Decking lumber - pallette quantity</Desc>
+<Quantity>144</Quantity>
+<Rate>4.95</Rate>
+<Amount>712.80</Amount>
+<ReceivedQuantity>0</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+</PurchaseOrderRet>
+<PurchaseOrderRet>
+<TxnID>26B5-1071525781</TxnID>
+<TimeCreated>2003-12-16T03:03:01+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:36:03+05:00</TimeModified>
+<EditSequence>1765784163</EditSequence>
+<TxnNumber>458</TxnNumber>
+<VendorRef>
+<ListID>70000-933272656</ListID>
+<FullName>Lew Plumbing</FullName>
+</VendorRef>
+<TemplateRef>
+<ListID>80000023-1324002806</ListID>
+<FullName>Custom Purchase Order Template</FullName>
+</TemplateRef>
+<TxnDate>2026-12-12</TxnDate>
+<RefNumber>6235</RefNumber>
+<VendorAddress>
+<Addr1>Lew Plumbing</Addr1>
+<Addr2>221 Old Bayshore Rd</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>Lew Plumbing</Addr1>
+<Addr2>221 Old Bayshore Rd</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</VendorAddressBlock>
+<ShipAddress>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>1735 County Road</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>1735 County Road</Addr2>
+<Addr3>Bayshore, CA 94326</Addr3>
+</ShipAddressBlock>
+<TermsRef>
+<ListID>20000-933272658</ListID>
+<FullName>Net 15</FullName>
+</TermsRef>
+<DueDate>2027-12-27</DueDate>
+<ExpectedDate>2026-12-12</ExpectedDate>
+<TotalAmount>403.40</TotalAmount>
+<IsManuallyClosed>false</IsManuallyClosed>
+<IsFullyReceived>false</IsFullyReceived>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<PurchaseOrderLineRet>
+<TxnLineID>26B7-1071525781</TxnLineID>
+<ItemRef>
+<ListID>1E0000-933272656</ListID>
+<FullName>Plumb Fixtrs</FullName>
+</ItemRef>
+<Desc>Plumbing fixtures - See attached list of specifics</Desc>
+<Rate>403.40</Rate>
+<Amount>403.40</Amount>
+<ReceivedQuantity>0</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+</PurchaseOrderRet>
+<PurchaseOrderRet>
+<TxnID>25D6-1071508328</TxnID>
+<TimeCreated>2003-12-15T22:12:08+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:36:01+05:00</TimeModified>
+<EditSequence>1765784161</EditSequence>
+<TxnNumber>451</TxnNumber>
+<VendorRef>
+<ListID>640000-1071525538</ListID>
+<FullName>Daigle Lighting</FullName>
+</VendorRef>
+<TemplateRef>
+<ListID>80000023-1324002806</ListID>
+<FullName>Custom Purchase Order Template</FullName>
+</TemplateRef>
+<TxnDate>2026-12-15</TxnDate>
+<RefNumber>6236</RefNumber>
+<VendorAddress>
+<Addr1>PO Box 5903</Addr1>
+<City>Middlefield</City>
+<State>CA</State>
+<PostalCode>94482</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>PO Box 5903</Addr1>
+<Addr2>Middlefield CA  94482</Addr2>
+</VendorAddressBlock>
+<ShipAddress>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>1735 County Road</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Rock Castle Construction</Addr1>
+<Addr2>1735 County Road</Addr2>
+<Addr3>Bayshore, CA 94326</Addr3>
+</ShipAddressBlock>
+<DueDate>2027-12-15</DueDate>
+<ExpectedDate>2026-12-15</ExpectedDate>
+<TotalAmount>65.00</TotalAmount>
+<IsManuallyClosed>false</IsManuallyClosed>
+<IsFullyReceived>false</IsFullyReceived>
+<IsToBePrinted>true</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<PurchaseOrderLineRet>
+<TxnLineID>25D8-1071508328</TxnLineID>
+<ItemRef>
+<ListID>370000-1071525040</ListID>
+<FullName>Fluorescent Ceiling Lighting</FullName>
+</ItemRef>
+<Quantity>1</Quantity>
+<Rate>65.00</Rate>
+<Amount>65.00</Amount>
+<ReceivedQuantity>0</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+</PurchaseOrderRet>
+<PurchaseOrderRet>
+<TxnID>5B85-1197760963</TxnID>
+<TimeCreated>2007-12-16T04:22:43+05:00</TimeCreated>
+<TimeModified>2025-12-15T12:37:39+05:00</TimeModified>
+<EditSequence>1765784259</EditSequence>
+<TxnNumber>1251</TxnNumber>
+<VendorRef>
+<ListID>A60000-1197760912</ListID>
+<FullName>A Cheung Limited</FullName>
+</VendorRef>
+<ClassRef>
+<ListID>40000-933272658</ListID>
+<FullName>Remodel</FullName>
+</ClassRef>
+<ShipToEntityRef>
+<ListID>660000-1071517190</ListID>
+<FullName>Yoo, Young-Kyu:Repairs</FullName>
+</ShipToEntityRef>
+<TemplateRef>
+<ListID>80000023-1324002806</ListID>
+<FullName>Custom Purchase Order Template</FullName>
+</TemplateRef>
+<TxnDate>2026-12-15</TxnDate>
+<RefNumber>6237</RefNumber>
+<VendorAddress>
+<Addr1>A Cheung Limited</Addr1>
+<Addr2>Angela Cheung</Addr2>
+<Addr3>3818 Bear Rd. West</Addr3>
+<City>Berkeley</City>
+<State>CA</State>
+<PostalCode>94688</PostalCode>
+</VendorAddress>
+<VendorAddressBlock>
+<Addr1>A Cheung Limited</Addr1>
+<Addr2>Angela Cheung</Addr2>
+<Addr3>3818 Bear Rd. West</Addr3>
+<Addr4>Berkeley, CA 94688</Addr4>
+</VendorAddressBlock>
+<ShipAddress>
+<Addr1>Young-Kyu Yoo</Addr1>
+<Addr2>1967 Appleseed Lane</Addr2>
+<City>Bayshore</City>
+<State>CA</State>
+<PostalCode>94326</PostalCode>
+</ShipAddress>
+<ShipAddressBlock>
+<Addr1>Young-Kyu Yoo</Addr1>
+<Addr2>1967 Appleseed Lane</Addr2>
+<Addr3>Bayshore CA 94326</Addr3>
+</ShipAddressBlock>
+<DueDate>2027-12-15</DueDate>
+<ExpectedDate>2026-12-15</ExpectedDate>
+<TotalAmount>3500.00</TotalAmount>
+<IsManuallyClosed>false</IsManuallyClosed>
+<IsFullyReceived>false</IsFullyReceived>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<PurchaseOrderLineRet>
+<TxnLineID>5B87-1197760963</TxnLineID>
+<ItemRef>
+<ListID>1C0000-933272656</ListID>
+<FullName>Lumber:Rough</FullName>
+</ItemRef>
+<Quantity>35</Quantity>
+<Rate>100.00</Rate>
+<ClassRef>
+<ListID>40000-933272658</ListID>
+<FullName>Remodel</FullName>
+</ClassRef>
+<Amount>3500.00</Amount>
+<CustomerRef>
+<ListID>660000-1071517190</ListID>
+<FullName>Yoo, Young-Kyu:Repairs</FullName>
+</CustomerRef>
+<ReceivedQuantity>20</ReceivedQuantity>
+<IsBilled>false</IsBilled>
+<IsManuallyClosed>false</IsManuallyClosed>
+</PurchaseOrderLineRet>
+</PurchaseOrderRet>
+</PurchaseOrderQueryRs>
+</QBXMLMsgsRs>
+</QBXML>

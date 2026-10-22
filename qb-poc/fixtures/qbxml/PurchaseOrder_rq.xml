@@ -1,0 +1,1 @@
+<?xml version="1.0" encoding="utf-8"?><?qbxml version="16.0"?><QBXML><QBXMLMsgsRq onError="stopOnError"><PurchaseOrderQueryRq iterator="Start"><MaxReturned>100</MaxReturned><IncludeLineItems>true</IncludeLineItems></PurchaseOrderQueryRq></QBXMLMsgsRq></QBXML>

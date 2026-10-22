@@ -1,0 +1,7 @@
+qbwc-kit[server]==0.1.3
+fastapi==0.143.2
+uvicorn==0.54.0
+sqlalchemy==2.0.54
+pydantic-settings==2.15.0
+pytest==9.1.1
+httpx==0.28.1

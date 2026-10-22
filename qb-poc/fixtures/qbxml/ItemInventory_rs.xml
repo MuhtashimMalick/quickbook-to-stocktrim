@@ -1,0 +1,466 @@
+<?xml version="1.0" ?>
+<QBXML>
+<QBXMLMsgsRs>
+<ItemInventoryQueryRs statusCode="0" statusSeverity="Info" statusMessage="Status OK" iteratorRemainingCount="0" iteratorID="{0657542f-69c6-4546-9d89-c55ee05dedb4}">
+<ItemInventoryRet>
+<ListID>F0000-933272656</ListID>
+<TimeCreated>1999-07-29T23:24:16+05:00</TimeCreated>
+<TimeModified>2007-05-05T20:26:24+05:00</TimeModified>
+<EditSequence>933272656</EditSequence>
+<Name>Cabinets</Name>
+<FullName>Cabinets</FullName>
+<IsActive>true</IsActive>
+<Sublevel>0</Sublevel>
+<SalesTaxCodeRef>
+<ListID>10000-999022286</ListID>
+<FullName>Tax</FullName>
+</SalesTaxCodeRef>
+<SalesDesc>Cabinets</SalesDesc>
+<SalesPrice>0.00</SalesPrice>
+<IncomeAccountRef>
+<ListID>1A0000-933270542</ListID>
+<FullName>Construction Income:Materials Income</FullName>
+</IncomeAccountRef>
+<PurchaseDesc>Cabinets</PurchaseDesc>
+<PurchaseCost>0.00</PurchaseCost>
+<COGSAccountRef>
+<ListID>1E0000-933270542</ListID>
+<FullName>Cost of Goods Sold</FullName>
+</COGSAccountRef>
+<PrefVendorRef>
+<ListID>A0000-933272656</ListID>
+<FullName>Thomas Kitchen &amp; Bath</FullName>
+</PrefVendorRef>
+<AssetAccountRef>
+<ListID>60000-933270541</ListID>
+<FullName>Inventory Asset</FullName>
+</AssetAccountRef>
+<ReorderPoint>15</ReorderPoint>
+<QuantityOnHand>0</QuantityOnHand>
+<AverageCost>0.00</AverageCost>
+<QuantityOnOrder>0</QuantityOnOrder>
+<QuantityOnSalesOrder>0</QuantityOnSalesOrder>
+</ItemInventoryRet>
+<ItemInventoryRet>
+<ListID>100000-933272656</ListID>
+<TimeCreated>1999-07-29T23:24:16+05:00</TimeCreated>
+<TimeModified>2023-08-18T12:38:15+05:00</TimeModified>
+<EditSequence>1179499113</EditSequence>
+<Name>Cabinet Pulls</Name>
+<FullName>Cabinets:Cabinet Pulls</FullName>
+<IsActive>true</IsActive>
+<ParentRef>
+<ListID>F0000-933272656</ListID>
+<FullName>Cabinets</FullName>
+</ParentRef>
+<Sublevel>1</Sublevel>
+<UnitOfMeasureSetRef>
+<ListID>80000001-1179499108</ListID>
+<FullName>Each to Case/Doz</FullName>
+</UnitOfMeasureSetRef>
+<SalesTaxCodeRef>
+<ListID>10000-999022286</ListID>
+<FullName>Tax</FullName>
+</SalesTaxCodeRef>
+<SalesDesc>Cabinet Pulls</SalesDesc>
+<SalesPrice>0.00</SalesPrice>
+<IncomeAccountRef>
+<ListID>1A0000-933270542</ListID>
+<FullName>Construction Income:Materials Income</FullName>
+</IncomeAccountRef>
+<PurchaseDesc>Cabinet Pulls</PurchaseDesc>
+<PurchaseCost>3.00</PurchaseCost>
+<COGSAccountRef>
+<ListID>1E0000-933270542</ListID>
+<FullName>Cost of Goods Sold</FullName>
+</COGSAccountRef>
+<PrefVendorRef>
+<ListID>B0000-933272656</ListID>
+<FullName>Patton Hardware Supplies</FullName>
+</PrefVendorRef>
+<AssetAccountRef>
+<ListID>60000-933270541</ListID>
+<FullName>Inventory Asset</FullName>
+</AssetAccountRef>
+<ReorderPoint>15</ReorderPoint>
+<QuantityOnHand>423</QuantityOnHand>
+<AverageCost>2.55933</AverageCost>
+<QuantityOnOrder>0</QuantityOnOrder>
+<QuantityOnSalesOrder>0</QuantityOnSalesOrder>
+</ItemInventoryRet>
+<ItemInventoryRet>
+<ListID>110000-933272656</ListID>
+<TimeCreated>1999-07-29T23:24:16+05:00</TimeCreated>
+<TimeModified>2023-08-18T12:38:15+05:00</TimeModified>
+<EditSequence>933272656</EditSequence>
+<Name>Light Pine</Name>
+<FullName>Cabinets:Light Pine</FullName>
+<IsActive>true</IsActive>
+<ParentRef>
+<ListID>F0000-933272656</ListID>
+<FullName>Cabinets</FullName>
+</ParentRef>
+<Sublevel>1</Sublevel>
+<SalesTaxCodeRef>
+<ListID>10000-999022286</ListID>
+<FullName>Tax</FullName>
+</SalesTaxCodeRef>
+<SalesDesc>Light pine kitchen cabinet wall unit</SalesDesc>
+<SalesPrice>1799.00</SalesPrice>
+<IncomeAccountRef>
+<ListID>1A0000-933270542</ListID>
+<FullName>Construction Income:Materials Income</FullName>
+</IncomeAccountRef>
+<PurchaseDesc>Light pine kitchen cabinet wall unit 
+#CLD- 1235-p</PurchaseDesc>
+<PurchaseCost>1500.00</PurchaseCost>
+<COGSAccountRef>
+<ListID>1E0000-933270542</ListID>
+<FullName>Cost of Goods Sold</FullName>
+</COGSAccountRef>
+<PrefVendorRef>
+<ListID>B0000-933272656</ListID>
+<FullName>Patton Hardware Supplies</FullName>
+</PrefVendorRef>
+<AssetAccountRef>
+<ListID>60000-933270541</ListID>
+<FullName>Inventory Asset</FullName>
+</AssetAccountRef>
+<ReorderPoint>0</ReorderPoint>
+<QuantityOnHand>6</QuantityOnHand>
+<AverageCost>1500.00</AverageCost>
+<QuantityOnOrder>0</QuantityOnOrder>
+<QuantityOnSalesOrder>2</QuantityOnSalesOrder>
+</ItemInventoryRet>
+<ItemInventoryRet>
+<ListID>440001-1071511796</ListID>
+<TimeCreated>2003-12-15T23:09:56+05:00</TimeCreated>
+<TimeModified>2023-08-18T12:38:15+05:00</TimeModified>
+<EditSequence>1197746281</EditSequence>
+<Name>Door Frame</Name>
+<FullName>Door Frame</FullName>
+<IsActive>true</IsActive>
+<Sublevel>0</Sublevel>
+<SalesTaxCodeRef>
+<ListID>10000-999022286</ListID>
+<FullName>Tax</FullName>
+</SalesTaxCodeRef>
+<SalesDesc>standard interior door frame</SalesDesc>
+<SalesPrice>0.00</SalesPrice>
+<IncomeAccountRef>
+<ListID>1A0000-933270542</ListID>
+<FullName>Construction Income:Materials Income</FullName>
+</IncomeAccountRef>
+<PurchaseDesc>standard interior door frame</PurchaseDesc>
+<PurchaseCost>12.00</PurchaseCost>
+<COGSAccountRef>
+<ListID>1E0000-933270542</ListID>
+<FullName>Cost of Goods Sold</FullName>
+</COGSAccountRef>
+<PrefVendorRef>
+<ListID>B0000-933272656</ListID>
+<FullName>Patton Hardware Supplies</FullName>
+</PrefVendorRef>
+<AssetAccountRef>
+<ListID>60000-933270541</ListID>
+<FullName>Inventory Asset</FullName>
+</AssetAccountRef>
+<QuantityOnHand>21</QuantityOnHand>
+<AverageCost>12.00</AverageCost>
+<QuantityOnOrder>0</QuantityOnOrder>
+<QuantityOnSalesOrder>0</QuantityOnSalesOrder>
+</ItemInventoryRet>
+<ItemInventoryRet>
+<ListID>120000-933272656</ListID>
+<TimeCreated>1999-07-29T23:24:16+05:00</TimeCreated>
+<TimeModified>2007-12-16T00:18:08+05:00</TimeModified>
+<EditSequence>1197746288</EditSequence>
+<Name>Hardware</Name>
+<FullName>Hardware</FullName>
+<IsActive>true</IsActive>
+<Sublevel>0</Sublevel>
+<SalesTaxCodeRef>
+<ListID>10000-999022286</ListID>
+<FullName>Tax</FullName>
+</SalesTaxCodeRef>
+<SalesPrice>0.00</SalesPrice>
+<IncomeAccountRef>
+<ListID>1A0000-933270542</ListID>
+<FullName>Construction Income:Materials Income</FullName>
+</IncomeAccountRef>
+<PurchaseCost>0.00</PurchaseCost>
+<COGSAccountRef>
+<ListID>1E0000-933270542</ListID>
+<FullName>Cost of Goods Sold</FullName>
+</COGSAccountRef>
+<PrefVendorRef>
+<ListID>B0000-933272656</ListID>
+<FullName>Patton Hardware Supplies</FullName>
+</PrefVendorRef>
+<AssetAccountRef>
+<ListID>60000-933270541</ListID>
+<FullName>Inventory Asset</FullName>
+</AssetAccountRef>
+<QuantityOnHand>0</QuantityOnHand>
+<AverageCost>0.00</AverageCost>
+<QuantityOnOrder>0</QuantityOnOrder>
+<QuantityOnSalesOrder>0</QuantityOnSalesOrder>
+</ItemInventoryRet>
+<ItemInventoryRet>
+<ListID>450000-1071511428</ListID>
+<TimeCreated>2003-12-15T23:03:48+05:00</TimeCreated>
+<TimeModified>2023-08-18T12:38:15+05:00</TimeModified>
+<EditSequence>1179499123</EditSequence>
+<Name>Brass hinges</Name>
+<FullName>Hardware:Brass hinges</FullName>
+<IsActive>true</IsActive>
+<ParentRef>
+<ListID>120000-933272656</ListID>
+<FullName>Hardware</FullName>
+</ParentRef>
+<Sublevel>1</Sublevel>
+<UnitOfMeasureSetRef>
+<ListID>80000001-1179499108</ListID>
+<FullName>Each to Case/Doz</FullName>
+</UnitOfMeasureSetRef>
+<SalesTaxCodeRef>
+<ListID>10000-999022286</ListID>
+<FullName>Tax</FullName>
+</SalesTaxCodeRef>
+<SalesDesc>standard interior brass hinge</SalesDesc>
+<SalesPrice>0.00</SalesPrice>
+<IncomeAccountRef>
+<ListID>1A0000-933270542</ListID>
+<FullName>Construction Income:Materials Income</FullName>
+</IncomeAccountRef>
+<PurchaseDesc>standard interior brass hinge</PurchaseDesc>
+<PurchaseCost>3.00</PurchaseCost>
+<COGSAccountRef>
+<ListID>1E0000-933270542</ListID>
+<FullName>Cost of Goods Sold</FullName>
+</COGSAccountRef>
+<PrefVendorRef>
+<ListID>C0000-933272656</ListID>
+<FullName>Perry Windows &amp; Doors</FullName>
+</PrefVendorRef>
+<AssetAccountRef>
+<ListID>60000-933270541</ListID>
+<FullName>Inventory Asset</FullName>
+</AssetAccountRef>
+<QuantityOnHand>246</QuantityOnHand>
+<AverageCost>3.00</AverageCost>
+<QuantityOnOrder>0</QuantityOnOrder>
+<QuantityOnSalesOrder>0</QuantityOnSalesOrder>
+</ItemInventoryRet>
+<ItemInventoryRet>
+<ListID>130000-933272656</ListID>
+<TimeCreated>1999-07-29T23:24:16+05:00</TimeCreated>
+<TimeModified>2023-08-18T12:38:15+05:00</TimeModified>
+<EditSequence>1197746308</EditSequence>
+<Name>Doorknobs Std</Name>
+<FullName>Hardware:Doorknobs Std</FullName>
+<IsActive>true</IsActive>
+<ParentRef>
+<ListID>120000-933272656</ListID>
+<FullName>Hardware</FullName>
+</ParentRef>
+<Sublevel>1</Sublevel>
+<SalesTaxCodeRef>
+<ListID>10000-999022286</ListID>
+<FullName>Tax</FullName>
+</SalesTaxCodeRef>
+<SalesDesc>Standard Doorknobs</SalesDesc>
+<SalesPrice>30.00</SalesPrice>
+<IncomeAccountRef>
+<ListID>1A0000-933270542</ListID>
+<FullName>Construction Income:Materials Income</FullName>
+</IncomeAccountRef>
+<PurchaseDesc>Doorknobs Part # DK 3704</PurchaseDesc>
+<PurchaseCost>15.00</PurchaseCost>
+<COGSAccountRef>
+<ListID>1E0000-933270542</ListID>
+<FullName>Cost of Goods Sold</FullName>
+</COGSAccountRef>
+<PrefVendorRef>
+<ListID>C0000-933272656</ListID>
+<FullName>Perry Windows &amp; Doors</FullName>
+</PrefVendorRef>
+<AssetAccountRef>
+<ListID>60000-933270541</ListID>
+<FullName>Inventory Asset</FullName>
+</AssetAccountRef>
+<ReorderPoint>50</ReorderPoint>
+<QuantityOnHand>124</QuantityOnHand>
+<AverageCost>26.91259</AverageCost>
+<QuantityOnOrder>0</QuantityOnOrder>
+<QuantityOnSalesOrder>0</QuantityOnSalesOrder>
+</ItemInventoryRet>
+<ItemInventoryRet>
+<ListID>140000-933272656</ListID>
+<TimeCreated>1999-07-29T23:24:16+05:00</TimeCreated>
+<TimeModified>2023-08-18T12:38:15+05:00</TimeModified>
+<EditSequence>1197746315</EditSequence>
+<Name>Lk Doorknobs</Name>
+<FullName>Hardware:Lk Doorknobs</FullName>
+<IsActive>true</IsActive>
+<ParentRef>
+<ListID>120000-933272656</ListID>
+<FullName>Hardware</FullName>
+</ParentRef>
+<Sublevel>1</Sublevel>
+<SalesTaxCodeRef>
+<ListID>10000-999022286</ListID>
+<FullName>Tax</FullName>
+</SalesTaxCodeRef>
+<SalesDesc>Locking interior doorknobs</SalesDesc>
+<SalesPrice>38.00</SalesPrice>
+<IncomeAccountRef>
+<ListID>1A0000-933270542</ListID>
+<FullName>Construction Income:Materials Income</FullName>
+</IncomeAccountRef>
+<PurchaseDesc>Locking interior doorknobs  Part # DK415</PurchaseDesc>
+<PurchaseCost>34.95</PurchaseCost>
+<COGSAccountRef>
+<ListID>1E0000-933270542</ListID>
+<FullName>Cost of Goods Sold</FullName>
+</COGSAccountRef>
+<PrefVendorRef>
+<ListID>C0000-933272656</ListID>
+<FullName>Perry Windows &amp; Doors</FullName>
+</PrefVendorRef>
+<AssetAccountRef>
+<ListID>60000-933270541</ListID>
+<FullName>Inventory Asset</FullName>
+</AssetAccountRef>
+<ReorderPoint>50</ReorderPoint>
+<QuantityOnHand>122</QuantityOnHand>
+<AverageCost>35.26524</AverageCost>
+<QuantityOnOrder>0</QuantityOnOrder>
+<QuantityOnSalesOrder>0</QuantityOnSalesOrder>
+</ItemInventoryRet>
+<ItemInventoryRet>
+<ListID>150000-933272656</ListID>
+<TimeCreated>1999-07-29T23:24:16+05:00</TimeCreated>
+<TimeModified>2023-08-18T12:38:15+05:00</TimeModified>
+<EditSequence>933272656</EditSequence>
+<Name>Wood Door</Name>
+<FullName>Wood Door</FullName>
+<IsActive>true</IsActive>
+<Sublevel>0</Sublevel>
+<SalesTaxCodeRef>
+<ListID>10000-999022286</ListID>
+<FullName>Tax</FullName>
+</SalesTaxCodeRef>
+<SalesDesc>Doors</SalesDesc>
+<SalesPrice>0.00</SalesPrice>
+<IncomeAccountRef>
+<ListID>1A0000-933270542</ListID>
+<FullName>Construction Income:Materials Income</FullName>
+</IncomeAccountRef>
+<PurchaseCost>0.00</PurchaseCost>
+<COGSAccountRef>
+<ListID>1E0000-933270542</ListID>
+<FullName>Cost of Goods Sold</FullName>
+</COGSAccountRef>
+<PrefVendorRef>
+<ListID>B0000-933272656</ListID>
+<FullName>Patton Hardware Supplies</FullName>
+</PrefVendorRef>
+<AssetAccountRef>
+<ListID>60000-933270541</ListID>
+<FullName>Inventory Asset</FullName>
+</AssetAccountRef>
+<QuantityOnHand>1</QuantityOnHand>
+<AverageCost>1750.00</AverageCost>
+<QuantityOnOrder>0</QuantityOnOrder>
+<QuantityOnSalesOrder>0</QuantityOnSalesOrder>
+</ItemInventoryRet>
+<ItemInventoryRet>
+<ListID>160000-933272656</ListID>
+<TimeCreated>1999-07-29T23:24:16+05:00</TimeCreated>
+<TimeModified>2023-08-18T12:38:15+05:00</TimeModified>
+<EditSequence>1197697112</EditSequence>
+<Name>Exterior</Name>
+<FullName>Wood Door:Exterior</FullName>
+<IsActive>true</IsActive>
+<ParentRef>
+<ListID>150000-933272656</ListID>
+<FullName>Wood Door</FullName>
+</ParentRef>
+<Sublevel>1</Sublevel>
+<SalesTaxCodeRef>
+<ListID>10000-999022286</ListID>
+<FullName>Tax</FullName>
+</SalesTaxCodeRef>
+<SalesDesc>Exterior wood door</SalesDesc>
+<SalesPrice>120.00</SalesPrice>
+<IncomeAccountRef>
+<ListID>1A0000-933270542</ListID>
+<FullName>Construction Income:Materials Income</FullName>
+</IncomeAccountRef>
+<PurchaseDesc>Exterior door - #P-10981</PurchaseDesc>
+<PurchaseCost>590.39</PurchaseCost>
+<COGSAccountRef>
+<ListID>1E0000-933270542</ListID>
+<FullName>Cost of Goods Sold</FullName>
+</COGSAccountRef>
+<PrefVendorRef>
+<ListID>C0000-933272656</ListID>
+<FullName>Perry Windows &amp; Doors</FullName>
+</PrefVendorRef>
+<AssetAccountRef>
+<ListID>60000-933270541</ListID>
+<FullName>Inventory Asset</FullName>
+</AssetAccountRef>
+<ReorderPoint>5</ReorderPoint>
+<QuantityOnHand>16</QuantityOnHand>
+<AverageCost>308.5065</AverageCost>
+<QuantityOnOrder>0</QuantityOnOrder>
+<QuantityOnSalesOrder>0</QuantityOnSalesOrder>
+</ItemInventoryRet>
+<ItemInventoryRet>
+<ListID>170000-933272656</ListID>
+<TimeCreated>1999-07-29T23:24:16+05:00</TimeCreated>
+<TimeModified>2023-08-18T12:38:15+05:00</TimeModified>
+<EditSequence>1197734114</EditSequence>
+<Name>Interior</Name>
+<FullName>Wood Door:Interior</FullName>
+<IsActive>true</IsActive>
+<ParentRef>
+<ListID>150000-933272656</ListID>
+<FullName>Wood Door</FullName>
+</ParentRef>
+<Sublevel>1</Sublevel>
+<SalesTaxCodeRef>
+<ListID>10000-999022286</ListID>
+<FullName>Tax</FullName>
+</SalesTaxCodeRef>
+<SalesDesc>Interior wood door</SalesDesc>
+<SalesPrice>72.00</SalesPrice>
+<IncomeAccountRef>
+<ListID>1A0000-933270542</ListID>
+<FullName>Construction Income:Materials Income</FullName>
+</IncomeAccountRef>
+<PurchaseDesc>Interior door - P-187055T</PurchaseDesc>
+<PurchaseCost>35.00</PurchaseCost>
+<COGSAccountRef>
+<ListID>1E0000-933270542</ListID>
+<FullName>Cost of Goods Sold</FullName>
+</COGSAccountRef>
+<PrefVendorRef>
+<ListID>C0000-933272656</ListID>
+<FullName>Perry Windows &amp; Doors</FullName>
+</PrefVendorRef>
+<AssetAccountRef>
+<ListID>60000-933270541</ListID>
+<FullName>Inventory Asset</FullName>
+</AssetAccountRef>
+<ReorderPoint>5</ReorderPoint>
+<QuantityOnHand>47</QuantityOnHand>
+<AverageCost>69.89717</AverageCost>
+<QuantityOnOrder>0</QuantityOnOrder>
+<QuantityOnSalesOrder>0</QuantityOnSalesOrder>
+</ItemInventoryRet>
+</ItemInventoryQueryRs>
+</QBXMLMsgsRs>
+</QBXML>

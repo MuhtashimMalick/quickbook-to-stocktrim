@@ -1,0 +1,69 @@
+<?xml version="1.0" ?>
+<QBXML>
+<QBXMLMsgsRs>
+<ItemInventoryAssemblyQueryRs statusCode="0" statusSeverity="Info" statusMessage="Status OK" iteratorRemainingCount="0" iteratorID="{72eb3054-3e92-4ad3-b9fa-e4b9bf1d914e}">
+<ItemInventoryAssemblyRet>
+<ListID>430001-1071511103</ListID>
+<TimeCreated>2003-12-15T22:58:23+05:00</TimeCreated>
+<TimeModified>2023-08-18T12:38:15+05:00</TimeModified>
+<EditSequence>1197768672</EditSequence>
+<Name>Interior Door kit</Name>
+<FullName>Interior Door kit</FullName>
+<IsActive>true</IsActive>
+<Sublevel>0</Sublevel>
+<SalesTaxCodeRef>
+<ListID>10000-999022286</ListID>
+<FullName>Tax</FullName>
+</SalesTaxCodeRef>
+<SalesDesc>complete Interior door</SalesDesc>
+<SalesPrice>0.00</SalesPrice>
+<IncomeAccountRef>
+<ListID>1A0000-933270542</ListID>
+<FullName>Construction Income:Materials Income</FullName>
+</IncomeAccountRef>
+<PurchaseCost>0.00</PurchaseCost>
+<COGSAccountRef>
+<ListID>1E0000-933270542</ListID>
+<FullName>Cost of Goods Sold</FullName>
+</COGSAccountRef>
+<AssetAccountRef>
+<ListID>60000-933270541</ListID>
+<FullName>Inventory Asset</FullName>
+</AssetAccountRef>
+<BuildPoint>5</BuildPoint>
+<QuantityOnHand>20</QuantityOnHand>
+<AverageCost>100.00</AverageCost>
+<QuantityOnOrder>0</QuantityOnOrder>
+<QuantityOnSalesOrder>0</QuantityOnSalesOrder>
+<ItemInventoryAssemblyLine>
+<ItemInventoryRef>
+<ListID>130000-933272656</ListID>
+<FullName>Hardware:Doorknobs Std</FullName>
+</ItemInventoryRef>
+<Quantity>1</Quantity>
+</ItemInventoryAssemblyLine>
+<ItemInventoryAssemblyLine>
+<ItemInventoryRef>
+<ListID>170000-933272656</ListID>
+<FullName>Wood Door:Interior</FullName>
+</ItemInventoryRef>
+<Quantity>1</Quantity>
+</ItemInventoryAssemblyLine>
+<ItemInventoryAssemblyLine>
+<ItemInventoryRef>
+<ListID>450000-1071511428</ListID>
+<FullName>Hardware:Brass hinges</FullName>
+</ItemInventoryRef>
+<Quantity>3</Quantity>
+</ItemInventoryAssemblyLine>
+<ItemInventoryAssemblyLine>
+<ItemInventoryRef>
+<ListID>440001-1071511796</ListID>
+<FullName>Door Frame</FullName>
+</ItemInventoryRef>
+<Quantity>1</Quantity>
+</ItemInventoryAssemblyLine>
+</ItemInventoryAssemblyRet>
+</ItemInventoryAssemblyQueryRs>
+</QBXMLMsgsRs>
+</QBXML>
