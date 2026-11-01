@@ -125,7 +125,7 @@ def test_admin_requires_token(env, method, path, headers):
 def test_qwc_download(env):
     r = env.get("/qwc")
     s = env.settings
-    assert r.headers["content-disposition"] == 'attachment; filename="quickbook-poc.qwc"'
+    assert r.headers["content-disposition"] == 'attachment; filename="SpecialtyArchery-StockTrim.qwc"'
     assert "<AppURL>http://localhost:8000/qbwc</AppURL>" in r.text
     assert "<OwnerID>{%s}</OwnerID>" % str(s.qwc_owner_id).upper() in r.text
     assert "<FileID>{%s}</FileID>" % str(s.qwc_file_id).upper() in r.text

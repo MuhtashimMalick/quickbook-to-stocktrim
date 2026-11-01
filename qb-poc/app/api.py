@@ -80,7 +80,7 @@ def download_qwc(request: Request) -> Response:
     return Response(
         render_qwc(request.app.state.settings),
         media_type="application/xml",
-        headers={"Content-Disposition": 'attachment; filename="quickbook-poc.qwc"'},
+        headers={"Content-Disposition": f'attachment; filename="{request.app.state.settings.qwc_filename}"'},
     )
 
 
