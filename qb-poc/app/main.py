@@ -8,7 +8,8 @@ from .api import router
 from .auth import DbAuthenticator, end_session
 from .config import Settings, get_settings
 from .db import create_all, init_engine
-from .qbwc_service import LoggingQBWCService
+from .qbwc_service import LoggingQBWCService, setup_file_log
+from .tunnel_gate import QBWC_PATH, TunnelGate
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
@@ -17,11 +18,13 @@ def build_app(settings: Optional[Settings] = None) -> FastAPI:
     settings = settings or get_settings()
     init_engine(settings.database_url)
     create_all()
+    setup_file_log(settings.log_dir, settings.log_retention_days)
     app = FastAPI(title="QuickBooks <-> StockTrim POC (QuickBooks side)")
     app.state.settings = settings
     service = LoggingQBWCService(DbAuthenticator(settings), on_session_end=end_session)
     app.state.qbwc_service = service
-    create_app(service, endpoint_url=settings.app_url, path="/qbwc", app=app)
+    create_app(service, endpoint_url=settings.app_url, path=QBWC_PATH, app=app)
+    app.add_middleware(TunnelGate)
     app.include_router(router)
     return app
 

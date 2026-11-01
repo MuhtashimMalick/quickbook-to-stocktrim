@@ -3,3 +3,9 @@
 *.db
 __pycache__/
 .pytest_cache/
+fixtures/qbxml/*.xml
+!fixtures/qbxml/.gitkeep
+*.qwc
+exports/
+*.iif
+logs/

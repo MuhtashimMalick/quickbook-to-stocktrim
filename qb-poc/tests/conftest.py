@@ -61,7 +61,7 @@ class Env:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
         self.app = build_app(settings)
-        self.client = TestClient(self.app)
+        self.client = TestClient(self.app, client=("127.0.0.1", 50000))
 
     def queue(self, job_type: str, body: Optional[dict] = None):
         return self.client.post(f"/jobs/{job_type}", json=body, headers=HEADERS)
@@ -89,12 +89,12 @@ class Env:
 
 @pytest.fixture
 def make_env(tmp_path):
-    def _make(writes: bool = False) -> Env:
+    def _make(writes: bool = False, log_dir=None) -> Env:
         return Env(Settings(
             _env_file=None, qbwc_username=USER, qbwc_password=PASSWORD, admin_token=TOKEN,
             qwc_owner_id=uuid.uuid4(), qwc_file_id=uuid.uuid4(),
             database_url=f"sqlite:///{tmp_path / 'test.db'}", fixtures_dir=tmp_path / "fx",
-            writes_enabled=writes, run_every_n_seconds=120,
+            writes_enabled=writes, run_every_n_seconds=120, log_dir=log_dir or tmp_path / 'logs',
         ))
     return _make
 

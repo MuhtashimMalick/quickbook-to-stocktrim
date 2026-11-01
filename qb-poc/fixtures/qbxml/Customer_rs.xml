@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <QBXML>
 <QBXMLMsgsRs>
-<CustomerQueryRs statusCode="0" statusSeverity="Info" statusMessage="Status OK" iteratorRemainingCount="46" iteratorID="{091a50f9-0558-4e1a-a410-05ec66632ecf}">
+<CustomerQueryRs statusCode="0" statusSeverity="Info" statusMessage="Status OK" iteratorRemainingCount="46" iteratorID="{23044a68-da8b-4e25-b90b-94555f282f04}">
 <CustomerRet>
 <ListID>150000-933272658</ListID>
 <TimeCreated>1999-07-29T23:24:18+05:00</TimeCreated>
