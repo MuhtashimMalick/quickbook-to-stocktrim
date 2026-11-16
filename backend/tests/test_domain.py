@@ -151,6 +151,12 @@ def test_customer_rules():
     assert codes(r.warnings) == ["duplicate_name"] and "Same" not in r.warnings[0].message
 
 
+def test_inactive_customer_not_pushable():
+    r = resolve_customers([parse_customer({"ListID": "1", "Name": "A"}), parse_customer({"ListID": "2", "Name": "B", "IsActive": "false"})])
+    assert [c.list_id for c in r.ok] == ["1"] and [c.list_id for c in r.inactive] == ["2"] and not r.quarantined
+    assert codes(r.warnings) == ["inactive_customer"] and "B" not in r.warnings[0].message
+
+
 # ---------------------------------------------------------------- BOM
 def line(lid, qty):
     return {"ItemInventoryRef": {"ListID": lid, "FullName": "n"}, "Quantity": qty}
@@ -310,3 +316,12 @@ def test_load_snapshot_reads_only_master_entities(clean_db):
     assert sorted(p.sku for p in snap.products) == ["a", "i"] and [p.quantity_on_hand for p in snap.products if p.sku == "i"] == [Decimal("-2")]
     assert len(snap.assemblies) == 1 and codes(snap.issues) == ["parse_error"] and snap.issues[0].ref == "I2"
     assert snap.issues[0].message == "NumberError: Max" and "zz" not in snap.issues[0].message
+
+
+def test_quantity_precision_over_six_places_dropped():
+    ps = QuarantineResult[Product](ok=[prod("P", kind="assembly"), prod("A"), prod("B"), prod("C")])
+    lines = [line("L-A", "0.0000001"), line("L-B", "0.1234560"), line("L-C", "0.0000004"), line("L-C", "0.0000004")]  # B has 7 digits but equals 6; C sums to 8e-7
+    plan = plan_bom(ps, [{"ListID": "L-P", "ItemInventoryAssemblyLine": lines}])
+    assert [(e.component_sku, e.quantity) for e in plan.edges_by_parent["P"]] == [("B", Decimal("0.1234560"))]
+    assert codes(plan.issues) == ["bom_quantity_precision"] * 2 and plan.stats["dropped_edges"] == 2
+    assert all(i.severity == "warning" for i in plan.issues)

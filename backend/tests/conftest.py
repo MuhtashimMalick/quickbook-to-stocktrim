@@ -171,3 +171,10 @@ def make_env(tmp_path, clean_db):
 @pytest.fixture
 def env(make_env) -> Env:
     return make_env()
+
+
+@pytest.fixture(autouse=True)
+def _fresh_shared_limiters():
+    from app.stocktrim.limiter import reset_shared_limiters  # noqa: PLC0415
+
+    reset_shared_limiters()

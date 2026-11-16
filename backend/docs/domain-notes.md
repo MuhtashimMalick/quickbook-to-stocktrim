@@ -23,9 +23,15 @@ Kept and only warned: key longer than 200, internal double space, non-ASCII.
 ## Suppliers
 Phase 2's supplier push must use exactly `resolve_suppliers(...).ok`. Inactive vendors (`IsActive=false`) are valid but go to `.inactive` with an `inactive_supplier` warning and are never pushed. A product whose preferred vendor is inactive, quarantined or unknown gets `unresolved_vendor` and `preferred_vendor_code=None` (set only by `resolve_products`).
 
-## Open questions for the Phase 2 mapper
-1. Units of measure: `UnitOfMeasureSetRef` is on most items; SO/PO lines can carry non-base units. Convert to the base unit or reject?
-2. Customer emails containing `;` or `,` (9 cases): split, take the first, or drop?
-3. Vendor address `Addr1` often holds the company name: skip it when it equals the vendor name?
-4. Decimal serialisation: the Stage 5 DTOs must emit JSON numbers (not strings) for stockOnHand/cost/price/BOM quantity. Verify.
-5. Negative stock (A13, 134 items): the rule for pushing negative `QuantityOnHand` (clamp to 0, push raw, or skip).
+## Phase 2 mapper decisions (`app/sync/mappers.py`)
+1. Units of measure: still open (SO/PO mappers, later stages).
+2. Several emails (`;` or `,`): the first valid one is sent, none if no part is valid. A leading `mailto:` and `Name <addr>` are accepted; validity is checked by `email-validator` without DNS. Internationalised addresses (`ä@x.de`) are accepted (returned NFC-normalised).
+3. Addresses: Addr1..Addr5 lines equal (casefold, trimmed) to the vendor code/company name (customer: name) are dropped; the rest become streetAddress, addressLine1 and addressLine2 (3rd and later lines joined with ", "). SupplierDto has no city and no phone, so neither is sent for suppliers (known limitation: on the 6 Nov pull 333 of 382 suppliers have a city and 289 a phone; no mapping is invented).
+4. Decimal serialisation: the DTOs use float fields, so payloads carry JSON numbers (tested on the serialised payload).
+5. Negative stock (A13): `NEGATIVE_STOCK_POLICY` `as_is` (default, send the negative) or `clamp` (send 0); `to_product_request` returns `(request, stock_adjusted)`; `PushPlan` lists negative-stock ListIDs and (under `clamp`) adjusted ListIDs.
+6. Product category: top-level group of `FullName` when it has a ':' parent, else omitted. Supplier link only when `preferred_vendor_code` is set, and it sends ONLY `supplierId` (+ `supplierSkuCode` when a manufacturer part number exists): `supplierName` is never sent (undocumented, it could rename the supplier created by the supplier push). An empty top-level group (`:Item`) gives no category. The product `name` has whitespace runs collapsed (keys never). `maximumShelfLevel` only when Max > 0. `stockOnOrder` never.
+7. Inactive customers (`IsActive=false`) go to `resolve_customers(...).inactive` with an `inactive_customer` warning and are never pushed (the plan uses `.ok`).
+8. BOM quantity precision: a summed edge with more than 6 decimal places is dropped (`bom_quantity_precision` warning, counted in `dropped_edges`) so the stored `Numeric(20,6)` equals the planned Decimal.
+9. `build_push_plan` sorts suppliers, products and customers by key and raises `ValueError` when its inputs disagree (BOM edge end not a planned product; product vendor not a planned supplier).
+10. BOM edge key: `bom_edge_key(parent, component)` = `json.dumps([parent, component], ensure_ascii=False)`; used by the plan and by `push_item.key` (the engine must use it too), so a SKU containing `|` cannot collide.
+11. `bom_edge` and `push_run` carry a `target` (`stocktrim_target(settings)`: environment | normalised base URL | sha256(auth id)[:12]); the BOM edge key is unique per (target, parent, component).

@@ -1,13 +1,13 @@
 from functools import lru_cache
 from pathlib import Path
-from typing import Optional
+from typing import Literal, Optional
 from urllib.parse import urlparse
 from uuid import UUID
 
 from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from .domain.models import ProductKeyField
+from .domain.models import NegativeStockPolicy, ProductKeyField
 from .qbwc.gate import QBWC_PATH
 
 
@@ -47,10 +47,14 @@ class Settings(DatabaseSettings):
     log_retention_days: int = Field(14, ge=1)
     # Product SKU = QuickBooks item Name (decided: unique, short, matches PO lines); FullName only if the client ever changes the rule
     product_key_field: ProductKeyField = "Name"
+    # Negative QuickBooks stock: send as-is first (A13); clamp = send 0. Read by the push mapper.
+    negative_stock_policy: NegativeStockPolicy = "as_is"
     # StockTrim (optional at start; StockTrimClient.from_settings raises StockTrimConfigError when a call needs them)
     stocktrim_base_url: str = "https://api.stocktrim.com"
     stocktrim_auth_id: Optional[SecretStr] = None
     stocktrim_auth_signature: Optional[SecretStr] = None
+    # Scopes the BOM ledger and push runs to one StockTrim account. PRODUCTION DEPLOYMENTS MUST SET stocktrim_environment=production.
+    stocktrim_environment: Literal["test", "production"] = "test"
     stocktrim_max_rps: float = Field(5, gt=0, le=50)
     stocktrim_concurrency: int = Field(4, ge=1, le=32)
     stocktrim_max_call_seconds: float = Field(90, ge=10, le=600)

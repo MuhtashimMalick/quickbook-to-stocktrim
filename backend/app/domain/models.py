@@ -9,9 +9,10 @@ IssueCode = Literal[
     "duplicate_key", "whitespace_key", "control_chars", "empty_key", "key_too_long", "internal_double_space", "non_ascii_key",
     "duplicate_name", "unresolved_vendor", "nonpositive_quantity", "bom_self_reference", "bom_cycle", "bom_component_excluded",
     "bom_component_unresolved", "parse_error", "empty_list_id", "bom_cycle_ancestor", "inactive_supplier",
+    "inactive_customer", "bom_quantity_precision",
 ]
-# Product SKU source field. Duplicated in app/config.py only if importing this module there creates a cycle (it does not).
-ProductKeyField = Literal["Name", "FullName"]
+ProductKeyField = Literal["Name", "FullName"]  # Product SKU source field
+NegativeStockPolicy = Literal["as_is", "clamp"]  # negative QuickBooks stock: send as-is or send 0
 
 
 class Issue(BaseModel):
@@ -30,7 +31,7 @@ class Quarantined(BaseModel, Generic[T]):
 class QuarantineResult(BaseModel, Generic[T]):
     ok: list[T] = Field(default_factory=list)
     quarantined: list[Quarantined[T]] = Field(default_factory=list)
-    inactive: list[T] = Field(default_factory=list)  # valid but IsActive=false (suppliers only); never pushed
+    inactive: list[T] = Field(default_factory=list)  # valid but IsActive=false (suppliers and customers); never pushed
     warnings: list[Issue] = Field(default_factory=list)
 
 

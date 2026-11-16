@@ -95,8 +95,13 @@ def resolve_suppliers(suppliers: Iterable[Supplier]) -> QuarantineResult[Supplie
 
 
 def resolve_customers(customers: Iterable[Customer]) -> QuarantineResult[Customer]:
-    """Customers are keyed by ListID (always unique); duplicate Names are only a warning."""
+    """Customers are keyed by ListID (always unique); duplicate Names are only a warning. Like suppliers, the push must use exactly
+    `.ok`: IsActive=false customers go to `.inactive` (with an `inactive_customer` warning) and are never pushed."""
     res = resolve(customers, "customer", lambda c: c.code, lambda c: c.list_id)
+    res.inactive = [c for c in res.ok if not c.is_active]
+    res.ok = [c for c in res.ok if c.is_active]
+    res.warnings += [Issue(entity="customer", ref=c.list_id, code="inactive_customer", severity="warning", message="customer is inactive: not pushed")
+                     for c in res.inactive]
     by_name: dict[str, list[str]] = defaultdict(list)
     for c in res.ok:
         by_name[c.name.strip().casefold()].append(c.list_id)

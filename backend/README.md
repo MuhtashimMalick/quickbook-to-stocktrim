@@ -10,7 +10,7 @@ QuickBooks Desktop <--COM--> QBWC --SOAP/http--> POST /qbwc (qbwc-kit, LoggingQB
                                                       v
    curl / Swagger --> admin API (/api/v1/jobs|records|log)     JobTask generators (app/quickbooks/tasks): build qbXML, parse + store
                                   \                         /
-                                   +-- PostgreSQL (jobs, qb_records, sync_log, po_link) --+   raw qbXML -> fixtures/qbxml/
+                                   +-- PostgreSQL (jobs, qb_records, sync_log, po_link, bom_edge, push_run, push_item) --+   raw qbXML -> fixtures/qbxml/
 ```
 
 Admin endpoints do no QuickBooks work: they only queue jobs. QBWC polls, picks up queued jobs, runs them.
@@ -219,6 +219,13 @@ Fields: `ts` (ISO 8601 UTC), `event` (callback name), `direction` (`in` = QBWC -
 - [ ] `create_test_po` creates one Open PO with the Memo and `ST-xxxxxxxx` RefNumber; retrying creates no second PO.
 - [ ] `ItemSitesQueryRq` iterator accepted (see `fixtures/qbxml/ItemSites_rq.xml` / `_rs.xml`).
 - [ ] qbXML version the log shows matches your QuickBooks.
+
+## Push foundation (Phase 2, stage 8; nothing is pushed yet)
+- Tables (migration `0003`): `bom_edge` (the edge set last pushed, the BOM diff source, since StockTrim cannot list edges), `push_run` (one row per run: status, options, pre-flight fingerprint, counts-only summary) and `push_item` (per-item progress: entity, key, status, attempts, short `error_code`; never names or response bodies). This per-item progress is the plan's `sync_progress`. The `qb_app` role gets DML on them through the default privileges set by `docker/db/init-app-role.sh` (verified by a test: DML yes, DDL no). On an existing volume whose role was created before these tables, re-run that script only if the default privileges are missing.
+- `app/sync/mappers.py`: pure domain -> StockTrim request mappers and `build_push_plan` (ordered `(key, request)` pairs: suppliers, products, BOM edges children-first, customers). Product category = the top-level QuickBooks group of `FullName` (omitted for top-level items); emails with several addresses use the first valid one; address lines equal to the vendor/company/customer name are dropped; `stockOnOrder` is never sent.
+- `NEGATIVE_STOCK_POLICY=as_is|clamp` (default `as_is`): `clamp` sends 0 for negative stock; the mapper reports `stock_adjusted`; the push engine (next stage) owns the fallback when StockTrim rejects negatives.
+- `app/stocktrim/limiter.py`: one process-wide rate limiter per StockTrim base URL, shared by every `StockTrimClient` (a later, lower `STOCKTRIM_MAX_RPS` tightens it, never loosens, with one warning; `defer(seconds)` backs off after a 429).
+- `STOCKTRIM_ENVIRONMENT=test|production` (default `test`): with the base URL and a hash of the auth id it forms `stocktrim_target(settings)`, stored in `bom_edge.target` and `push_run.target` so test and production ledgers never mix. **Production deployments must set `STOCKTRIM_ENVIRONMENT=production`.** `push_run` allows one `running` row (partial unique index), carries a heartbeat `updated_at` and `requested_by`; status/entity values are CHECK-constrained (constants in `app/models.py`). A BOM edge key is `bom_edge_key(parent, component)` (JSON array). Client-facing behaviours: `docs/client-behaviours.md`.
 
 ## Next steps
 

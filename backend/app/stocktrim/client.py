@@ -24,6 +24,7 @@ from .errors import (
     StockTrimRejected,
     StockTrimUnavailable,
 )
+from .limiter import RateLimiter, shared_limiter
 
 log = logging.getLogger("app.stocktrim")
 T, R = TypeVar("T"), TypeVar("R")
@@ -41,22 +42,6 @@ def read_only_guard(request: httpx.Request) -> None:
     """httpx request hook for read-only callers (the pre-flight): anything but GET is refused before it leaves the machine."""
     if request.method != "GET":
         raise RuntimeError(f"read-only StockTrim client: refusing {request.method} {request.url.path}")
-
-
-class RateLimiter:
-    """Thread-safe min-interval limiter: each caller reserves the next free slot, then sleeps outside the lock."""
-
-    def __init__(self, rps: float, clock: Callable[[], float] = time.monotonic, sleep: Callable[[float], None] = time.sleep):
-        self.interval, self._clock, self._sleep = 1.0 / rps, clock, sleep
-        self._next, self._lock = 0.0, threading.Lock()
-
-    def acquire(self) -> None:
-        with self._lock:
-            now = self._clock()
-            slot = max(now, self._next)
-            self._next = slot + self.interval
-        if slot > now:
-            self._sleep(slot - now)
 
 
 class _Transient(Exception):
@@ -102,12 +87,15 @@ class StockTrimClient:
     def __init__(self, base_url: str, auth_id: str, auth_signature: str, *, max_rps: float = 5, concurrency: int = 4,
                  transport: Optional[httpx.BaseTransport] = None, clock: Callable[[], float] = time.monotonic,
                  sleep: Callable[[float], None] = time.sleep, max_attempts: int = MAX_ATTEMPTS,
-                 max_call_seconds: float = MAX_CALL_SECONDS, event_hooks: Optional[dict[str, list[Callable]]] = None):
+                 max_call_seconds: float = MAX_CALL_SECONDS, event_hooks: Optional[dict[str, list[Callable]]] = None,
+                 limiter: Optional[RateLimiter] = None):
         if not (auth_id and auth_signature):
             raise StockTrimConfigError(CREDS_MISSING)
         self._http = httpx.Client(base_url=base_url, timeout=TIMEOUT, transport=transport,
                                   event_hooks=event_hooks, headers={"api-auth-id": auth_id, "api-auth-signature": auth_signature, "Accept": "application/json"})
-        self._limiter, self._sleep, self.concurrency, self._max_attempts = RateLimiter(max_rps, clock, sleep), sleep, concurrency, max_attempts
+        # default: the process-wide limiter for this base URL; tests inject their own (limiter=) so nothing really waits
+        self._limiter = limiter or shared_limiter(base_url, max_rps)
+        self._sleep, self.concurrency, self._max_attempts = sleep, concurrency, max_attempts
         self._clock, self._max_call_seconds = clock, max_call_seconds
 
     @classmethod

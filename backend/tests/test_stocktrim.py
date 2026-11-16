@@ -44,7 +44,8 @@ def prod(pid, **kw):
 
 def make(handler: Callable[[httpx.Request], httpx.Response], **kw):
     sleeps: list[float] = []
-    client = StockTrimClient("https://st.test", ID, SIG, transport=httpx.MockTransport(handler), sleep=sleeps.append, **kw)
+    client = StockTrimClient("https://st.test", ID, SIG, transport=httpx.MockTransport(handler), sleep=sleeps.append,
+                             limiter=RateLimiter(kw.get("max_rps", 5), sleep=sleeps.append), **kw)
     return client, StockTrimApi(client), sleeps
 
 
@@ -452,7 +453,8 @@ def test_per_call_time_cap_stops_retries():
         return httpx.Response(503)
 
     client = StockTrimClient("https://st.test", ID, SIG, transport=httpx.MockTransport(h), clock=lambda: t[0],
-                             sleep=lambda s: t.__setitem__(0, t[0] + s), max_call_seconds=45)
+                             sleep=lambda s: t.__setitem__(0, t[0] + s), max_call_seconds=45,
+                             limiter=RateLimiter(5, lambda: t[0], lambda s: t.__setitem__(0, t[0] + s)))
     with pytest.raises(StockTrimUnavailable):
         StockTrimApi(client).post_product(prod("A"))
     assert len(calls) == 3  # stopped by the time cap, not by the 5-attempt limit
@@ -490,7 +492,8 @@ def test_per_call_cap_counts_the_sleep_about_to_happen():
         return httpx.Response(503, headers={"Retry-After": "60"})  # attempts take 0 s
 
     client = StockTrimClient("https://st.test", ID, SIG, transport=httpx.MockTransport(h), clock=lambda: t[0],
-                             sleep=lambda s: t.__setitem__(0, t[0] + s), max_call_seconds=45)
+                             sleep=lambda s: t.__setitem__(0, t[0] + s), max_call_seconds=45,
+                             limiter=RateLimiter(5, lambda: t[0], lambda s: t.__setitem__(0, t[0] + s)))
     with pytest.raises(StockTrimUnavailable):
         StockTrimApi(client).post_product(prod("A"))
     assert len(calls) == 1 and t[0] <= 45

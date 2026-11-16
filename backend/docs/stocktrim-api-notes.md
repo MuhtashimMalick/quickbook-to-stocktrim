@@ -89,7 +89,7 @@ Read-only counts: **319 products** (7 pages), **1173 customer rows** (20 rows be
 - Whether `GET /api/SalesOrders?productId=` is case-sensitive (could not determine; products and BOM ids are case-insensitive, sales orders were not tested). StockTrim stores sales orders for products that do not exist, so an empty product list does not mean there are no sales orders.
 - Whether stock/PO flags change `stockOnOrder` (not probed).
 
-- TODO Phase 2: a process-wide rate limiter per StockTrim base URL (each client instance has its own 5 rps limiter; the pre-flight only prevents concurrent runs with a process lock).
+- DONE (stage 8): a process-wide rate limiter per StockTrim base URL (`app/stocktrim/limiter.py`); every `StockTrimClient` shares it unless a test injects `limiter=`. The key is the normalised base URL; `RateLimiter.defer(seconds)` pushes the next slot forward (used on 429 in the next stage).
 
 ## 10. Cleanup verification
 Second probe (BOM key + null test, 2026-11-16): created only `ZZ-PROBE-A`, `ZZ-PROBE-B`, `ZZ-PROBE-N` (and the one A->B edge by readable key). Deleted the edge with both keys and the three products; GET by readable code and by productId -> 404 for all three, GET of every BOM key form -> 404.

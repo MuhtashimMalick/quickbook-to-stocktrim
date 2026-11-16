@@ -2,7 +2,7 @@
 Read-only on both sides (the StockTrim client refuses any non-GET). Nothing here is persisted; INFO logs carry counts only. Issue
 messages and record fields are never copied into the report (Vendor Names can be personal names): samples are `{ref, code}` with ref =
 QuickBooks ListID, and the response is the typed `PreflightReport` (extra fields cannot reach the JSON).
-ponytail: the 'one run at a time' lock lives in the route; Phase 2 needs a process-wide rate limiter per StockTrim base URL instead."""
+ponytail: the 'one run at a time' lock lives in the route; the process-wide rate limiter per StockTrim base URL lives in app/stocktrim/limiter.py (every client shares it)."""
 import hashlib
 import json
 import logging

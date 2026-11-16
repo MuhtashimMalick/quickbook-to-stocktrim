@@ -151,6 +151,12 @@ def plan_bom(products: QuarantineResult[Product], assemblies: Iterable[dict[str,
         with_summed += bool(n_summed)
         all_excluded += bool(lines) and n_excluded == len(lines)
 
+    for parent_sku, comps in sums.items():  # the stored Numeric(20,6) must equal the planned Decimal
+        for comp_sku in [c for c, q in comps.items() if q.as_tuple().exponent < -6 and q != q.quantize(Decimal("0.000001"))]:
+            del comps[comp_sku]
+            dropped += 1
+            issue("bom_quantity_precision", lid_of[parent_sku], "warning", f"edge {parent_sku!r} -> {comp_sku!r} has more than 6 decimal places; dropped")
+
     graph = {p: set(c) for p, c in sums.items() if c}
     all_parents_of: dict[str, set[str]] = defaultdict(set)
     for p, comps in graph.items():

@@ -1,4 +1,5 @@
 import uuid
+from decimal import Decimal
 
 import pytest
 from alembic.autogenerate import compare_metadata
@@ -6,6 +7,7 @@ from alembic.migration import MigrationContext
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 from sqlalchemy import create_engine, inspect, text
+from sqlalchemy.exc import DBAPIError, IntegrityError, ProgrammingError
 
 from alembic import command
 from app import jobs
@@ -20,7 +22,7 @@ from app.quickbooks.tasks.base import QuerySpec
 
 from .conftest import QB, admin_engine, alembic_cfg, create_database, make_records, rs_error
 
-TABLES = {"jobs", "sync_log", "qb_records", "po_link"}
+TABLES = {"jobs", "sync_log", "qb_records", "po_link", "bom_edge", "push_run", "push_item"}
 
 
 def keys(env, entity):
@@ -49,11 +51,116 @@ def test_migration_upgrade_downgrade_on_scratch_db(db_url):
         assert set(inspect(engine).get_table_names()) == {"alembic_version"}
         command.upgrade(alembic_cfg(url), "head")
         with engine.connect() as c:  # models must equal the migration (no drift)
-            assert compare_metadata(MigrationContext.configure(c), Base.metadata) == []
+            assert compare_metadata(MigrationContext.configure(c, opts={"compare_server_default": True}), Base.metadata) == []
     finally:
         engine.dispose()
         with admin_engine(db_url).connect() as c:
             c.execute(text(f'DROP DATABASE "{name}" WITH (FORCE)'))
+
+
+def test_migration_0003_downgrade_one_step_keeps_older_tables(db_url):
+    name = f"qb_scratch_{uuid.uuid4().hex[:8]}"
+    create_database(db_url, name)
+    url = create_engine(db_url).url.set(database=name).render_as_string(hide_password=False)
+    engine = create_engine(url)
+    try:
+        command.upgrade(alembic_cfg(url), "head")
+        command.downgrade(alembic_cfg(url), "-1")
+        assert set(inspect(engine).get_table_names()) == TABLES - {"bom_edge", "push_run", "push_item"} | {"alembic_version"}
+        command.upgrade(alembic_cfg(url), "head")
+        assert {"bom_edge", "push_run", "push_item"} <= set(inspect(engine).get_table_names())
+    finally:
+        engine.dispose()
+        with admin_engine(db_url).connect() as c:
+            c.execute(text(f'DROP DATABASE "{name}" WITH (FORCE)'))
+
+
+def test_push_tables_constraints_and_cascade(clean_db):
+    engine = create_engine(clean_db)
+    run = uuid.uuid4()
+    with engine.begin() as c:
+        c.execute(text("INSERT INTO push_run (id, target, started_at, status, options) VALUES (:i, 'T', now(), 'running', '{}')"), {"i": run})
+        c.execute(text("INSERT INTO bom_edge (target, parent_sku, component_sku, quantity, parent_hash, pushed_at) VALUES ('T', 'P', 'C', 0.123457, 'h', now())"))
+        c.execute(text("INSERT INTO push_item (run_id, entity, key, status, attempts, updated_at) VALUES (:r, 'product', 'K', 'pending', 0, now())"), {"r": run})
+        assert c.scalar(text("SELECT quantity FROM bom_edge")) == Decimal("0.123457")  # QuickBooks decimals kept to 6 places
+    for sql in ("INSERT INTO bom_edge (target, parent_sku, component_sku, quantity, parent_hash, pushed_at) VALUES ('T', 'P', 'C', 1, 'h', now())",
+                f"INSERT INTO push_item (run_id, entity, key, status, attempts, updated_at) VALUES ('{run}', 'product', 'K', 'done', 1, now())"):
+        with pytest.raises(IntegrityError), engine.begin() as c:
+            c.execute(text(sql))  # unique (parent, component) and unique (run_id, entity, key)
+    with pytest.raises(IntegrityError), engine.begin() as c:  # FK: unknown run
+        c.execute(text("INSERT INTO push_item (run_id, entity, key, status, attempts, updated_at) VALUES (gen_random_uuid(), 'product', 'X', 'pending', 0, now())"))
+    with engine.begin() as c:
+        c.execute(text("INSERT INTO bom_edge (target, parent_sku, component_sku, quantity, parent_hash, pushed_at) VALUES ('T', 'P', 'C2', 1, 'h', now())"))  # same parent, new pair
+        c.execute(text("INSERT INTO bom_edge (target, parent_sku, component_sku, quantity, parent_hash, pushed_at) VALUES ('T2', 'P', 'C', 1, 'h', now())"))  # same pair, other target
+        c.execute(text("DELETE FROM push_run WHERE id = :r"), {"r": run})
+        assert c.scalar(text("SELECT count(*) FROM push_item")) == 0  # ON DELETE CASCADE
+    engine.dispose()
+
+
+def test_least_privilege_role_covers_new_tables(db_url):
+    """Mirror docker/db/init-app-role.sh (default privileges), migrate, then a role with only DML must use the new tables and sequences but not run DDL."""
+    name, role, pw = f"qb_scratch_{uuid.uuid4().hex[:8]}", f"qb_app_t{uuid.uuid4().hex[:8]}", uuid.uuid4().hex
+    create_database(db_url, name)
+    owner_url = create_engine(db_url).url.set(database=name)
+    try:
+        with admin_engine(db_url).connect() as c:
+            try:
+                c.execute(text(f"CREATE ROLE {role} LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE PASSWORD '{pw}'"))
+            except ProgrammingError:
+                pytest.skip("the test database user cannot create roles")
+        owner = create_engine(owner_url, isolation_level="AUTOCOMMIT")
+        with owner.connect() as c:
+            c.execute(text(f"GRANT USAGE ON SCHEMA public TO {role}"))
+            c.execute(text(f"ALTER DEFAULT PRIVILEGES FOR ROLE CURRENT_USER IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO {role}"))
+            c.execute(text(f"ALTER DEFAULT PRIVILEGES FOR ROLE CURRENT_USER IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO {role}"))
+        command.upgrade(alembic_cfg(owner_url.render_as_string(hide_password=False)), "head")
+        app = create_engine(owner_url.set(username=role, password=pw), isolation_level="AUTOCOMMIT")
+        run = uuid.uuid4()
+        with app.connect() as c:
+            c.execute(text("INSERT INTO push_run (id, target, started_at, status, options) VALUES (:i, 'T', now(), 'running', '{}')"), {"i": run})
+            c.execute(text("INSERT INTO push_item (run_id, entity, key, status, attempts, updated_at) VALUES (:r, 'product', 'K', 'pending', 0, now())"), {"r": run})
+            c.execute(text("INSERT INTO bom_edge (target, parent_sku, component_sku, quantity, parent_hash, pushed_at) VALUES ('T', 'P', 'C', 1, 'h', now())"))
+            c.execute(text("UPDATE push_item SET status = 'done'"))
+            assert c.scalar(text("SELECT count(*) FROM push_item WHERE status = 'done'")) == 1
+            c.execute(text("DELETE FROM bom_edge"))
+            for ddl in ("CREATE TABLE evil (x int)", "ALTER TABLE push_item ADD COLUMN x int", "DROP TABLE bom_edge", "TRUNCATE push_item",
+                        "CREATE INDEX evil_ix ON push_item (key)"):
+                with pytest.raises(DBAPIError):
+                    c.execute(text(ddl))
+        app.dispose()
+        owner.dispose()
+    finally:
+        with admin_engine(db_url).connect() as c:
+            c.execute(text(f'DROP DATABASE IF EXISTS "{name}" WITH (FORCE)'))
+            c.execute(text(f"DROP ROLE IF EXISTS {role}"))
+
+
+def test_push_table_checks_and_run_guard(clean_db):
+    engine = create_engine(clean_db)
+    run = uuid.uuid4()
+    with engine.begin() as c:
+        c.execute(text("INSERT INTO push_run (id, target, started_at, status, options) VALUES (:i, 'T', now(), 'done', '{}')"), {"i": run})
+    item = "INSERT INTO push_item (run_id, entity, key, status, attempts, updated_at) VALUES ('%s', '%s', 'K', '%s', %d, now())"
+    bad = {
+        "ck_push_run_status": "INSERT INTO push_run (target, started_at, status, options) VALUES ('T', now(), 'bogus', '{}')",
+        "ck_push_item_status": item % (run, "product", "bogus", 0),
+        "ck_push_item_entity": item % (run, "bogus", "pending", 0),
+        "ck_push_item_attempts_nonneg": item % (run, "product", "pending", -1),
+        "ck_bom_edge_quantity_positive": "INSERT INTO bom_edge (target, parent_sku, component_sku, quantity, parent_hash, pushed_at) VALUES ('T', 'P', 'C', 0, 'h', now())",
+    }
+    for name, sql in bad.items():
+        with pytest.raises(IntegrityError, match=name), engine.begin() as c:
+            c.execute(text(sql))
+    one_running = "INSERT INTO push_run (target, started_at, status, options) VALUES ('T', now(), 'running', '{}')"
+    with engine.begin() as c:
+        c.execute(text(one_running))
+        assert c.scalar(text("SELECT updated_at IS NOT NULL FROM push_run WHERE status = 'running'"))  # heartbeat has a default
+    with pytest.raises(IntegrityError, match="ux_push_run_one_running"), engine.begin() as c:
+        c.execute(text(one_running))  # a second running run is refused
+    with engine.begin() as c:
+        c.execute(text("UPDATE push_run SET status = 'done'"))
+        c.execute(text(one_running))  # fine once the first finished
+    engine.dispose()
 
 
 # ---- snapshot -----------------------------------------------------------------------------------
