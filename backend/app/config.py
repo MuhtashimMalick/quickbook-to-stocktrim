@@ -7,6 +7,7 @@ from uuid import UUID
 from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from .domain.models import ProductKeyField
 from .qbwc.gate import QBWC_PATH
 
 
@@ -44,6 +45,8 @@ class Settings(DatabaseSettings):
     save_fixtures: bool = True
     log_dir: Path = Path("logs")
     log_retention_days: int = Field(14, ge=1)
+    # Product SKU = QuickBooks item Name (decided: unique, short, matches PO lines); FullName only if the client ever changes the rule
+    product_key_field: ProductKeyField = "Name"
     # StockTrim (optional at start; StockTrimClient.from_settings raises StockTrimConfigError when a call needs them)
     stocktrim_base_url: str = "https://api.stocktrim.com"
     stocktrim_auth_id: Optional[SecretStr] = None

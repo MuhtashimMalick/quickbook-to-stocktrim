@@ -8,3 +8,4 @@ Caddyfile text eol=lf
 *.toml text eol=lf
 requirements*.txt text eol=lf
 constraints.txt text eol=lf
+.env.example text eol=lf
