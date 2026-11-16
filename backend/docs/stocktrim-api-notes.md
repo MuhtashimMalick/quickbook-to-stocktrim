@@ -28,7 +28,8 @@ Read-only counts: **319 products** (7 pages), **1173 customer rows** (20 rows be
 ## 3. Suppliers (`/api/Suppliers`)
 - **POST** takes an **array** (an object body -> 400 "Cannot deserialize the current JSON object ... List<SupplierRequestDto>"); `[]` -> 200 `[]`; element without `supplierCode` -> 400 `[0].SupplierCode required`. Response 200 = array of the stored suppliers (with `id`).
 - **Upsert by supplierCode**: re-POST with a changed name and no email -> 200, name changed, **email kept** (omitted = kept).
-- **GET `?code=`** returns a **single object** (not an array; swagger agrees). Unknown -> 404 `{"title":"Could not find a supplier with code X"}`. **GET without code -> 404** (`"...with code "`): there is no list-all on this endpoint (`/api/SuppliersBulk` exists in swagger; not probed).
+- **GET `?code=`** returns a **single object** (not an array; swagger agrees). Unknown -> 404 `{"title":"Could not find a supplier with code X"}`. **GET without code -> 404** (`"...with code "`): `GET /api/Suppliers` itself has no list-all, but see `SuppliersBulk` below.
+- **`GET /api/SuppliersBulk`** (probed read-only 2026-11-16, TEST account): 200 and a JSON **array of all suppliers in one response** (6 on the TEST account). Fields per element: `id, supplierCode, supplierName, emailAddress, externalId, defaultLeadTime, primaryContactName, streetAddress, addressLine1, addressLine2, state, country, postCode`. **No paging**: `page`, `pageNo`, `pageSize` (and `code`) are ignored (same 6 rows for page 1, 2 and 999; pageSize=2 still returns all 6). The empty-account answer (404 vs `[]`) could not be observed on this non-empty account; `StockTrimApi.list_suppliers_bulk()` accepts both. This is the pre-flight's supplier inventory; the per-key `?code=` probe is only an opt-in cross-check.
 - **DELETE `?supplierCodeOrName=`**: 200 empty; unknown -> 404 `Could not find a supplier with code or name X`. Verified by GET -> 404.
 - **Side effect**: a purchase order that names an unknown supplier code **auto-creates that supplier** (see 7). Delete it afterwards.
 
@@ -84,8 +85,11 @@ Read-only counts: **319 products** (7 pages), **1173 customer rows** (20 rows be
 - PUT /api/Customers response and behaviour (no cleanup route).
 - Retry-After / 429 / 5xx behaviour of the real service (never triggered; covered offline only). Rate limits beyond the client's 5 requests/s were not exercised.
 - Multi-level BOM effect in StockTrim's forecast/order plan (UI-only; needs demand history).
-- `GET /api/V2/PurchaseOrders` paging with more than one page; `/api/SuppliersBulk`.
+- `GET /api/V2/PurchaseOrders` paging with more than one page and whether its paging base is 0 or 1 (the pre-flight therefore also asks for `page=0` and for an unfiltered list, and takes the larger count: a PO created without a status comes back with integer status 0 that no status filter returns). `/api/SuppliersBulk` on an empty account (404 or `[]`).
+- Whether `GET /api/SalesOrders?productId=` is case-sensitive (could not determine; products and BOM ids are case-insensitive, sales orders were not tested). StockTrim stores sales orders for products that do not exist, so an empty product list does not mean there are no sales orders.
 - Whether stock/PO flags change `stockOnOrder` (not probed).
+
+- TODO Phase 2: a process-wide rate limiter per StockTrim base URL (each client instance has its own 5 rps limiter; the pre-flight only prevents concurrent runs with a process lock).
 
 ## 10. Cleanup verification
 Second probe (BOM key + null test, 2026-11-16): created only `ZZ-PROBE-A`, `ZZ-PROBE-B`, `ZZ-PROBE-N` (and the one A->B edge by readable key). Deleted the edge with both keys and the three products; GET by readable code and by productId -> 404 for all three, GET of every BOM key form -> 404.

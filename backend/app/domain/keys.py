@@ -47,7 +47,7 @@ def resolve(records: Iterable[T], entity: str, key_of: Callable[[T], str], lid_o
     lid_groups: dict[str, list[int]] = defaultdict(list)
     issues: list[list[Issue]] = []
     warnings: list[Issue] = []
-    refs = [lid_of(r) or key_of(r) for r in recs]
+    refs = [lid_of(r) or f"<no ListID>#{i}" for i, r in enumerate(recs)]  # a ref is a ListID (or this placeholder), never a name
 
     def add(i: int, code: IssueCode, severity: str, msg: str) -> None:
         issues[i].append(Issue(entity=entity, ref=refs[i], code=code, severity=severity, message=msg))  # type: ignore[arg-type]

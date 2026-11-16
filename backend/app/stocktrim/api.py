@@ -1,10 +1,11 @@
 """One typed method per StockTrim endpoint we use. Behaviour notes come from the live probe: backend/docs/stocktrim-api-notes.md."""
+from collections.abc import Callable, Iterable
 from typing import Any, Optional, Union
 
 import httpx
 from pydantic import BaseModel, TypeAdapter, ValidationError
 
-from .client import StockTrimClient
+from .client import BulkItem, StockTrimClient
 from .dto import (
     BomRequest,
     BomResponse,
@@ -23,6 +24,7 @@ from .errors import StockTrimBadResponse, StockTrimRejected
 
 _PRODUCTS, _SUPPLIERS = TypeAdapter(list[ProductResponse]), TypeAdapter(list[SupplierResponse])
 _CUSTOMERS, _POS = TypeAdapter(list[CustomerResponse]), TypeAdapter(list[PurchaseOrderResponse])
+_SALES_ORDERS = TypeAdapter(list[SalesOrderResponse])
 
 
 def _parse(target: Union[TypeAdapter, type[BaseModel]], resp: httpx.Response, identifier: Optional[str] = None) -> Any:
@@ -48,6 +50,10 @@ class StockTrimApi:
                 return None
             raise
 
+    def map_concurrent(self, fn: Callable[[Any], Any], items: Iterable[Any]) -> list[BulkItem]:
+        """Rate-limited, concurrent bulk helper of the underlying client (see StockTrimClient.map_concurrent)."""
+        return self.c.map_concurrent(fn, items)
+
     # products (V1). `code` filters on productCodeReadable (NOT productId); pages hold 50; 404 = no match
     def post_product(self, p: ProductRequest) -> ProductResponse:
         return _parse(ProductResponse, self.c.request("POST", "/api/Products", json=p.payload(), identifier=p.product_id), p.product_id)
@@ -62,7 +68,7 @@ class StockTrimApi:
     def delete_product(self, product_id: str) -> None:
         self.c.request("DELETE", "/api/Products", params={"productId": product_id}, identifier=product_id)
 
-    # suppliers: POST takes an array and returns an array; GET ?code= returns ONE object (404 if absent); no list-all
+    # suppliers: POST takes an array and returns an array; GET ?code= returns ONE object (404 if absent); GET /api/SuppliersBulk lists them all
     def post_suppliers(self, suppliers: list[SupplierRequest]) -> list[SupplierResponse]:
         ident = ",".join(s.supplier_code for s in suppliers)[:200]
         return _parse(_SUPPLIERS, self.c.request("POST", "/api/Suppliers", json=[s.payload() for s in suppliers], identifier=ident), ident)
@@ -70,6 +76,11 @@ class StockTrimApi:
     def get_supplier(self, code: str) -> Optional[SupplierResponse]:
         r = self._or_none("GET", "/api/Suppliers", params={"code": code}, identifier=code)
         return _parse(SupplierResponse, r, code) if r else None
+
+    def list_suppliers_bulk(self) -> list[SupplierResponse]:
+        """GET /api/SuppliersBulk: every supplier in one array. No paging (page/pageNo/pageSize/code are ignored); 404 is treated as empty."""
+        r = self._or_none("GET", "/api/SuppliersBulk")
+        return _parse(_SUPPLIERS, r) if r else []
 
     def delete_supplier(self, code_or_name: str) -> None:
         self.c.request("DELETE", "/api/Suppliers", params={"supplierCodeOrName": code_or_name}, identifier=code_or_name)
@@ -102,6 +113,11 @@ class StockTrimApi:
     def post_sales_order(self, so: SalesOrderRequest) -> SalesOrderResponse:
         r = self.c.request("POST", "/api/SalesOrders", json=so.payload(), identifier=so.external_reference_id)
         return _parse(SalesOrderResponse, r, so.external_reference_id)
+
+    def get_sales_orders(self, product_id: str) -> list[SalesOrderResponse]:
+        """Not listable without a product: one call per productId; 404 = none."""
+        r = self._or_none("GET", "/api/SalesOrders", params={"productId": product_id}, identifier=product_id)
+        return _parse(_SALES_ORDERS, r, product_id) if r else []
 
     # purchase orders: V2 list (status comes back as a name or 0-3, both parsed); POST upserts by clientReferenceNumber
     def list_purchase_orders(self, page: Optional[int] = None, page_size: Optional[int] = None, status: Optional[str] = None) -> list[PurchaseOrderResponse]:

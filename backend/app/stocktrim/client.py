@@ -37,6 +37,12 @@ _NEVER_SENT = (httpx.ConnectError, httpx.ConnectTimeout, httpx.PoolTimeout)  # t
 _FATAL = (StockTrimUnavailable, StockTrimConfigError, StockTrimAuthError)  # a bulk run stops on these
 
 
+def read_only_guard(request: httpx.Request) -> None:
+    """httpx request hook for read-only callers (the pre-flight): anything but GET is refused before it leaves the machine."""
+    if request.method != "GET":
+        raise RuntimeError(f"read-only StockTrim client: refusing {request.method} {request.url.path}")
+
+
 class RateLimiter:
     """Thread-safe min-interval limiter: each caller reserves the next free slot, then sleeps outside the lock."""
 
@@ -96,11 +102,11 @@ class StockTrimClient:
     def __init__(self, base_url: str, auth_id: str, auth_signature: str, *, max_rps: float = 5, concurrency: int = 4,
                  transport: Optional[httpx.BaseTransport] = None, clock: Callable[[], float] = time.monotonic,
                  sleep: Callable[[float], None] = time.sleep, max_attempts: int = MAX_ATTEMPTS,
-                 max_call_seconds: float = MAX_CALL_SECONDS):
+                 max_call_seconds: float = MAX_CALL_SECONDS, event_hooks: Optional[dict[str, list[Callable]]] = None):
         if not (auth_id and auth_signature):
             raise StockTrimConfigError(CREDS_MISSING)
         self._http = httpx.Client(base_url=base_url, timeout=TIMEOUT, transport=transport,
-                                  headers={"api-auth-id": auth_id, "api-auth-signature": auth_signature, "Accept": "application/json"})
+                                  event_hooks=event_hooks, headers={"api-auth-id": auth_id, "api-auth-signature": auth_signature, "Accept": "application/json"})
         self._limiter, self._sleep, self.concurrency, self._max_attempts = RateLimiter(max_rps, clock, sleep), sleep, concurrency, max_attempts
         self._clock, self._max_call_seconds = clock, max_call_seconds
 
