@@ -44,6 +44,21 @@ class Settings(DatabaseSettings):
     save_fixtures: bool = True
     log_dir: Path = Path("logs")
     log_retention_days: int = Field(14, ge=1)
+    # StockTrim (optional at start; StockTrimClient.from_settings raises StockTrimConfigError when a call needs them)
+    stocktrim_base_url: str = "https://api.stocktrim.com"
+    stocktrim_auth_id: Optional[SecretStr] = None
+    stocktrim_auth_signature: Optional[SecretStr] = None
+    stocktrim_max_rps: float = Field(5, gt=0, le=50)
+    stocktrim_concurrency: int = Field(4, ge=1, le=32)
+    stocktrim_max_call_seconds: float = Field(90, ge=10, le=600)
+
+    @field_validator("stocktrim_base_url")
+    @classmethod
+    def _check_stocktrim_url(cls, v: str) -> str:
+        u = urlparse(v)
+        if not (u.scheme == "https" or (u.scheme == "http" and u.hostname in ("localhost", "127.0.0.1"))) or not u.hostname:
+            raise ValueError("stocktrim_base_url must be https (http only for localhost): the API credentials travel in headers")
+        return v
 
     @field_validator("app_url")
     @classmethod
