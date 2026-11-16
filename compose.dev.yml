@@ -1,0 +1,15 @@
+# Opt-in dev overlay: docker compose -f docker-compose.yml -f compose.dev.yml up -d --build
+# (Windows: COMPOSE_FILE uses ";" as separator, Linux ":").
+services:
+  db:
+    networks: [backend, dev-publish]   # published ports need a non-internal network
+    ports:
+      - "127.0.0.1:5432:5432"   # for the local venv + tests
+  caddy:
+    environment:
+      DOMAIN: localhost          # Caddy issues an internal (self-signed) cert for localhost
+    ports: !override
+      - "127.0.0.1:8080:80"
+      - "127.0.0.1:8443:443"
+networks:
+  dev-publish:

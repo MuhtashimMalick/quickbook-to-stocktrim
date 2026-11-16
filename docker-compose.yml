@@ -1,0 +1,113 @@
+# Production: `docker compose up -d --build`. Nothing but Caddy (80/443) is published.
+x-logging: &logging
+  driver: json-file
+  options: {max-size: 10m, max-file: "5"}
+
+x-app-env: &app-env
+  QBWC_USERNAME: ${QBWC_USERNAME?set QBWC_USERNAME in .env}
+  QBWC_PASSWORD: ${QBWC_PASSWORD?set QBWC_PASSWORD in .env}
+  ADMIN_TOKEN: ${ADMIN_TOKEN?set ADMIN_TOKEN in .env}
+  QWC_OWNER_ID: ${QWC_OWNER_ID?set QWC_OWNER_ID in .env}
+  QWC_FILE_ID: ${QWC_FILE_ID?set QWC_FILE_ID in .env}
+  QWC_APP_NAME: ${QWC_APP_NAME:-Specialty Archery StockTrim}
+  QWC_APP_DESCRIPTION: "${QWC_APP_DESCRIPTION:-Specialty Archery: QuickBooks Desktop <-> StockTrim sync}"
+  QWC_FILENAME: ${QWC_FILENAME:-SpecialtyArchery-StockTrim.qwc}
+  APP_URL: ${APP_URL?set APP_URL in .env (https://<DOMAIN>/qbwc)}
+  RUN_EVERY_N_SECONDS: ${RUN_EVERY_N_SECONDS:-600}
+  WRITES_ENABLED: ${WRITES_ENABLED:-false}
+  MAX_QBXML_VERSION: ${MAX_QBXML_VERSION:-16.0}
+  PAGE_SIZE: ${PAGE_SIZE:-100}
+  SAVE_FIXTURES: ${SAVE_FIXTURES:-false}
+  LOG_RETENTION_DAYS: ${LOG_RETENTION_DAYS:-14}
+  LOG_DIR: /data/logs
+  FIXTURES_DIR: /data/fixtures
+
+services:
+  db:
+    logging: *logging
+    networks: [backend]
+    image: postgres:17.12
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER?set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB?set POSTGRES_DB in .env}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD?set APP_DB_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/db/init-app-role.sh:/docker-entrypoint-initdb.d/init-app-role.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  migrate:
+    logging: *logging
+    networks: [backend]
+    build: {context: ./backend, target: runtime}
+    image: quickbook-app
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+    depends_on:
+      db: {condition: service_healthy}
+
+  app:
+    logging: *logging
+    networks: [edge, backend]
+    image: quickbook-app
+    restart: unless-stopped
+    environment:
+      <<: *app-env
+      DATABASE_URL: postgresql+psycopg://qb_app:${APP_DB_PASSWORD}@db:5432/${POSTGRES_DB}
+    volumes:
+      - appdata:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; assert u.urlopen('http://127.0.0.1:8000/qbwc?wsdl', timeout=4).status == 200"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    depends_on:
+      db: {condition: service_healthy}
+      migrate: {condition: service_completed_successfully}
+
+  caddy:
+    logging: *logging
+    networks: [edge]
+    image: caddy:2.10.2
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${DOMAIN?set DOMAIN in .env}
+      ACME_EMAIL: ${ACME_EMAIL:-}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      app: {condition: service_healthy}
+
+  test:
+    logging: *logging
+    networks: [backend]
+    profiles: [test]
+    build: {context: ./backend, target: test}
+    environment:
+      TEST_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}_test
+    depends_on:
+      db: {condition: service_healthy}
+
+networks:
+  edge:                # caddy <-> app, normal (app keeps outbound internet)
+  backend:
+    internal: true     # db/migrate/test: no route to the internet, caddy is not on it
+
+volumes:
+  pgdata:
+  appdata:
+  caddy_data:
+  caddy_config:

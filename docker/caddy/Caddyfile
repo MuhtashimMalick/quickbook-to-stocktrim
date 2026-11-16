@@ -1,0 +1,19 @@
+# Only the QBWC SOAP endpoint is exposed. Caddy sets X-Forwarded-For, which the app's TunnelGate relies on.
+{
+	email "{$ACME_EMAIL}"
+	servers {
+		protocols h1 h2
+	}
+}
+
+{$DOMAIN} {
+	handle /qbwc* {
+		request_body {
+			max_size 64MB
+		}
+		reverse_proxy app:8000
+	}
+	handle {
+		respond 404
+	}
+}

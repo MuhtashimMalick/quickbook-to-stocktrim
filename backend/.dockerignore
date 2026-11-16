@@ -1,0 +1,11 @@
+.venv/
+**/.env
+.git
+logs/
+fixtures/
+**/*.db
+**/*.qwc
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/

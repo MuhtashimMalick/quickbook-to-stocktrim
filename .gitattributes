@@ -1,0 +1,10 @@
+# Files mounted or built into Linux containers must keep LF line endings on every OS.
+*.sh text eol=lf
+Dockerfile text eol=lf
+Caddyfile text eol=lf
+*.yml text eol=lf
+*.py text eol=lf
+*.ini text eol=lf
+*.toml text eol=lf
+requirements*.txt text eol=lf
+constraints.txt text eol=lf
