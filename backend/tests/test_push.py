@@ -413,7 +413,7 @@ def resume(env: Env, run_id: str, expect: int = 200) -> httpx.Response:
 def test_thread_crash_fails_the_run_and_releases_the_lock(clean_db, tmp_path, monkeypatch):
     env = mk(clean_db, tmp_path, Fake())
     d = dry(env)
-    monkeypatch.setattr(engine, "build_plan", lambda settings: (_ for _ in ()).throw(KeyError("SENTINEL-boom")))
+    monkeypatch.setattr(engine, "build_plan", lambda settings, steps=(): (_ for _ in ()).throw(KeyError("SENTINEL-boom")))
     out = finish(env, post(env, steps=["suppliers", "products"], dry_run=False, preflight_fingerprint=d["preflight_fingerprint"], plan_fingerprint=d["plan_fingerprint"]).json()["run_id"])
     assert out["status"] == "failed" and out["summary"]["error"] == "KeyError" and "SENTINEL" not in json.dumps(out)
     assert not engine._ACTIVE.locked() and items() == []

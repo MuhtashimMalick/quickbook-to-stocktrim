@@ -11,3 +11,14 @@
 - Customers cannot be deleted through the StockTrim API: every customer we push (13,588 on the first full load, plus the probe customer `zz-probe-cust`) can only be removed in the StockTrim UI. Customer codes are the QuickBooks ListIDs, matched case-insensitively.
 - Cost, price and stock on hand are stored by StockTrim with 2 decimals, rounded half-up (1.005 becomes 1.01); we round the same way before sending, so a QuickBooks value with more decimals (e.g. a 3-decimal cost) will show rounded in StockTrim. For negative stock the tie rule (-1.005 -> -1.01) is assumed, not verified.
 - Incremental sync pushes only changed records (compared by payload hash). A customer PUT replaces the whole StockTrim record, so only customers that changed in QuickBooks overwrite hand edits made in StockTrim; unchanged customers are never touched, with these exceptions, each of which re-sends customers and so overwrites hand edits made in StockTrim: the first sync after migration `0005` unless the baseline was stamped, a re-queue after a StockTrim wipe, an explicit `mode=initial` customers run, and any mapper or DTO change that alters every customer's hash (about 13,600 PUTs, roughly 70 minutes). Records that disappear from QuickBooks are reported, never deleted in StockTrim.
+
+
+## Sales orders and purchase orders: defaults the client may change
+- Sales history: only orders dated within the last 3 years are sent (`SALES_HISTORY_YEARS`).
+- Quantity: the ORDERED quantity of each sales-order line; for a manually closed sales order the INVOICED quantity (closing cancels the unshipped remainder; a closed line with nothing invoiced is skipped).
+- Skipped sales-order lines: items that are not pushed products (shipping, discounts, fees, non-inventory, unknown), lines inside bundles/groups, and lines with a zero or negative quantity. They are counted in the dry-run.
+- Purchase orders: ALL of them are sent, with the status taken from QuickBooks: open -> Sent (remaining quantity = ordered - received), fully received -> Received (ordered quantity), manually closed but not fully received -> Received (so StockTrim does not count it as on order). A PO whose state changes later is re-sent with the new status. POs whose vendor is not a pushed supplier, or with no pushable line, are skipped.
+- No product-level "stock on order" is sent: StockTrim derives it from the purchase orders.
+- Units of measure are not converted: quantities go to StockTrim exactly as QuickBooks holds them.
+- Sales-order customers: an order is linked to its customer only when that customer was pushed (inactive customers are not): their orders are sent without a customer.
+- Purchase orders that share a RefNumber in QuickBooks (10 pairs today) are merged into ONE purchase order by StockTrim (lines united); the expected date (`ExpectedDate`) is accepted by StockTrim but not stored on the PO lines.

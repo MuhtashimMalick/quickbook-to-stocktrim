@@ -15,6 +15,7 @@ from .dto import (
     ProductResponse,
     PurchaseOrderRequest,
     PurchaseOrderResponse,
+    SalesOrderBulkRequest,
     SalesOrderRequest,
     SalesOrderResponse,
     SupplierRequest,
@@ -113,6 +114,12 @@ class StockTrimApi:
     def post_sales_order(self, so: SalesOrderRequest) -> SalesOrderResponse:
         r = self.c.request("POST", "/api/SalesOrders", json=so.payload(), identifier=so.external_reference_id)
         return _parse(SalesOrderResponse, r, so.external_reference_id)
+
+    def post_sales_orders(self, lines: list[SalesOrderRequest]) -> None:
+        """Upsert of lines that share one customer (see SalesOrderBulkRequest); the response body is not needed."""
+        body = SalesOrderBulkRequest(order_date=lines[0].order_date, customer_code=lines[0].customer_code,
+                                     sale_order_line_items=[ln.model_copy(update={"customer_code": None}) for ln in lines])
+        self.c.request("POST", "/api/SalesOrdersBulk", json=body.payload(), identifier=f"{len(lines)} sales order lines")
 
     def get_sales_orders(self, product_id: str) -> list[SalesOrderResponse]:
         """Not listable without a product: one call per productId; 404 = none."""

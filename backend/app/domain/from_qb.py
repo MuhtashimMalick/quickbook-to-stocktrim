@@ -113,6 +113,11 @@ def _stream(session: Session, entity: str, page: int = 1000) -> Iterator[tuple[s
     yield from session.execute(stmt)
 
 
+def stream_payloads(session: Session, entity: str) -> Iterator[dict[str, Any]]:
+    """Raw stored payloads of one entity (SalesOrder, PurchaseOrder), streamed."""
+    return (p for _, p in _stream(session, entity))
+
+
 def load_snapshot(session: Session, key_field: ProductKeyField = "Name") -> Snapshot:
     """Reads only the four master-data entities, in streaming pages (never SalesOrder/PurchaseOrder)."""
     snap = Snapshot()

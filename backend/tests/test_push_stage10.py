@@ -346,9 +346,9 @@ def test_new_steps_leak_nothing_and_codes_stay_a_closed_set(clean_db, tmp_path, 
     assert out["status"] == "done_with_failures" and out["counts"]["customer"] == {"done": 1, "failed": 1}
 
 
-def test_endpoint_accepts_the_new_steps_only(clean_db, tmp_path):
+def test_endpoint_accepts_the_known_steps_only(clean_db, tmp_path):
     env = mk(clean_db, tmp_path, Fake10(), rows=ROWS10)
-    assert post(env, steps=["bom", "customers"]).status_code == 200 and post(env, steps=["sales_orders"]).status_code == 422
+    assert post(env, steps=["bom", "customers"]).status_code == 200 and post(env, steps=["orders"]).status_code == 422
     assert env.client.get("/api/v1/push/runs/00000000-0000-0000-0000-000000000000", headers=HEADERS).status_code == 404
 
 

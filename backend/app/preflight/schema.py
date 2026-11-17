@@ -96,6 +96,7 @@ class PurchaseOrders(Step):
     count: Optional[int] = None
     capped: Optional[bool] = None
     by_status: Optional[dict[str, int]] = None
+    foreign: Optional[int] = None  # sync mode only: POs whose clientReferenceNumber is not in our ledger
 
 
 class Suppliers(Step):

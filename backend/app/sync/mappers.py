@@ -1,7 +1,10 @@
 """Pure mappers: Stage 6 domain models -> Stage 5 StockTrim request DTOs (no I/O). Fields the DTO lacks are not sent."""
 import json
 import re
+from collections import Counter
+from collections.abc import Iterable
 from dataclasses import dataclass, field
+from datetime import date, datetime, timezone
 from decimal import ROUND_HALF_UP, Decimal
 from email.utils import parseaddr
 from typing import Optional
@@ -9,8 +12,19 @@ from typing import Optional
 from email_validator import EmailNotValidError, validate_email
 
 from ..domain.bom import BomPlan
+from ..domain.from_qb import _dec, as_list, first_dict
 from ..domain.models import Address, BomEdge, Customer, NegativeStockPolicy, Product, QuarantineResult, Supplier
-from ..stocktrim.dto import BomRequest, CustomerRequest, ProductRequest, ProductSupplier, SupplierRequest
+from ..stocktrim.dto import (
+    BomRequest,
+    CustomerRequest,
+    ProductRequest,
+    ProductSupplier,
+    PurchaseOrderLine,
+    PurchaseOrderRequest,
+    PurchaseOrderSupplier,
+    SalesOrderRequest,
+    SupplierRequest,
+)
 
 _MAILTO = re.compile(r"mailto:", re.IGNORECASE)
 _WS = re.compile(r"\s+")
@@ -91,6 +105,86 @@ def to_bom_request(e: BomEdge) -> BomRequest:
     return BomRequest(product_code=e.parent_sku, component_code=e.component_sku, quantity=e.quantity)
 
 
+def _day(v: object) -> Optional[datetime]:
+    """QuickBooks TxnDate/ExpectedDate ('2026-06-07') -> midnight UTC; None when absent or unreadable."""
+    try:
+        return datetime.combine(date.fromisoformat(str(v)[:10]), datetime.min.time(), tzinfo=timezone.utc)
+    except ValueError:
+        return None
+
+
+def _true(v: object) -> bool:
+    return str(v).strip().lower() == "true"
+
+
+def _qty(p: dict, field_name: str) -> Decimal:
+    return _r2(_dec(p.get(field_name), field_name) or Decimal(0))  # type: ignore[return-value]
+
+
+def sales_order_lines(orders: Iterable[dict], sku_of: dict[str, str], customers: set[str], since: date) -> tuple[list[tuple[str, SalesOrderRequest]], dict[str, int]]:
+    """One request per order LINE of the orders dated >= `since`; key = externalReferenceId = 'TxnID:TxnLineID'. Only lines of pushable products (`sku_of`: ListID -> SKU) are sent;
+    quantity = ordered, but invoiced for a manually closed order. customerCode only when that customer is pushed (StockTrim rejects an unknown one).
+    stats: orders (in window), lines (to send), skipped by reason: non_product, group (lines inside bundles), zero_quantity, closed_uninvoiced."""
+    out: list[tuple[str, SalesOrderRequest]] = []
+    st: Counter[str] = Counter()
+    for o in orders:
+        day = _day(o.get("TxnDate"))
+        if day is None or day.date() < since:
+            continue
+        st["orders"] += 1
+        closed = _true(o.get("IsManuallyClosed"))
+        cust = first_dict(o.get("CustomerRef")).get("ListID")
+        st["group"] += sum(len(as_list(g.get("SalesOrderLineRet"))) for g in as_list(o.get("SalesOrderLineGroupRet")) if isinstance(g, dict))
+        for ln in (x for x in as_list(o.get("SalesOrderLineRet")) if isinstance(x, dict)):
+            sku = sku_of.get(first_dict(ln.get("ItemRef")).get("ListID") or "")
+            qty = _qty(ln, "Invoiced" if closed else "Quantity")
+            if sku is None:
+                st["non_product"] += 1
+            elif qty <= 0:
+                st["closed_uninvoiced" if closed else "zero_quantity"] += 1
+            else:
+                key = f"{o.get('TxnID')}:{ln.get('TxnLineID')}"
+                price = _dec(ln.get("Rate"), "Rate")
+                out.append((key, SalesOrderRequest(product_id=sku, order_date=day, quantity=qty, external_reference_id=key, unit_price=_r2(price),
+                                                   customer_code=cust if cust in customers else None)))
+    st["lines"] = len(out)
+    return out, dict(st)
+
+
+def purchase_orders(pos: Iterable[dict], sku_of: dict[str, str], supplier_of: dict[str, str]) -> tuple[list[tuple[str, PurchaseOrderRequest]], dict[str, int]]:
+    """Every PO (no window): key = clientReferenceNumber = 'QB-' + TxnID. Open -> Sent with the REMAINING quantity per line (Quantity - ReceivedQuantity, lines <= 0 dropped);
+    fully received or manually closed -> Received with the full ordered quantity (history). Lines are summed per product (StockTrim merges lines by productId).
+    Skipped: vendor not a pushed supplier (`supplier_of`: ListID -> code; StockTrim would auto-create one), no pushable line. stockOnOrder is never involved.
+    stats: sent, received (POs to send), vendor_not_pushed, no_lines (POs skipped), lines_non_product."""
+    out: list[tuple[str, PurchaseOrderRequest]] = []
+    st: Counter[str] = Counter()
+    for po in pos:
+        vendor = supplier_of.get(first_dict(po.get("VendorRef")).get("ListID") or "")
+        if vendor is None:
+            st["vendor_not_pushed"] += 1
+            continue
+        done = _true(po.get("IsFullyReceived")) or _true(po.get("IsManuallyClosed"))
+        eta = _day(po.get("ExpectedDate"))
+        qtys: dict[str, Decimal] = {}
+        prices: dict[str, Optional[Decimal]] = {}
+        for ln in (x for x in as_list(po.get("PurchaseOrderLineRet")) if isinstance(x, dict)):
+            sku = sku_of.get(first_dict(ln.get("ItemRef")).get("ListID") or "")
+            qty = _qty(ln, "Quantity") - (0 if done else _qty(ln, "ReceivedQuantity"))
+            if sku is None:
+                st["lines_non_product"] += 1
+            elif qty > 0:
+                qtys[sku] = qtys.get(sku, Decimal(0)) + qty
+                prices.setdefault(sku, _r2(_dec(ln.get("Rate"), "Rate")))
+        if not qtys:
+            st["no_lines"] += 1
+            continue
+        st["received" if done else "sent"] += 1
+        key = "QB-" + str(po.get("TxnID"))
+        out.append((key, PurchaseOrderRequest(supplier=PurchaseOrderSupplier(supplier_code=vendor), purchase_order_line_items=[PurchaseOrderLine(product_id=s, quantity=q, eta_date=eta, unit_price=prices[s]) for s, q in qtys.items()], order_date=_day(po.get("TxnDate")),
+                                              reference_number=po.get("RefNumber") or None, client_reference_number=key, status="Received" if done else "Sent")))
+    return out, dict(st)
+
+
 @dataclass
 class PushPlan:
     """Ordered (key, request) pairs per entity, in push order. Keys: supplier code | SKU | bom_edge_key(parent, component) | customer ListID."""
@@ -99,6 +193,9 @@ class PushPlan:
     products: list[tuple[str, ProductRequest]] = field(default_factory=list)
     bom_edges: list[tuple[str, BomRequest]] = field(default_factory=list)  # children's BOMs before their parents' (BomPlan.order)
     customers: list[tuple[str, CustomerRequest]] = field(default_factory=list)
+    sales_orders: list[tuple[str, SalesOrderRequest]] = field(default_factory=list)  # key = 'TxnID:TxnLineID'
+    purchase_orders: list[tuple[str, PurchaseOrderRequest]] = field(default_factory=list)  # key = 'QB-' + TxnID
+    order_stats: dict[str, dict[str, int]] = field(default_factory=dict)  # step -> sales_order_lines / purchase_orders stats (only for the steps that were built)
     negative_stock_list_ids: list[str] = field(default_factory=list)  # ListIDs with negative on-hand (whatever the policy)
     stock_adjusted_list_ids: list[str] = field(default_factory=list)  # ListIDs whose stock `clamp` set to 0
 

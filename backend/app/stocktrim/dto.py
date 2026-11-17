@@ -200,6 +200,14 @@ class SalesOrderRequest(Request):
     customer_name: Optional[str] = None
 
 
+class SalesOrderBulkRequest(Request):
+    """POST /api/SalesOrdersBulk (probed): each line keeps its own orderDate and externalReferenceId, but only the HEADER's customerCode counts (a line's is ignored); so one call = one customer."""
+
+    order_date: AwareDatetime
+    customer_code: Optional[str] = None
+    sale_order_line_items: list[SalesOrderRequest]
+
+
 class SalesOrderResponse(Response):
     id: Optional[int] = None
     product_id: str

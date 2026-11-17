@@ -113,7 +113,9 @@ def verdict(qb: dict[str, Any], st: dict[str, Any], sync: bool = False, acked: b
     add(blocking, "stocktrim_suppliers_not_checked", int(steps.get("suppliers", {}).get("status") == "skipped"))
     add(warnings, "sales_orders_not_checked", int(steps.get("sales_orders", {}).get("status") == "skipped"))  # StockTrim keeps sales orders of unknown products: no products != no sales orders
     existing = {n: (0 if acked else v["foreign"]) if sync and "foreign" in v else v.get("count", v.get("found", 0)) for n, v in steps.items() if v["status"] == "ok"}
-    add(warnings, "purchase_orders_present", existing.pop("purchase_orders", 0) if sync else 0)
+    if sync:  # only POs that are not in our ledger count here (an acknowledgement does not silence them)
+        po = existing.pop("purchase_orders", None) is not None and steps["purchase_orders"]
+        add(warnings, "purchase_orders_present", po.get("foreign", po.get("count", 0)) if po else 0)
     add(warnings, "foreign_in_plan", foreign_in_plan)
     p_id = 0 if sync else steps.get("products", {}).get("overlap_product_id", {}).get("count", 0)
     add(blocking, "stocktrim_not_empty", sum(existing.values()), detail={**{k: v for k, v in existing.items() if v}, **({"products_overlap_product_id": p_id} if p_id else {})})

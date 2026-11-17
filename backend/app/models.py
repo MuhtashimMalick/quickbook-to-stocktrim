@@ -12,8 +12,8 @@ from .db import Base
 # One source for the allowed values: the CHECK constraints below and the later push engine use these tuples.
 PUSH_RUN_STATUSES = ("running", "done", "done_with_failures", "failed", "interrupted", "cancelled")
 PUSH_ITEM_STATUSES = ("pending", "done", "failed", "skipped")
-PUSH_ENTITIES = ("supplier", "product", "bom_edge", "customer")
-LEDGER_ENTITIES = ("supplier", "product", "customer")  # pushed_item; BOM keeps bom_edge
+PUSH_ENTITIES = ("supplier", "product", "bom_edge", "customer", "sales_order_line", "purchase_order")
+LEDGER_ENTITIES = ("supplier", "product", "customer", "sales_order_line", "purchase_order")  # pushed_item; BOM keeps bom_edge
 
 
 def _in(column: str, values: tuple[str, ...]) -> str:
@@ -138,7 +138,7 @@ class PushItem(Base):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     run_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("push_run.id", ondelete="CASCADE"))
     entity: Mapped[str] = mapped_column(Text)  # one of PUSH_ENTITIES
-    key: Mapped[str] = mapped_column(Text)  # supplier code | SKU | bom_edge_key(parent, component) | customer ListID
+    key: Mapped[str] = mapped_column(Text)  # supplier code | SKU | bom_edge_key(parent, component) | customer ListID | TxnID:TxnLineID | QB-TxnID
     status: Mapped[str] = mapped_column(String(16), default="pending")  # one of PUSH_ITEM_STATUSES
     attempts: Mapped[int] = mapped_column(Integer, default=0)
     error_code: Mapped[Optional[str]] = mapped_column(Text)  # short code (rejected_400, unavailable, ...), never a body

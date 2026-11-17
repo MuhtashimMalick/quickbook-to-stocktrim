@@ -77,21 +77,22 @@ def _customers(api: StockTrimApi, ours: Pairs, limit: int, facts: dict, ledger: 
             "duplicate_code_groups": sum(1 for n in Counter(map(norm, codes)).values() if n > 1), **_foreign("customers", (c.code for c in rows), ledger and ledger["customers"], probe_exempt, sink)}
 
 
-def _po_count(api: StockTrimApi, status: Optional[str]) -> tuple[int, bool]:
+def _po_count(api: StockTrimApi, status: Optional[str]) -> tuple[int, bool, list]:
     """The paging base is not proven (page 0 vs 1) and a PO created without a status has integer status 0 that no filter finds:
     take the larger of the 1.. walk and one page=0 call."""
     rows, capped = _paged(lambda p: api.list_purchase_orders(page=p, page_size=PO_PAGE_SIZE, status=status), PO_PAGE_SIZE)
-    return max(len(rows), len(api.list_purchase_orders(page=0, page_size=PO_PAGE_SIZE, status=status))), capped
+    return max(len(rows), len(api.list_purchase_orders(page=0, page_size=PO_PAGE_SIZE, status=status))), capped, rows
 
 
-def _purchase_orders(api: StockTrimApi, facts: dict) -> dict[str, Any]:
-    by_status, capped = {}, False
+def _purchase_orders(api: StockTrimApi, facts: dict, ledger: Optional[Ledger]) -> dict[str, Any]:
+    """Sync mode: a PO whose clientReferenceNumber is in our ledger is ours (`foreign` counts the others; the verdict only warns about those)."""
+    by_status, capped, rows = {}, False, []
     for s in (*PO_STATUSES, None):  # None = the unfiltered list
-        by_status[s or "any"], cap = _po_count(api, s)
-        capped = capped or cap
+        by_status[s or "any"], cap, got = _po_count(api, s)
+        capped, rows = capped or cap, got if s is None else rows
     count = max(sum(by_status[s] for s in PO_STATUSES), by_status["any"])
     facts["purchase_orders"] = {"count": count}
-    return {"count": count, "by_status": by_status, "capped": capped}
+    return {"count": count, "by_status": by_status, "capped": capped, **_foreign("purchase_orders", (r.client_reference_number for r in rows), ledger and ledger["purchase_orders"], False)}
 
 
 def _suppliers(api: StockTrimApi, ours: Pairs, limit: int, facts: dict, ledger: Optional[Ledger], probe_exempt: bool, sink: Optional[dict] = None) -> dict[str, Any]:
@@ -125,7 +126,7 @@ def inventory(api: StockTrimApi, first_products: list[ProductResponse], products
     steps: list[tuple[str, Callable[[], dict[str, Any]]]] = [
         ("products", lambda: _products(api, first_products, products, limit, facts, ledger, probe_exempt, sink)),
         ("customers", lambda: _customers(api, customers, limit, facts, ledger, probe_exempt, sink)),
-        ("purchase_orders", lambda: _purchase_orders(api, facts)),
+        ("purchase_orders", lambda: _purchase_orders(api, facts, ledger)),
         ("suppliers", (lambda: _suppliers(api, suppliers, limit, facts, ledger, probe_exempt, sink)) if check_suppliers else skipped),
     ]
     if check_suppliers_by_code:

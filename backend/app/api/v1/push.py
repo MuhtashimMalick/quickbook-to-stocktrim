@@ -17,7 +17,7 @@ class M(BaseModel):
 
 
 class PushRequest(M):
-    steps: list[Literal["suppliers", "products", "bom", "customers"]] = Field(["suppliers", "products"], min_length=1)  # run in this order whatever the list order
+    steps: list[Literal["suppliers", "products", "bom", "customers", "sales_orders", "purchase_orders"]] = Field(["suppliers", "products"], min_length=1)  # run in this order whatever the list order
     dry_run: bool = True
     preflight_fingerprint: Optional[str] = Field(None, max_length=128)
     plan_fingerprint: Optional[str] = Field(None, max_length=128)  # required for a real run: the one the dry-run returned
@@ -45,6 +45,8 @@ class PlanCounts(M):
     dropped_supplier_links: int
     bom_to_post: Optional[int] = None  # only when the `bom` step is selected: diff against the stored edges
     bom_to_delete: Optional[int] = None
+    sales_orders: Optional[dict[str, int]] = None  # only when selected: orders, lines (to send) and skipped lines by reason (non_product, group, zero_quantity, closed_uninvoiced)
+    purchase_orders: Optional[dict[str, int]] = None  # only when selected: sent, received (POs to send) and skipped (vendor_not_pushed, no_lines, lines_non_product)
 
 
 class PushStarted(M):
