@@ -22,3 +22,4 @@
 - Units of measure are not converted: quantities go to StockTrim exactly as QuickBooks holds them.
 - Sales-order customers: an order is linked to its customer only when that customer was pushed (inactive customers are not): their orders are sent without a customer.
 - Purchase orders that share a RefNumber in QuickBooks (10 pairs today) are merged into ONE purchase order by StockTrim (lines united); the expected date (`ExpectedDate`) is accepted by StockTrim but not stored on the PO lines.
+- StockTrim merges purchase orders that share a referenceNumber (and does not store the PO line expected date `etaDate`: to raise with Neil). QuickBooks allows duplicate RefNumbers (10 pairs today), so we send those as `RefNumber-TransactionNumber`; unique RefNumbers are sent unchanged.

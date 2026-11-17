@@ -13,6 +13,7 @@ from email_validator import EmailNotValidError, validate_email
 
 from ..domain.bom import BomPlan
 from ..domain.from_qb import _dec, as_list, first_dict
+from ..domain.keys import norm
 from ..domain.models import Address, BomEdge, Customer, NegativeStockPolicy, Product, QuarantineResult, Supplier
 from ..stocktrim.dto import (
     BomRequest,
@@ -151,11 +152,19 @@ def sales_order_lines(orders: Iterable[dict], sku_of: dict[str, str], customers:
     return out, dict(st)
 
 
+def _po_ref(po: dict, shared: set[str]) -> Optional[str]:
+    """RefNumber, suffixed with the unique TxnNumber (else the first 8 characters of the TxnID) when another PO in the snapshot has the same one (compared normalised)."""
+    ref = po.get("RefNumber") or None
+    return f"{ref}-{po.get('TxnNumber') or str(po.get('TxnID'))[:8]}" if ref and norm(str(ref)) in shared else ref
+
+
 def purchase_orders(pos: Iterable[dict], sku_of: dict[str, str], supplier_of: dict[str, str]) -> tuple[list[tuple[str, PurchaseOrderRequest]], dict[str, int]]:
     """Every PO (no window): key = clientReferenceNumber = 'QB-' + TxnID. Open -> Sent with the REMAINING quantity per line (Quantity - ReceivedQuantity, lines <= 0 dropped);
     fully received or manually closed -> Received with the full ordered quantity (history). Lines are summed per product (StockTrim merges lines by productId).
-    Skipped: vendor not a pushed supplier (`supplier_of`: ListID -> code; StockTrim would auto-create one), no pushable line. stockOnOrder is never involved.
+    referenceNumber: RefNumber, or RefNumber-TxnNumber when the RefNumber is shared by several POs (counted over ALL POs). Skipped: vendor not a pushed supplier (`supplier_of`: ListID -> code; StockTrim would auto-create one), no pushable line. stockOnOrder is never involved.
     stats: sent, received (POs to send), vendor_not_pushed, no_lines (POs skipped), lines_non_product."""
+    pos = list(pos)
+    shared = {n for n, c in Counter(norm(str(p.get("RefNumber") or "")) for p in pos).items() if n and c > 1}  # StockTrim merges POs that share a referenceNumber
     out: list[tuple[str, PurchaseOrderRequest]] = []
     st: Counter[str] = Counter()
     for po in pos:
@@ -181,7 +190,7 @@ def purchase_orders(pos: Iterable[dict], sku_of: dict[str, str], supplier_of: di
         st["received" if done else "sent"] += 1
         key = "QB-" + str(po.get("TxnID"))
         out.append((key, PurchaseOrderRequest(supplier=PurchaseOrderSupplier(supplier_code=vendor), purchase_order_line_items=[PurchaseOrderLine(product_id=s, quantity=q, eta_date=eta, unit_price=prices[s]) for s, q in qtys.items()], order_date=_day(po.get("TxnDate")),
-                                              reference_number=po.get("RefNumber") or None, client_reference_number=key, status="Received" if done else "Sent")))
+                                              reference_number=_po_ref(po, shared), client_reference_number=key, status="Received" if done else "Sent")))
     return out, dict(st)
 
 

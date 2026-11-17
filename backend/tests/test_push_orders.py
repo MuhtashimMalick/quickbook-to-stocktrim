@@ -248,3 +248,15 @@ def test_migration_0006_widens_the_entity_checks_and_downgrades(db_url):
         eng.dispose()
         with admin_engine(db_url).connect() as c:
             c.execute(text(f'DROP DATABASE "{name}" WITH (FORCE)'))
+
+
+def test_shared_ref_numbers_get_the_transaction_number_suffix() -> None:
+    pos = [po("A1", "V1", [po_line("1", "I1", "1", "0")], RefNumber="100", TxnNumber="11"), po("A2", "V1", [po_line("1", "I1", "1", "0")], RefNumber="100 ", TxnNumber="12"),
+           po("A3", "V1", [po_line("1", "I1", "1", "0")], RefNumber="x-9"), po("A4", "V1", [po_line("1", "I1", "1", "0")], RefNumber="X-9"),
+           po("ABCDEFGH12", "V1", [po_line("1", "I1", "1", "0")], RefNumber="u"), po("B1", "V8", [po_line("1", "I1", "1", "0")], RefNumber="u")]  # B1: not sent, still counts as a sharer
+    out = dict(purchase_orders(pos, SKUS, {"V1": "SUPA"})[0])
+    assert {k: r.reference_number for k, r in out.items()} == {"QB-A1": "100-11", "QB-A2": "100 -12", "QB-A3": "x-9-A3", "QB-A4": "X-9-A4", "QB-ABCDEFGH12": "u-ABCDEFGH"}  # no TxnNumber: first 8 of the TxnID
+    assert all(k == r.client_reference_number for k, r in out.items())
+    solo = dict(purchase_orders([pos[0]], SKUS, {"V1": "SUPA"})[0])["QB-A1"]
+    assert solo.reference_number == "100" and solo.payload() != out["QB-A1"].payload()  # only the affected POs change
+    assert dict(purchase_orders(pos, SKUS, {"V1": "SUPA"})[0])["QB-A1"].payload() == out["QB-A1"].payload()  # deterministic
