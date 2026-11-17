@@ -180,6 +180,11 @@ def bom_diff(target: str, built: Built) -> tuple[list[str], list[str]]:
     return post, sorted(bom_edge_key(p, c) for p, c in stored.keys() - planned)
 
 
+def _unstamp(target: str, parent: str) -> Any:
+    """Any write to one edge of a parent invalidates the parent's hash (siblings too): _finish_parents re-stamps it only when every planned edge matches."""
+    return update(BomEdgeRow).where(BomEdgeRow.target == target, BomEdgeRow.parent_sku == parent).values(parent_hash="")
+
+
 def _insert_items(run_id: UUID, built: Built, steps: list[str], target: str) -> None:
     """One push_item per planned key (refs are QuickBooks ListIDs); for `bom` only the DIFF against the stored edges (new/changed -> POST, vanished -> DELETE)."""
     rows = [{"run_id": run_id, "entity": "supplier", "key": k, "ref": r.external_id} for k, r in built.plan.suppliers if "suppliers" in steps]
@@ -236,6 +241,7 @@ class _Run:
         self.clamp = threading.Event()  # set after the first negative-stock rejection: the rest of the run is clamped
         self.fatal: Optional[str] = None
         self.extra: dict[str, Any] = {}
+        self._lock = threading.Lock()
 
     def run(self, steps: list[str]) -> str:
         if _rejected_keys(self.id):
@@ -363,7 +369,10 @@ class _Run:
             except StockTrimRejected as e:
                 if e.status != 404:  # a plain 404 = already gone (or a product that is gone): the ledger row must go too
                     raise
+                with self._lock:
+                    self.extra["bom_delete_404"] = self.extra.get("bom_delete_404", 0) + 1
             with session_scope() as s:
+                s.execute(_unstamp(self.target, parent))  # FIRST: locks the parent's rows in scan order, so concurrent edges of one parent queue instead of deadlocking
                 s.execute(delete(BomEdgeRow).where(BomEdgeRow.target == self.target, BomEdgeRow.parent_sku == parent, BomEdgeRow.component_sku == comp))
                 s.execute(_mark_stmt(self.id, "bom_edge", [key], "done"))
             return
@@ -372,6 +381,7 @@ class _Run:
         self.api.post_bom(self.reqs["bom_edge"][key])
         qty = self.built.quantities[key]
         with session_scope() as s:  # ONE transaction: the ledger row and `done` stand or fall together
+            s.execute(_unstamp(self.target, parent))  # first, see the delete branch
             s.execute(pg_insert(BomEdgeRow).values(target=self.target, parent_sku=parent, component_sku=comp, quantity=qty, parent_hash="")
                       .on_conflict_do_update(index_elements=["target", "parent_sku", "component_sku"], set_={"quantity": qty, "pushed_at": utcnow()}))
             s.execute(_mark_stmt(self.id, "bom_edge", [key], "done"))
@@ -380,11 +390,12 @@ class _Run:
         """parent_hash is stamped only once EVERY planned edge of the parent is stored with its planned quantity (and nothing else is)."""
         parents = {json.loads(k)[0] for k in chunk} & self.built.bom.edges_by_parent.keys()
         with session_scope() as s:
+            stored: dict[str, dict[str, Decimal]] = {}
+            for p, c, q in s.execute(select(BomEdgeRow.parent_sku, BomEdgeRow.component_sku, BomEdgeRow.quantity).where(BomEdgeRow.target == self.target, BomEdgeRow.parent_sku.in_(parents))):
+                stored.setdefault(p, {})[c] = q
             for p in parents:
-                planned = {e.component_sku: e.quantity for e in self.built.bom.edges_by_parent[p]}
-                where = (BomEdgeRow.target == self.target, BomEdgeRow.parent_sku == p)
-                if dict(s.execute(select(BomEdgeRow.component_sku, BomEdgeRow.quantity).where(*where)).tuples().all()) == planned:
-                    s.execute(update(BomEdgeRow).where(*where).values(parent_hash=self.built.bom.fingerprint_by_parent[p]))
+                if stored.get(p) == {e.component_sku: e.quantity for e in self.built.bom.edges_by_parent[p]}:
+                    s.execute(update(BomEdgeRow).where(BomEdgeRow.target == self.target, BomEdgeRow.parent_sku == p).values(parent_hash=self.built.bom.fingerprint_by_parent[p]))
 
     # customers: PUT is a proven upsert by code (see docs/stocktrim-api-notes.md), so a failed or lost call is simply retried by the client
     def _customers(self) -> Optional[str]:
@@ -530,10 +541,10 @@ def start(settings: Settings, steps: list[str], dry_run: bool, fingerprint: Opti
     try:
         target = stocktrim_target(settings)
         ledger = _ledger(target)  # not None = sync mode: the account may hold what an earlier run of ours pushed
+        if ledger and any(ledger[st] for st in steps if st in ("suppliers", "products")):  # before the minutes-long StockTrim reads; dry-runs too (same 409)
+            raise PushError(409, "step_already_pushed")  # re-pushing master data is the incremental sync (a later stage); BOM and customers are diffed/upserted
         report = build_report(settings, PreflightOptions(), kw, ledger)
         if not dry_run:
-            if ledger and any(ledger[st] for st in steps if st in ("suppliers", "products")):
-                raise PushError(409, "step_already_pushed")  # re-pushing master data is the incremental sync (a later stage); BOM and customers are diffed/upserted
             if not report.verdict.ok_to_push:
                 raise PushError(409, "preflight_not_ok")
             if report.fingerprint != fingerprint:

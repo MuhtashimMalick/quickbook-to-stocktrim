@@ -161,7 +161,7 @@ class BomRequest(Request):
 
     product_code: str = Field(min_length=1, pattern=r"\S", alias="productId")
     component_code: str = Field(min_length=1, pattern=r"\S", alias="componentId")
-    quantity: Optional[float] = None
+    quantity: Optional[float] = None  # float on the wire: exact up to 15 significant digits; the planner rounds to 5 decimals and drops anything >= 1e14
 
 
 class BomResponse(Response):

@@ -135,7 +135,8 @@ def _stocktrim(settings: Settings, opts: PreflightOptions, keys: Keys, client_kw
         return {"status": "unreachable_or_bad_credentials", "error": type(e).__name__}, {}
     with closing(preflight_client(settings, client_kw)) as c:
         return inventory(StockTrimApi(c), first, *keys, check_suppliers=opts.check_suppliers, check_suppliers_by_code=opts.check_suppliers_by_code,
-                         check_sales_orders=opts.check_sales_orders, limit=opts.sample_limit, ledger=ledger)
+                         check_sales_orders=opts.check_sales_orders, limit=opts.sample_limit, ledger=ledger,
+                         probe_exempt=settings.stocktrim_environment == "test")
 
 
 def _plan(keys: Keys, bom_edges: int, rps: float) -> dict[str, Any]:

@@ -326,3 +326,11 @@ def test_quantity_rounded_half_up_to_five_places_like_stocktrim():
     assert [(e.component_sku, e.quantity) for e in plan.edges_by_parent["P"]] == [("A", Decimal("0.00003")), ("B", Decimal("0.12346")), ("D", Decimal("1234.56790"))]
     assert codes(plan.issues) == ["bom_quantity_precision"] and plan.stats["dropped_edges"] == 1
     assert all(i.severity == "warning" for i in plan.issues)
+
+
+def test_huge_quantities_are_dropped_with_a_warning_not_a_failure():
+    ps = QuarantineResult[Product](ok=[prod("P", kind="assembly"), prod("A"), prod("B"), prod("C"), prod("D")])
+    lines = [line("L-A", "1e14"), line("L-B", "1E30"), line("L-C", "99999999999999.99999"), line("L-D", "2")]
+    plan = plan_bom(ps, [{"ListID": "L-P", "ItemInventoryAssemblyLine": lines}])
+    assert [(e.component_sku, e.quantity) for e in plan.edges_by_parent["P"]] == [("C", Decimal("99999999999999.99999")), ("D", Decimal("2"))]
+    assert codes(plan.issues) == ["nonpositive_quantity", "nonpositive_quantity"] and plan.stats["dropped_edges"] == 2 and all(i.severity == "warning" for i in plan.issues)

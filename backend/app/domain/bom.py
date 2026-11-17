@@ -11,6 +11,7 @@ from .from_qb import as_list, first_dict
 from .models import BomEdge, Issue, IssueCode, Product, QuarantineResult
 
 BOM_QUANTITY_STEP = Decimal("0.00001")
+BOM_QUANTITY_MAX = Decimal("1e14")  # float carries 15 significant digits; with 5 decimals that is the largest quantity StockTrim can hold exactly
 
 
 class BomPlan(BaseModel):
@@ -155,7 +156,15 @@ def plan_bom(products: QuarantineResult[Product], assemblies: Iterable[dict[str,
 
     for parent_sku, comps in sums.items():  # StockTrim stores BOM quantities with 5 decimals, ROUND_HALF_UP (probed live): round the SUM the same way, so syncs never see phantom diffs
         for comp_sku, qty in list(comps.items()):
-            comps[comp_sku] = rounded = qty.quantize(BOM_QUANTITY_STEP, ROUND_HALF_UP)
+            try:
+                if qty >= BOM_QUANTITY_MAX:
+                    raise InvalidOperation
+                comps[comp_sku] = rounded = qty.quantize(BOM_QUANTITY_STEP, ROUND_HALF_UP)
+            except InvalidOperation:  # not exactly representable at StockTrim (float, 15 significant digits): like a bad quantity, never fails the whole plan
+                del comps[comp_sku]
+                dropped += 1
+                issue("nonpositive_quantity", lid_of[parent_sku], "warning", f"line {comp_sku!r} of {parent_sku!r} has no usable quantity; dropped")
+                continue
             if rounded <= 0:  # StockTrim would store 0 (a meaningless edge)
                 del comps[comp_sku]
                 dropped += 1

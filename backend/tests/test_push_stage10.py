@@ -12,6 +12,8 @@ from sqlalchemy import select
 from app.api.v1.preflight import get_stocktrim_client_kw
 from app.db import session_scope
 from app.models import BomEdge, QBRecord
+from app.preflight.stocktrim_inventory import _foreign
+from app.stocktrim.target import stocktrim_target
 from app.sync import engine
 from app.sync.engine import plan_fingerprint
 from app.sync.mappers import bom_edge_key
@@ -44,6 +46,7 @@ class Fake10(Fake):
     def __init__(self, *a: Any, on_bom: Optional[Callable] = None, on_customer: Optional[Callable] = None, **kw: Any):
         super().__init__(*a, **kw)
         self.edges: dict[tuple[str, str], float] = {}
+        self.pos: list[str] = []  # purchase orders (only their presence matters)
         self.customers: dict[str, dict] = {}
         self.bom_calls: list[tuple[str, tuple[str, str]]] = []
         self.put_codes: Counter = Counter()
@@ -86,6 +89,9 @@ class Fake10(Fake):
                 return httpx.Response(200, json=body)
             self.log.append((req.method, path))
             return httpx.Response(200, json=list(self.customers.values()))
+        if path == "/api/V2/PurchaseOrders":
+            self.log.append((req.method, path))
+            return httpx.Response(200, json=[{"status": "Draft"} for _ in self.pos] if q.get("status") in (None, "Draft") and int(q.get("page") or 1) in (0, 1) else [])
         if req.method == "GET" and path == "/api/SuppliersBulk":
             self.log.append((req.method, path))
             return httpx.Response(200, json=[{"supplierCode": c} for c in self.suppliers])
@@ -150,9 +156,10 @@ def test_unchanged_second_run_makes_no_calls_then_a_changed_and_a_removed_edge(c
     fake.bom_calls.clear()
     d = dry(env, ("bom",))
     assert d["plan"]["bom_to_post"] == 0 and d["plan"]["bom_to_delete"] == 0 and d["verdict"]["ok_to_push"]  # sync mode: the account holds exactly our records
-    n_before = len(fake.writes)
+    n_before, rows_before = len(fake.writes), stored_edges()
     out = finish(env, go(env, ("bom",)).json()["run_id"])
     assert out["status"] == "done" and out["counts"] == {} and fake.bom_calls == [] and len(fake.writes) == n_before
+    assert stored_edges() == rows_before and all(h for _, h in rows_before.values())  # an unchanged run keeps every parent_hash
     set_line("A2", "I5", "4")  # changed quantity: ONE POST
     assert finish(env, go(env, ("bom",)).json()["run_id"])["counts"] == {"bom_edge": {"done": 1}}
     assert fake.bom_calls == [("POST", ("ASM2", "P5"))] and stored_edges()[("ASM2", "P5")][0] == Decimal(4)
@@ -278,9 +285,11 @@ def test_products_only_and_bom_only_runs_on_an_existing_target(clean_db, tmp_pat
     assert run_all(env, ("suppliers", "products"))["status"] == "done"
     assert run_all(env, ("bom",))["counts"] == {"bom_edge": {"done": 5}}  # the products are `done` for the target through an earlier run
     assert run_all(env, ("customers",))["counts"] == {"customer": {"done": 2}}
-    d = dry(env, ("products",))
-    r = post(env, steps=["products"], dry_run=False, preflight_fingerprint=d["preflight_fingerprint"], plan_fingerprint=d["plan_fingerprint"])
-    assert (r.status_code, r.json()["detail"]) == (409, "step_already_pushed") and not engine._ACTIVE.locked()  # master data re-push = the incremental sync
+    n = len(fake.log)
+    for body in ({}, {"dry_run": False, "preflight_fingerprint": "x", "plan_fingerprint": "y"}):  # the dry-run and the real run: same 409, BEFORE any StockTrim read
+        r = post(env, steps=["products"], **body)
+        assert (r.status_code, r.json()["detail"]) == (409, "step_already_pushed") and not engine._ACTIVE.locked()  # master data re-push = the incremental sync
+    assert len(fake.log) == n
 
 
 def test_sync_mode_gate_foreign_records_still_block(clean_db, tmp_path):
@@ -355,3 +364,124 @@ def test_progress_eta_counts_bom_and_customer_calls(clean_db, tmp_path):
         release.set()
     assert finish(env, run_id)["status"] == "done_with_failures"  # BOM edges: products are not pushed in this account yet -> dependency_failed
     assert {i.error_code for i in items("bom_edge")} == {"dependency_failed"}
+
+
+def refused(env: Env, steps) -> dict:
+    """The verdict of a dry-run (must still answer 200)."""
+    return dry(env, steps)["verdict"]
+
+
+def test_sync_gate_a_purchase_order_blocks(clean_db, tmp_path):
+    fake = Fake10()
+    env = mk(clean_db, tmp_path, fake, rows=ROWS10)
+    assert run_all(env)["status"] == "done" and refused(env, ("bom",))["ok_to_push"]
+    fake.pos = ["PO"]
+    v = refused(env, ("bom",))
+    assert not v["ok_to_push"] and v["blocking"][0]["code"] == "stocktrim_not_empty" and v["blocking"][0]["detail"] == {"purchase_orders": 1}
+
+
+def test_sync_gate_done_with_failures_and_dry_runs_do_not_establish_it(clean_db, tmp_path):
+    fake = Fake10(on_product=lambda n, b: httpx.Response(400, json={"title": "x"}) if b["productId"] == "P4" else None)
+    env = mk(clean_db, tmp_path, fake, rows=ROWS10)
+    target = stocktrim_target(env.app.state.settings)
+    refused(env, ("products",))
+    refused(env, ("products",))
+    assert engine._ledger(target) is None  # dry-runs never establish sync mode, however many
+    assert run_all(env, ("suppliers", "products"))["status"] == "done_with_failures"
+    assert engine._ledger(target) is None  # neither does a run with failures
+    v = refused(env, ("bom",))
+    assert not v["ok_to_push"] and v["blocking"][0]["code"] == "stocktrim_not_empty"  # strict: the account holds our own half-done load
+
+
+def test_sync_gate_blank_customer_code_is_foreign(clean_db, tmp_path):
+    fake = Fake10()
+    env = mk(clean_db, tmp_path, fake, rows=ROWS10)
+    assert run_all(env)["status"] == "done"
+    for i, bad in enumerate(({"name": "no code"}, {"code": ""}, {"code": "   "}), 1):
+        fake.customers[f"blank{i}"] = bad
+        v = refused(env, ("bom",))
+        assert not v["ok_to_push"] and v["blocking"] == [{"code": "stocktrim_not_empty", "count": i, "detail": {"customers": i}}]
+
+
+def test_probe_exemption_applies_to_a_test_target_only(clean_db, tmp_path):
+    fake = Fake10()
+    env = mk(clean_db, tmp_path, fake, rows=ROWS10)
+    env.app.state.settings.stocktrim_environment = "production"
+    assert run_all(env)["status"] == "done" and refused(env, ("bom",))["ok_to_push"]
+    fake.customers["zz-probe-cust"] = {"code": "zz-probe-cust"}  # exempt on TEST only: on a production target it is a foreign record
+    v = refused(env, ("bom",))
+    assert not v["ok_to_push"] and v["blocking"][0]["detail"] == {"customers": 1}
+    assert _foreign("customers", ["zz-probe-cust"], set(), True) == {"foreign": 0} and _foreign("products", ["zz-probe-cust"], set(), True) == {"foreign": 1}  # only the listed entity
+
+
+def test_bom_rounding_below_the_fifth_decimal_is_no_diff_and_a_zero_rounding_edge_is_deleted(clean_db, tmp_path):
+    fake = Fake10()
+    env = mk(clean_db, tmp_path, fake, rows=ROWS10)
+    assert run_all(env)["status"] == "done"
+    set_line("A2", "I4", "0.123459")  # 0.12346 either way
+    d = dry(env, ("bom",))["plan"]
+    assert d["bom_to_post"] == 0 and d["bom_to_delete"] == 0
+    set_line("A2", "I4", "0.000001")  # rounds to 0: the edge is dropped from the plan, so the stored one is deleted
+    d = dry(env, ("bom",))["plan"]
+    assert d["bom_to_post"] == 0 and d["bom_to_delete"] == 1
+    fake.bom_calls.clear()
+    assert finish(env, go(env, ("bom",)).json()["run_id"])["counts"] == {"bom_edge": {"done": 1}}
+    assert fake.bom_calls == [("DELETE", ("ASM2", "P4"))] and ("ASM2", "P4") not in stored_edges()
+
+
+def test_a_start_while_a_run_is_active_is_a_running_conflict_for_bom_and_customers(clean_db, tmp_path):
+    release = threading.Event()
+    fake = Fake10(on_customer=lambda n, b: release.wait(10) and None)
+    env = mk(clean_db, tmp_path, fake, rows=ROWS10)
+    d = dry(env, ("bom", "customers"))
+    body = {"dry_run": False, "preflight_fingerprint": d["preflight_fingerprint"], "plan_fingerprint": d["plan_fingerprint"]}
+    run_id = post(env, steps=["customers"], **body).json()["run_id"]
+    try:
+        for steps in (["bom"], ["customers"], ["bom", "customers"]):
+            r = post(env, steps=steps, **body)
+            assert (r.status_code, r.json()["detail"]) == (409, "push_running")
+    finally:
+        release.set()
+    finish(env, run_id)
+
+
+def test_delete_500_fails_the_edge_and_keeps_its_ledger_row(clean_db, tmp_path):
+    fake = Fake10(on_bom=lambda n, m, p: httpx.Response(500) if m == "DELETE" and p == ("ASM1", "P2") else None)
+    env = mk(clean_db, tmp_path, fake, rows=ROWS10)
+    assert run_all(env)["status"] == "done"
+    set_line("A1", "I2", None)
+    out = finish(env, go(env, ("bom",)).json()["run_id"])
+    assert out["status"] in ("failed", "done_with_failures") and out["counts"] == {"bom_edge": {"failed": 1}}
+    assert ("ASM1", "P2") in stored_edges() and ("ASM1", "P2") in fake.edges  # nothing was deleted anywhere: retried by the next run
+
+
+def test_a_sibling_failure_leaves_the_parent_hash_empty_and_a_clean_resume_restamps_it(clean_db, tmp_path):
+    fake = Fake10()
+    env = mk(clean_db, tmp_path, fake, rows=ROWS10)
+    assert run_all(env)["status"] == "done"
+    assert all(stored_edges()[k][1] for k in (("ASM2", "P4"), ("ASM2", "P5")))
+    set_line("A2", "I4", "0.5")
+    set_line("A2", "I5", "4")  # both edges of ASM2 change; the P4 POST is rejected, the sibling's goes through
+    fake.on_bom = lambda n, m, p: httpx.Response(400, json={"title": "x"}) if m == "POST" and p == ("ASM2", "P4") else None
+    out = finish(env, go(env, ("bom",)).json()["run_id"])
+    assert out["status"] == "done_with_failures" and out["counts"]["bom_edge"] == {"done": 1, "failed": 1}
+    assert stored_edges()[("ASM2", "P5")] == (Decimal(4), "") and stored_edges()[("ASM2", "P4")][1] == ""  # old hash invalidated, not re-stamped
+    assert all(stored_edges()[k][1] for k in (("ASM1", "P1"), ("ASM1", "P2")))  # other parents untouched
+    fake.on_bom = None
+    resume(env, out["run_id"])
+    assert finish(env, out["run_id"])["status"] == "done" and stored_edges()[("ASM2", "P4")][1] == stored_edges()[("ASM2", "P5")][1] != ""
+
+
+def test_plain_delete_404_is_counted_in_the_summary(clean_db, tmp_path):
+    def on_bom(n, method, pair):
+        if method == "DELETE" and pair == ("ASM1", "P2"):
+            fake.edges.pop(pair)
+            return httpx.Response(404)
+        return None
+
+    fake = Fake10(on_bom=on_bom)
+    env = mk(clean_db, tmp_path, fake, rows=ROWS10)
+    assert run_all(env)["status"] == "done"
+    set_line("A1", "I2", None)
+    out = finish(env, go(env, ("bom",)).json()["run_id"])
+    assert out["status"] == "done" and out["summary"]["bom_delete_404"] == 1
