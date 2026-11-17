@@ -146,6 +146,8 @@ class StockTrimClient:
                 maybe_processed = saw_5xx = True
                 if not idempotent:
                     raise StockTrimUnavailable(f"StockTrim answered HTTP {code}; not retried (non-idempotent): {method} {path}{hint()}", identifier)
+            if code == 429:
+                self._limiter.defer(_retry_after(resp) or 1.0)  # slow ALL workers sharing the limiter, not just this call
             if code == 429 or code >= 500:
                 raise _Transient(f"HTTP {code}", _retry_after(resp))
             if method == "DELETE" and code == 404 and maybe_processed:

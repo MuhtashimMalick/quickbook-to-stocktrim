@@ -55,6 +55,8 @@ class Settings(DatabaseSettings):
     stocktrim_auth_signature: Optional[SecretStr] = None
     # Scopes the BOM ledger and push runs to one StockTrim account. PRODUCTION DEPLOYMENTS MUST SET stocktrim_environment=production.
     stocktrim_environment: Literal["test", "production"] = "test"
+    # Gate for every non-dry-run StockTrim push (the QuickBooks-side writes_enabled is separate)
+    stocktrim_writes_enabled: bool = False
     stocktrim_max_rps: float = Field(5, gt=0, le=50)
     stocktrim_concurrency: int = Field(4, ge=1, le=32)
     stocktrim_max_call_seconds: float = Field(90, ge=10, le=600)

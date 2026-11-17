@@ -16,6 +16,7 @@ from ...qbwc.qwc import render_qwc
 from ...quickbooks import snapshot
 from ...quickbooks.tasks import ENTITY_ALIASES, JOB_TYPES, READ_JOB_TYPES
 from .preflight import router as preflight_router
+from .push import router as push_router
 
 _token_header = APIKeyHeader(name="X-Admin-Token", auto_error=False)
 
@@ -28,6 +29,7 @@ def require_admin(request: Request, token: Optional[str] = Security(_token_heade
 
 router = APIRouter(dependencies=[Depends(require_admin)])
 router.include_router(preflight_router)
+router.include_router(push_router)
 
 
 class _Out(BaseModel):

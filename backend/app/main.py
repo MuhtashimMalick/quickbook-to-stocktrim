@@ -13,6 +13,7 @@ from .qbwc.auth import DbAuthenticator, end_session
 from .qbwc.gate import QBWC_PATH, TunnelGate
 from .qbwc.service import LoggingQBWCService, setup_file_log
 from .quickbooks.tasks import WRITE_JOB_TYPES
+from .sync.engine import recover_push_runs
 
 setup_logging()
 
@@ -20,6 +21,7 @@ setup_logging()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     jobs.recover_interrupted(WRITE_JOB_TYPES)
+    recover_push_runs()
     yield
 
 
