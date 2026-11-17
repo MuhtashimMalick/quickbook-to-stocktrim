@@ -14,6 +14,7 @@ from .qbwc.auth import DbAuthenticator, end_session
 from .qbwc.gate import QBWC_PATH, TunnelGate
 from .qbwc.service import LoggingQBWCService, setup_file_log
 from .quickbooks.tasks import WRITE_JOB_TYPES
+from .scheduler import Scheduler, recover_cycles
 from .sync.engine import recover_push_runs, shutdown
 
 setup_logging()
@@ -23,7 +24,10 @@ setup_logging()
 async def lifespan(app: FastAPI):
     jobs.recover_interrupted(WRITE_JOB_TYPES)
     recover_push_runs()
+    recover_cycles()
+    app.state.scheduler.start()  # only when SCHEDULER_ENABLED
     yield
+    await asyncio.to_thread(app.state.scheduler.stop)  # a running cycle ends `interrupted`; stop before cancelling its push run
     await asyncio.to_thread(shutdown)  # cancel the active push run (resumable) and wait for its worker
 
 
@@ -33,6 +37,7 @@ def build_app(settings: Optional[Settings] = None) -> FastAPI:
     setup_file_log(settings.log_dir, settings.log_retention_days)
     app = FastAPI(lifespan=lifespan, title="QuickBooks <-> StockTrim POC (QuickBooks side)")
     app.state.settings = settings
+    app.state.scheduler = Scheduler(settings)
     service = LoggingQBWCService(DbAuthenticator(settings), on_session_end=end_session)
     app.state.qbwc_service = service
     create_app(service, endpoint_url=settings.app_url, path=QBWC_PATH, app=app)

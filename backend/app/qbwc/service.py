@@ -6,6 +6,7 @@ and logs just some callbacks.
 import json
 import logging
 import re
+import time
 from datetime import datetime, timezone
 from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
@@ -14,6 +15,8 @@ from xml.etree import ElementTree as ET
 from qbwc_kit import QBWCService, soap
 from qbwc_kit.session import UnknownTicket
 
+from ..appstate import set_state
+from ..models import utcnow
 from .textrepair import repair_qbxml
 
 logger = logging.getLogger(__name__)
@@ -87,6 +90,17 @@ def setup_file_log(log_dir: Path, retention_days: int) -> None:
 
 
 class LoggingQBWCService(QBWCService):
+    _contact_at = -1e9  # monotonic time of the last last_qbwc_contact write (throttled to once a minute)
+
+    def _touch_contact(self) -> None:
+        if time.monotonic() - self._contact_at < 60:
+            return
+        self._contact_at = time.monotonic()
+        try:
+            set_state("last_qbwc_contact", {"at": utcnow().isoformat()})
+        except Exception as e:  # noqa: BLE001 - health bookkeeping must never break the Web Connector
+            logger.warning("last_qbwc_contact not recorded: %s", type(e).__name__)
+
     def dispatch(self, body: "str | bytes") -> str:
         try:
             call = soap.parse_request(body)
@@ -94,6 +108,8 @@ class LoggingQBWCService(QBWCService):
             logger.warning("unparseable SOAP request: %d chars, receiveResponseXML=%s", len(body), "receiveResponseXML" in str(body))
             return super().dispatch(body)
         _emit("->", call.method, _describe(call))
+        if call.method == "authenticate":
+            self._touch_contact()
         if call.method == "receiveResponseXML":
             raw = call.get("response")  # real QBWC always sends named parameters (qbwc-kit also falls back to positional(1))
             try:

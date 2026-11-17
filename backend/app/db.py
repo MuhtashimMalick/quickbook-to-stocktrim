@@ -1,7 +1,7 @@
 from collections.abc import Iterator
 from contextlib import contextmanager
 
-from sqlalchemy import create_engine
+from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 
@@ -19,6 +19,11 @@ def init_engine(url: str) -> None:
         _sessionmaker.kw["bind"].dispose()
     engine = create_engine(url, pool_pre_ping=True)
     _sessionmaker = sessionmaker(engine, expire_on_commit=False)
+
+
+def get_engine() -> Engine:
+    assert _sessionmaker is not None, "init_engine() not called"
+    return _sessionmaker.kw["bind"]
 
 
 @contextmanager

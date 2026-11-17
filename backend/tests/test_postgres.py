@@ -22,7 +22,7 @@ from app.quickbooks.tasks.base import QuerySpec
 
 from .conftest import QB, admin_engine, alembic_cfg, create_database, make_records, rs_error
 
-TABLES = {"jobs", "sync_log", "qb_records", "po_link", "bom_edge", "push_run", "push_item", "pushed_item"}
+TABLES = {"jobs", "sync_log", "qb_records", "po_link", "bom_edge", "push_run", "push_item", "pushed_item", "sync_cycle", "app_state"}
 
 
 def keys(env, entity):
@@ -66,7 +66,7 @@ def test_migration_0003_downgrade_one_step_keeps_older_tables(db_url):
     try:
         command.upgrade(alembic_cfg(url), "head")
         command.downgrade(alembic_cfg(url), "0002")
-        assert set(inspect(engine).get_table_names()) == TABLES - {"bom_edge", "push_run", "push_item", "pushed_item"} | {"alembic_version"}
+        assert set(inspect(engine).get_table_names()) == TABLES - {"bom_edge", "push_run", "push_item", "pushed_item", "sync_cycle", "app_state"} | {"alembic_version"}
         command.upgrade(alembic_cfg(url), "head")
         assert {"bom_edge", "push_run", "push_item"} <= set(inspect(engine).get_table_names())
     finally:
@@ -142,11 +142,17 @@ def test_least_privilege_role_covers_new_tables(db_url):
             c.execute(text("INSERT INTO push_run (id, target, started_at, status, options) VALUES (:i, 'T', now(), 'running', '{}')"), {"i": run})
             c.execute(text("INSERT INTO push_item (run_id, entity, key, status, attempts, updated_at) VALUES (:r, 'product', 'K', 'pending', 0, now())"), {"r": run})
             c.execute(text("INSERT INTO bom_edge (target, parent_sku, component_sku, quantity, parent_hash, pushed_at) VALUES ('T', 'P', 'C', 1, 'h', now())"))
+            c.execute(text("INSERT INTO sync_cycle (started_at, status, trigger) VALUES (now(), 'running', 'manual')"))
+            c.execute(text("INSERT INTO app_state (key, value) VALUES ('k', '{}')"))
+            c.execute(text("UPDATE sync_cycle SET status = 'done'"))
+            c.execute(text("UPDATE app_state SET value = '1'"))
+            c.execute(text("DELETE FROM sync_cycle"))
+            c.execute(text("DELETE FROM app_state"))
             c.execute(text("UPDATE push_item SET status = 'done'"))
             assert c.scalar(text("SELECT count(*) FROM push_item WHERE status = 'done'")) == 1
             c.execute(text("DELETE FROM bom_edge"))
             for ddl in ("CREATE TABLE evil (x int)", "ALTER TABLE push_item ADD COLUMN x int", "DROP TABLE bom_edge", "TRUNCATE push_item",
-                        "CREATE INDEX evil_ix ON push_item (key)"):
+                        "CREATE INDEX evil_ix ON push_item (key)", "DROP TABLE sync_cycle", "TRUNCATE app_state"):
                 with pytest.raises(DBAPIError):
                     c.execute(text(ddl))
         app.dispose()

@@ -20,7 +20,8 @@ from app.main import build_app
 USER, PASSWORD, TOKEN = "qb", "s3cr3t-pw-xyz", "admin-tok"
 HEADERS = {"X-Admin-Token": TOKEN}
 ADMIN_ROUTES = [("get", "/api/v1/qwc"), ("post", "/api/v1/jobs/customers"), ("post", "/api/v1/jobs/all-reads"), ("get", "/api/v1/jobs"),
-                ("get", "/api/v1/jobs/1"), ("get", "/api/v1/records/customers"), ("get", "/api/v1/log")]
+                ("get", "/api/v1/jobs/1"), ("get", "/api/v1/records/customers"), ("get", "/api/v1/log"),
+                ("get", "/api/v1/health"), ("post", "/api/v1/scheduler/run-now")]
 
 
 def _default_test_db_url() -> str:

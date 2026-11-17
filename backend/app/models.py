@@ -11,6 +11,8 @@ from .db import Base
 
 # One source for the allowed values: the CHECK constraints below and the later push engine use these tuples.
 PUSH_RUN_STATUSES = ("running", "done", "done_with_failures", "failed", "interrupted", "cancelled")
+CYCLE_STATUSES = ("running", "done", "dry_run_only", "aborted", "failed", "interrupted")
+CYCLE_TRIGGERS = ("schedule", "manual")
 PUSH_ITEM_STATUSES = ("pending", "done", "failed", "skipped")
 PUSH_ENTITIES = ("supplier", "product", "bom_edge", "customer", "sales_order_line", "purchase_order")
 LEDGER_ENTITIES = ("supplier", "product", "customer", "sales_order_line", "purchase_order")  # pushed_item; BOM keeps bom_edge
@@ -160,3 +162,34 @@ class PushedItem(Base):
     payload_hash: Mapped[Optional[str]] = mapped_column(Text)
     last_run_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("push_run.id", ondelete="SET NULL"))
     pushed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class SyncCycle(Base):
+    """One scheduler cycle (reads -> freshness -> dry-run -> real run). reason = short code, summary = counts: never record contents."""
+
+    __tablename__ = "sync_cycle"
+    __table_args__ = (
+        CheckConstraint(_in("status", CYCLE_STATUSES), name="ck_sync_cycle_status"),
+        CheckConstraint(_in("trigger", CYCLE_TRIGGERS), name="ck_sync_cycle_trigger"),
+        Index("ux_sync_cycle_one_running", text("(1)"), unique=True, postgresql_where=text("status = 'running'")),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, server_default=text("gen_random_uuid()"))
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    finished_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    status: Mapped[str] = mapped_column(String(16), default="running")  # one of CYCLE_STATUSES
+    reason: Mapped[Optional[str]] = mapped_column(Text)
+    trigger: Mapped[str] = mapped_column(String(16))  # one of CYCLE_TRIGGERS
+    push_run_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("push_run.id", ondelete="SET NULL"))
+    summary: Mapped[Optional[dict[str, Any]]] = mapped_column(JSONB)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, server_default=text("now()"))
+
+
+class AppState(Base):
+    """Small key/value store: last_qbwc_contact, last_cycle."""
+
+    __tablename__ = "app_state"
+
+    key: Mapped[str] = mapped_column(Text, primary_key=True)
+    value: Mapped[Any] = mapped_column(JSONB)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, server_default=text("now()"))

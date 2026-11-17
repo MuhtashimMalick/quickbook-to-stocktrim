@@ -9,6 +9,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from .domain.models import NegativeStockPolicy, ProductKeyField
 from .qbwc.gate import QBWC_PATH
+from .tz import tz_of
 
 
 class DatabaseSettings(BaseSettings):
@@ -61,6 +62,24 @@ class Settings(DatabaseSettings):
     sales_history_years: int = Field(3, ge=1, le=20)  # sales-order push window: orders with TxnDate in the last N years
     stocktrim_concurrency: int = Field(4, ge=1, le=32)
     stocktrim_max_call_seconds: float = Field(90, ge=10, le=600)
+    # Daily scheduler (off by default; see README "Scheduler")
+    scheduler_enabled: bool = False
+    sync_daily_at: str = Field("02:00", pattern=r"^([01]\d|2[0-3]):[0-5]\d$")  # HH:MM in scheduler_tz
+    scheduler_tz: str = "UTC"
+    scheduler_read_jobs: str = "customers,vendors,items,other_items,assemblies,sales_orders,purchase_orders"  # comma-separated QuickBooks read job types (sites is unsupported on this client)
+    scheduler_read_timeout_hours: float = Field(6, gt=0)
+    scheduler_allow_production: bool = False  # production: the cycle's real run needs this, else it ends dry_run_only
+    sync_max_planned_calls: int = Field(20000, ge=1)
+    alert_webhook_url: Optional[SecretStr] = None  # Slack-compatible incoming webhook (the URL is a secret)
+
+    @field_validator("scheduler_tz")
+    @classmethod
+    def _check_tz(cls, v: str) -> str:
+        try:
+            tz_of(v)
+        except Exception:  # noqa: BLE001 - ZoneInfoNotFoundError, ModuleNotFoundError (no tzdata) or ValueError, all mean "unusable"
+            raise ValueError(f"unknown time zone {v!r} (use an IANA name such as America/Toronto, or UTC)") from None
+        return v
 
     @field_validator("stocktrim_base_url")
     @classmethod
