@@ -26,7 +26,7 @@ from ..stocktrim.api import StockTrimApi
 from ..stocktrim.client import StockTrimClient, read_only_guard
 from ..stocktrim.errors import StockTrimConfigError, StockTrimError
 from .schema import PreflightReport
-from .stocktrim_inventory import Pairs, inventory
+from .stocktrim_inventory import Ledger, Pairs, inventory
 
 log = logging.getLogger("app.preflight")
 ENTITIES = ("Customer", "Vendor", "ItemInventory", "ItemInventoryAssembly")
@@ -81,8 +81,9 @@ def _issue_count(qb: dict[str, Any], code: str) -> int:
     return sum(g["count"] for k, g in qb["issues"].items() if k.endswith("." + code))
 
 
-def verdict(qb: dict[str, Any], st: dict[str, Any]) -> dict[str, Any]:
-    """ok_to_push is NOT permission to push: nothing in this stage pushes. It is never true while any check is incomplete."""
+def verdict(qb: dict[str, Any], st: dict[str, Any], sync: bool = False) -> dict[str, Any]:
+    """ok_to_push is NOT permission to push. It is never true while any check is incomplete. `sync` (the account may hold what we pushed earlier):
+    only FOREIGN products/suppliers/customers (and any purchase order) count as existing, and a readable-code overlap is then covered by that count."""
     blocking: list[dict[str, Any]] = []
     warnings: list[dict[str, Any]] = []
 
@@ -109,10 +110,10 @@ def verdict(qb: dict[str, Any], st: dict[str, Any]) -> dict[str, Any]:
     add(blocking, "stocktrim_incomplete", len(incomplete), detail=incomplete)
     add(blocking, "stocktrim_suppliers_not_checked", int(steps.get("suppliers", {}).get("status") == "skipped"))
     add(warnings, "sales_orders_not_checked", int(steps.get("sales_orders", {}).get("status") == "skipped"))  # StockTrim keeps sales orders of unknown products: no products != no sales orders
-    existing = {n: v.get("count", v.get("found", 0)) for n, v in steps.items() if v["status"] == "ok"}
-    p_id = steps.get("products", {}).get("overlap_product_id", {}).get("count", 0)
+    existing = {n: v.get("foreign", v.get("count", v.get("found", 0))) if sync else v.get("count", v.get("found", 0)) for n, v in steps.items() if v["status"] == "ok"}
+    p_id = 0 if sync else steps.get("products", {}).get("overlap_product_id", {}).get("count", 0)
     add(blocking, "stocktrim_not_empty", sum(existing.values()), detail={**{k: v for k, v in existing.items() if v}, **({"products_overlap_product_id": p_id} if p_id else {})})
-    add(blocking, "stocktrim_readable_conflict", steps.get("products", {}).get("overlap_readable", {}).get("count", 0))  # duplicate readable codes make BOM keys ambiguous
+    add(blocking, "stocktrim_readable_conflict", 0 if sync else steps.get("products", {}).get("overlap_readable", {}).get("count", 0))  # duplicate readable codes make BOM keys ambiguous
     return {"ok_to_push": not blocking, "blocking": blocking, "warnings": warnings}
 
 
@@ -121,7 +122,7 @@ def preflight_client(settings: Settings, client_kw: dict[str, Any], **kw: Any) -
     return StockTrimClient.from_settings(settings, **{"event_hooks": {"request": [read_only_guard]}, **kw, **client_kw})
 
 
-def _stocktrim(settings: Settings, opts: PreflightOptions, keys: Keys, client_kw: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
+def _stocktrim(settings: Settings, opts: PreflightOptions, keys: Keys, client_kw: dict[str, Any], ledger: Optional[Ledger]) -> tuple[dict[str, Any], dict[str, Any]]:
     if not opts.stocktrim:
         return {"status": "skipped"}, {}
     try:  # credential check on its own short-retry client (a wrong api-auth-id answers 500 and would retry for ~15 s)
@@ -134,7 +135,7 @@ def _stocktrim(settings: Settings, opts: PreflightOptions, keys: Keys, client_kw
         return {"status": "unreachable_or_bad_credentials", "error": type(e).__name__}, {}
     with closing(preflight_client(settings, client_kw)) as c:
         return inventory(StockTrimApi(c), first, *keys, check_suppliers=opts.check_suppliers, check_suppliers_by_code=opts.check_suppliers_by_code,
-                         check_sales_orders=opts.check_sales_orders, limit=opts.sample_limit)
+                         check_sales_orders=opts.check_sales_orders, limit=opts.sample_limit, ledger=ledger)
 
 
 def _plan(keys: Keys, bom_edges: int, rps: float) -> dict[str, Any]:
@@ -144,11 +145,12 @@ def _plan(keys: Keys, bom_edges: int, rps: float) -> dict[str, Any]:
     return {"planned_calls": calls, "total_calls": total, "rps": rps, "eta_seconds": math.ceil(total / rps)}
 
 
-def build_report(settings: Settings, opts: PreflightOptions, client_kw: Optional[dict[str, Any]] = None) -> PreflightReport:
+def build_report(settings: Settings, opts: PreflightOptions, client_kw: Optional[dict[str, Any]] = None, ledger: Optional[Ledger] = None) -> PreflightReport:
+    """`ledger` (push engine only) = sync mode, see stocktrim_inventory.inventory."""
     with session_scope() as s:  # released before the (slow) StockTrim reads
         qb, keys, snap = qb_report(s, settings.product_key_field, opts.sample_limit)
-    st, facts = _stocktrim(settings, opts, keys, client_kw or {})
+    st, facts = _stocktrim(settings, opts, keys, client_kw or {}, ledger)
     # fingerprint: a later push can require it to be unchanged (pushable keys, BOM edges and what StockTrim held, incl. full overlap lists)
     fp = hashlib.sha256(json.dumps([sorted(keys.products), sorted(keys.suppliers), snap["bom"], facts], sort_keys=True, default=str).encode()).hexdigest()
-    return PreflightReport.model_validate({"quickbooks": qb, "stocktrim": st, "verdict": verdict(qb, st), "snapshot": {"synced_at_max": snap["synced_at_max"]},
+    return PreflightReport.model_validate({"quickbooks": qb, "stocktrim": st, "verdict": verdict(qb, st, ledger is not None), "snapshot": {"synced_at_max": snap["synced_at_max"]},
                                            "plan": _plan(keys, qb["bom"]["edges"], settings.stocktrim_max_rps), "fingerprint": fp})

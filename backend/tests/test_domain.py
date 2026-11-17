@@ -318,10 +318,11 @@ def test_load_snapshot_reads_only_master_entities(clean_db):
     assert snap.issues[0].message == "NumberError: Max" and "zz" not in snap.issues[0].message
 
 
-def test_quantity_precision_over_six_places_dropped():
-    ps = QuarantineResult[Product](ok=[prod("P", kind="assembly"), prod("A"), prod("B"), prod("C")])
-    lines = [line("L-A", "0.0000001"), line("L-B", "0.1234560"), line("L-C", "0.0000004"), line("L-C", "0.0000004")]  # B has 7 digits but equals 6; C sums to 8e-7
+def test_quantity_rounded_half_up_to_five_places_like_stocktrim():
+    ps = QuarantineResult[Product](ok=[prod("P", kind="assembly"), prod("A"), prod("B"), prod("C"), prod("D")])
+    lines = [line("L-A", "0.000025"), line("L-B", "0.123456"), line("L-C", "0.000002"), line("L-C", "0.000002"), line("L-D", "1234.567894"), line("L-D", "0.000001")]
     plan = plan_bom(ps, [{"ListID": "L-P", "ItemInventoryAssemblyLine": lines}])
-    assert [(e.component_sku, e.quantity) for e in plan.edges_by_parent["P"]] == [("B", Decimal("0.1234560"))]
-    assert codes(plan.issues) == ["bom_quantity_precision"] * 2 and plan.stats["dropped_edges"] == 2
+    # A: a tie rounds UP (2.5e-5 -> 3e-5, probed live); C sums to 4e-6 -> 0 -> dropped; D sums first, then rounds
+    assert [(e.component_sku, e.quantity) for e in plan.edges_by_parent["P"]] == [("A", Decimal("0.00003")), ("B", Decimal("0.12346")), ("D", Decimal("1234.56790"))]
+    assert codes(plan.issues) == ["bom_quantity_precision"] and plan.stats["dropped_edges"] == 1
     assert all(i.severity == "warning" for i in plan.issues)

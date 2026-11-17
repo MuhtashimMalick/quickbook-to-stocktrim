@@ -85,9 +85,9 @@ class StockTrimApi:
     def delete_supplier(self, code_or_name: str) -> None:
         self.c.request("DELETE", "/api/Suppliers", params={"supplierCodeOrName": code_or_name}, identifier=code_or_name)
 
-    # customers (PUT semantics unknown: sent once unless the request never left the machine)
+    # customers: PUT is a proven upsert by code (case-insensitive, FULL replace: omitted fields are cleared), so it is retried like POSTs. 200 + the customer as body (ignored)
     def put_customer(self, cust: CustomerRequest) -> None:
-        self.c.request("PUT", "/api/Customers", json=cust.payload(), identifier=cust.code, idempotent=False)  # response body not probed
+        self.c.request("PUT", "/api/Customers", json=cust.payload(), identifier=cust.code)
 
     def get_customers(self) -> list[CustomerResponse]:
         r = self._or_none("GET", "/api/Customers")

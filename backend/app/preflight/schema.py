@@ -80,6 +80,7 @@ class Products(Step):
     overlap_readable: Optional[Overlap] = None
     overlap_readable_only: Optional[Overlap] = None
     duplicate_readable_groups: Optional[int] = None
+    foreign: Optional[int] = None  # sync mode only: records not pushed by us
     readable_differs_from_product_id: Optional[int] = None
 
 
@@ -88,6 +89,7 @@ class Customers(Step):
     code_collisions: Optional[int] = None
     samples: Optional[list[Sample]] = None
     duplicate_code_groups: Optional[int] = None
+    foreign: Optional[int] = None
 
 
 class PurchaseOrders(Step):
@@ -100,6 +102,7 @@ class Suppliers(Step):
     count: Optional[int] = None
     overlap: Optional[int] = None
     samples: Optional[list[Sample]] = None
+    foreign: Optional[int] = None
 
 
 class Probe(Step):

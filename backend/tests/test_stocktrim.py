@@ -331,8 +331,8 @@ def test_non_idempotent_read_timeout_sent_once_but_idempotent_retries():
     assert len(calls) == 1 and "AUTH_ID" not in str(e.value)  # a timeout is not the wrong-id symptom
     calls.clear()
     with pytest.raises(StockTrimUnavailable):
-        api.put_customer(CustomerRequest(code="C"))
-    assert len(calls) == 1
+        api.put_customer(CustomerRequest(code="C"))  # proven upsert by code (probed 2026-11-17): full retry
+    assert len(calls) == 5
     calls.clear()
     with pytest.raises(StockTrimUnavailable):
         api.post_product(prod("A"))  # proven upsert: full retry

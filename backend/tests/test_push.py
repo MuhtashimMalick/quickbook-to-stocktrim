@@ -186,7 +186,7 @@ def test_gates(clean_db, tmp_path):
     env = mk(clean_db, tmp_path, fake, writes=False)
     fp = dry(env)["preflight_fingerprint"]
     assert post(env, steps=["suppliers"], dry_run=False, preflight_fingerprint=fp, plan_fingerprint="p").status_code == 403  # writes disabled
-    assert post(env, steps=["customers"]).status_code == 422 and post(env, steps=["products"], bogus=1).status_code == 422
+    assert post(env, steps=["orders"]).status_code == 422 and post(env, steps=["products"], bogus=1).status_code == 422
     env.app.state.settings.stocktrim_writes_enabled = True
     assert post(env, steps=["suppliers"], dry_run=False, plan_fingerprint="p").status_code == 422  # pre-flight fingerprint required
     assert post(env, steps=["suppliers"], dry_run=False, preflight_fingerprint=fp).status_code == 422  # plan fingerprint required for a real run

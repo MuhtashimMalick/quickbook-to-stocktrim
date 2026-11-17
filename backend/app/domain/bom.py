@@ -2,13 +2,15 @@
 import hashlib
 from collections import Counter, defaultdict
 from collections.abc import Iterable
-from decimal import Decimal, InvalidOperation
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from typing import Any
 
 from pydantic import BaseModel, Field
 
 from .from_qb import as_list, first_dict
 from .models import BomEdge, Issue, IssueCode, Product, QuarantineResult
+
+BOM_QUANTITY_STEP = Decimal("0.00001")
 
 
 class BomPlan(BaseModel):
@@ -151,11 +153,13 @@ def plan_bom(products: QuarantineResult[Product], assemblies: Iterable[dict[str,
         with_summed += bool(n_summed)
         all_excluded += bool(lines) and n_excluded == len(lines)
 
-    for parent_sku, comps in sums.items():  # the stored Numeric(20,6) must equal the planned Decimal
-        for comp_sku in [c for c, q in comps.items() if q.as_tuple().exponent < -6 and q != q.quantize(Decimal("0.000001"))]:
-            del comps[comp_sku]
-            dropped += 1
-            issue("bom_quantity_precision", lid_of[parent_sku], "warning", f"edge {parent_sku!r} -> {comp_sku!r} has more than 6 decimal places; dropped")
+    for parent_sku, comps in sums.items():  # StockTrim stores BOM quantities with 5 decimals, ROUND_HALF_UP (probed live): round the SUM the same way, so syncs never see phantom diffs
+        for comp_sku, qty in list(comps.items()):
+            comps[comp_sku] = rounded = qty.quantize(BOM_QUANTITY_STEP, ROUND_HALF_UP)
+            if rounded <= 0:  # StockTrim would store 0 (a meaningless edge)
+                del comps[comp_sku]
+                dropped += 1
+                issue("bom_quantity_precision", lid_of[parent_sku], "warning", f"edge {parent_sku!r} -> {comp_sku!r} rounds to 0 at StockTrim's 5 decimals; dropped")
 
     graph = {p: set(c) for p, c in sums.items() if c}
     all_parents_of: dict[str, set[str]] = defaultdict(set)

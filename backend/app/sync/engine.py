@@ -1,5 +1,5 @@
-"""Push engine (Phase 2, stage 9): suppliers then products to StockTrim, resumable, one run at a time. See README "Push engine".
-Leak rules: push_item / summary / progress carry keys (supplier code, SKU), QuickBooks ListIDs, counts and error codes ONLY (never names,
+"""Push engine (Phase 2, stages 9-10): suppliers, products, BOM edges, then customers to StockTrim, resumable, one run at a time. See README "Push engine".
+Leak rules: push_item / summary / progress carry keys (supplier code, SKU, BOM edge key, customer ListID), QuickBooks ListIDs, counts and error codes ONLY (never names,
 messages or response bodies); logs carry counts only. The plan lives in memory only; worker functions return nothing but a status."""
 import hashlib
 import json
@@ -9,17 +9,20 @@ import threading
 import time
 from collections import Counter
 from dataclasses import dataclass
-from typing import Any, Optional
+from decimal import Decimal
+from typing import Any, Callable, Optional
 from uuid import UUID
 
-from sqlalchemy import case, func, insert, null, select, update
+from sqlalchemy import case, delete, func, insert, null, select, update
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.exc import IntegrityError
 
 from ..config import Settings
 from ..db import session_scope
-from ..domain.bom import plan_bom
+from ..domain.bom import BomPlan, plan_bom
 from ..domain.from_qb import load_snapshot
-from ..domain.keys import resolve_customers, resolve_products, resolve_suppliers
+from ..domain.keys import norm, resolve_customers, resolve_products, resolve_suppliers
+from ..models import BomEdge as BomEdgeRow
 from ..models import PushItem, PushRun, utcnow
 from ..preflight.report import PreflightOptions, build_report
 from ..stocktrim.api import StockTrimApi
@@ -35,11 +38,12 @@ from ..stocktrim.errors import (
     StockTrimUnavailable,
 )
 from ..stocktrim.target import stocktrim_target
-from .mappers import PushPlan, build_push_plan
+from .mappers import PushPlan, bom_edge_key, build_push_plan
 
 log = logging.getLogger("app.push")
-STEPS = ("suppliers", "products")  # push order; the other steps arrive in stage 10
-ENTITY = {"suppliers": "supplier", "products": "product"}
+STEPS = ("suppliers", "products", "bom", "customers")  # push order
+ENTITY = {"suppliers": "supplier", "products": "product", "bom": "bom_edge", "customers": "customer"}
+PLAN_ATTR = {"suppliers": "suppliers", "products": "products", "bom": "bom_edges", "customers": "customers"}  # step -> PushPlan field
 CHUNK = 50
 SAMPLE_LIMIT = 50
 READBACK_SAMPLE = 25
@@ -57,6 +61,10 @@ class PushError(Exception):
 
 class _Cancelled(StockTrimAborted):
     """Raised inside a chunk when cancel was requested; the item stays `pending`. (An Aborted subclass: map_concurrent does not log it.)"""
+
+
+class _DependencyFailed(Exception):
+    """A BOM edge whose parent or component product is not `done` for this target."""
 
 
 class PlanChanged(Exception):
@@ -86,6 +94,8 @@ def shutdown(timeout: float = 8.0) -> None:
 class Built:
     plan: PushPlan
     list_ids: dict[str, str]  # product SKU -> QuickBooks ListID
+    bom: BomPlan
+    quantities: dict[str, Decimal]  # bom_edge_key -> planned quantity (exact Decimal, already rounded to StockTrim's 5 decimals)
 
 
 def build_plan(settings: Settings) -> Built:
@@ -95,14 +105,15 @@ def build_plan(settings: Settings) -> Built:
     prod = resolve_products(snap.products, sup)
     bom = plan_bom(prod, snap.assemblies, unusable_list_ids={i.ref for i in snap.issues})
     plan = build_push_plan(sup, prod, resolve_customers(snap.customers), bom, settings.negative_stock_policy)
-    return Built(plan, {p.sku: p.list_id for p in prod.ok})
+    return Built(plan, {p.sku: p.list_id for p in prod.ok}, bom,
+                 {bom_edge_key(e.parent_sku, e.component_sku): e.quantity for es in bom.edges_by_parent.values() for e in es})
 
 
 def plan_fingerprint(plan: PushPlan, steps: list[str]) -> str:
     """sha256 over the sorted planned keys of the selected steps and a hash of each request payload."""
     h = hashlib.sha256()
     for step in steps:
-        for key, req in sorted(getattr(plan, step), key=lambda x: x[0]):
+        for key, req in sorted(getattr(plan, PLAN_ATTR[step]), key=lambda x: x[0]):
             h.update(json.dumps([step, key, hashlib.sha256(json.dumps(req.payload(), sort_keys=True).encode()).hexdigest()]).encode())
     return h.hexdigest()
 
@@ -125,6 +136,8 @@ def classify(e: Exception) -> tuple[str, dict[str, Any]]:
         return {400: "rejected_400", 404: "rejected_404", 409: "rejected_409"}.get(e.status, "rejected_other"), {"status": e.status, "fields": _error_fields(e.body)}
     if isinstance(e, StockTrimUnavailable):
         return "unavailable", {}
+    if isinstance(e, _DependencyFailed):
+        return "dependency_failed", {}
     if isinstance(e, StockTrimBadResponse):  # 2xx we cannot parse: the write probably happened
         return "unknown_outcome", {"status": e.status}
     return "internal", {"exc": type(e).__name__}
@@ -136,11 +149,15 @@ def _negative_stock_error(e: StockTrimRejected) -> bool:
 
 
 # ---------------------------------------------------------------- db helpers
+def _mark_stmt(run_id: UUID, entity: str, keys: list[str], status: str, code: Optional[str] = None, detail: Optional[dict] = None) -> Any:
+    return (update(PushItem).where(PushItem.run_id == run_id, PushItem.entity == entity, PushItem.key.in_(keys))
+            .values(status=status, error_code=code, detail=detail or null(), attempts=PushItem.attempts + 1, updated_at=utcnow()))
+
+
 def _mark(run_id: UUID, entity: str, keys: list[str], status: str, code: Optional[str] = None, detail: Optional[dict] = None) -> None:
     """One short transaction."""
     with session_scope() as s:
-        s.execute(update(PushItem).where(PushItem.run_id == run_id, PushItem.entity == entity, PushItem.key.in_(keys))
-                  .values(status=status, error_code=code, detail=detail or null(), attempts=PushItem.attempts + 1, updated_at=utcnow()))
+        s.execute(_mark_stmt(run_id, entity, keys, status, code, detail))
 
 
 def _keys(run_id: UUID, entity: str, *, done: bool) -> list[str]:
@@ -154,9 +171,23 @@ def _beat(run_id: UUID) -> None:
         s.execute(update(PushRun).where(PushRun.id == run_id).values(updated_at=utcnow()))
 
 
-def _insert_items(run_id: UUID, built: Built, steps: list[str]) -> None:
-    ref = {"suppliers": lambda k, req: req.external_id, "products": lambda k, req: built.list_ids[k]}  # QuickBooks ListIDs
-    rows = [{"run_id": run_id, "entity": ENTITY[st], "key": k, "ref": ref[st](k, req)} for st in steps for k, req in getattr(built.plan, st)]
+def bom_diff(target: str, built: Built) -> tuple[list[str], list[str]]:
+    """(edge keys to POST in plan order = new or changed quantity, edge keys to DELETE = stored for this target but no longer planned)."""
+    with session_scope() as s:
+        stored = {(p, c): q for p, c, q in s.execute(select(BomEdgeRow.parent_sku, BomEdgeRow.component_sku, BomEdgeRow.quantity).where(BomEdgeRow.target == target))}
+    post = [k for k, r in built.plan.bom_edges if stored.get((r.product_code, r.component_code)) != built.quantities[k]]
+    planned = {(r.product_code, r.component_code) for _, r in built.plan.bom_edges}
+    return post, sorted(bom_edge_key(p, c) for p, c in stored.keys() - planned)
+
+
+def _insert_items(run_id: UUID, built: Built, steps: list[str], target: str) -> None:
+    """One push_item per planned key (refs are QuickBooks ListIDs); for `bom` only the DIFF against the stored edges (new/changed -> POST, vanished -> DELETE)."""
+    rows = [{"run_id": run_id, "entity": "supplier", "key": k, "ref": r.external_id} for k, r in built.plan.suppliers if "suppliers" in steps]
+    rows += [{"run_id": run_id, "entity": "product", "key": k, "ref": built.list_ids[k]} for k, _ in built.plan.products if "products" in steps]
+    if "bom" in steps:
+        post, gone = bom_diff(target, built)
+        rows += [{"run_id": run_id, "entity": "bom_edge", "key": k, "ref": built.list_ids.get(json.loads(k)[0])} for k in [*post, *gone]]
+    rows += [{"run_id": run_id, "entity": "customer", "key": k, "ref": k} for k, _ in built.plan.customers if "customers" in steps]  # code == QuickBooks ListID
     with session_scope() as s:
         for i in range(0, len(rows), 1000):
             s.execute(insert(PushItem), rows[i:i + 1000])
@@ -173,10 +204,18 @@ def _failures(run_id: UUID) -> int:
         return s.scalar(select(func.count()).where(PushItem.run_id == run_id, (PushItem.status == "failed") | ((PushItem.status == "skipped") & (PushItem.error_code == "aborted")))) or 0
 
 
-def _done_suppliers(target: str) -> set[str]:
-    """Supplier keys that are `done` in any run on this StockTrim target (this one included; dry-runs have no items)."""
+def _done_keys(target: str, entity: str) -> set[str]:
+    """Keys of `entity` that are `done` in any run on this StockTrim target (this one included; dry-runs have no items)."""
     with session_scope() as s:
-        return set(s.scalars(select(PushItem.key).join(PushRun, PushRun.id == PushItem.run_id).where(PushRun.target == target, PushItem.entity == "supplier", PushItem.status == "done")))
+        return set(s.scalars(select(PushItem.key).join(PushRun, PushRun.id == PushItem.run_id).where(PushRun.target == target, PushItem.entity == entity, PushItem.status == "done")))
+
+
+def _ledger(target: str) -> Optional[dict[str, set[str]]]:
+    """'Sync mode' gate: None (strict: the account must be empty) unless this target already has a completed non-dry-run run; then the
+    (comparison-normalised) keys we pushed, so the pre-flight can tell our own records from foreign ones."""
+    with session_scope() as s:
+        first = s.scalar(select(PushRun.id).where(PushRun.target == target, PushRun.status == "done", PushRun.options["dry_run"].as_boolean().is_(False)).limit(1))
+    return None if first is None else {st: {norm(k) for k in _done_keys(target, ENTITY[st])} for st in ("suppliers", "products", "customers")}
 
 
 def _run_row(run_id: UUID) -> PushRun:
@@ -192,7 +231,7 @@ def _run_row(run_id: UUID) -> PushRun:
 class _Run:
     def __init__(self, run_id: UUID, built: Built, api: StockTrimApi, cancel: threading.Event, target: str):
         self.id, self.built, self.api, self.cancel, self.target = run_id, built, api, cancel, target
-        self.reqs = {"supplier": dict(built.plan.suppliers), "product": dict(built.plan.products)}
+        self.reqs = {"supplier": dict(built.plan.suppliers), "product": dict(built.plan.products), "bom_edge": dict(built.plan.bom_edges), "customer": dict(built.plan.customers)}
         self.neg_ids = set(built.plan.negative_stock_list_ids)
         self.clamp = threading.Event()  # set after the first negative-stock rejection: the rest of the run is clamped
         self.fatal: Optional[str] = None
@@ -265,22 +304,28 @@ class _Run:
 
     # products: one POST per product (V1 upsert), concurrent inside a chunk
     def _products(self) -> Optional[str]:
-        done_suppliers = _done_suppliers(self.target)
+        done_suppliers = _done_keys(self.target, "supplier")
         with session_scope() as s:  # a resume re-pushes, WITH the link, the products that were pushed without it while their supplier is now done
             dropped = s.scalars(select(PushItem.key).where(PushItem.run_id == self.id, PushItem.entity == "product", PushItem.status == "done",
                                                            PushItem.detail["supplier_link_dropped"].as_boolean().is_(True))).all()
             if relink := [k for k in dropped if self.reqs["product"][k].supplier_code in done_suppliers]:
                 s.execute(update(PushItem).where(PushItem.run_id == self.id, PushItem.entity == "product", PushItem.key.in_(relink))
                           .values(status="pending", error_code=None, detail=null(), updated_at=utcnow()))
-        keys = _keys(self.id, "product", done=False)
+        return self._chunked("product", lambda k: self._one_product(k, done_suppliers))
+
+    def _chunked(self, entity: str, fn: Callable[[str], None], after: Optional[Callable[[list[str]], None]] = None) -> Optional[str]:
+        """Not-done keys of `entity` in chunks of CHUNK through map_concurrent (cancel takes effect between chunks, a fatal error stops the run)."""
+        keys = _keys(self.id, entity, done=False)
         for i in range(0, len(keys), CHUNK):
             if self.cancel.is_set():
                 return "cancelled"
             _beat(self.id)
             try:
-                self._settle("product", self.api.map_concurrent(lambda k: self._one_product(k, done_suppliers), keys[i:i + CHUNK]))
+                self._settle(entity, self.api.map_concurrent(fn, keys[i:i + CHUNK]))
             except _FATAL as e:
-                return self._fatal("product", e)
+                return self._fatal(entity, e)
+            if after:
+                after(keys[i:i + CHUNK])
         return None
 
     def _one_product(self, key: str, done_suppliers: set[str]) -> None:
@@ -304,11 +349,57 @@ class _Run:
             detail["sent_stock"] = req.stock_on_hand
         _mark(self.id, "product", [key], "done", code, detail)
 
+    # BOM edges (bottom-up, plan order): POST = upsert by pair; a vanished edge is DELETEd with both readable codes
+    def _bom(self) -> Optional[str]:
+        done = _done_keys(self.target, "product")
+        return self._chunked("bom_edge", lambda k: self._one_edge(k, done), self._finish_parents)
+
+    def _one_edge(self, key: str, done_products: set[str]) -> None:
+        self._check_cancel()
+        parent, comp = json.loads(key)
+        if key not in self.reqs["bom_edge"]:  # no longer planned
+            try:
+                self.api.delete_bom(product_code=parent, component_code=comp)  # the client counts a 404 after a transient failure as success
+            except StockTrimRejected as e:
+                if e.status != 404:  # a plain 404 = already gone (or a product that is gone): the ledger row must go too
+                    raise
+            with session_scope() as s:
+                s.execute(delete(BomEdgeRow).where(BomEdgeRow.target == self.target, BomEdgeRow.parent_sku == parent, BomEdgeRow.component_sku == comp))
+                s.execute(_mark_stmt(self.id, "bom_edge", [key], "done"))
+            return
+        if parent not in done_products or comp not in done_products:
+            raise _DependencyFailed
+        self.api.post_bom(self.reqs["bom_edge"][key])
+        qty = self.built.quantities[key]
+        with session_scope() as s:  # ONE transaction: the ledger row and `done` stand or fall together
+            s.execute(pg_insert(BomEdgeRow).values(target=self.target, parent_sku=parent, component_sku=comp, quantity=qty, parent_hash="")
+                      .on_conflict_do_update(index_elements=["target", "parent_sku", "component_sku"], set_={"quantity": qty, "pushed_at": utcnow()}))
+            s.execute(_mark_stmt(self.id, "bom_edge", [key], "done"))
+
+    def _finish_parents(self, chunk: list[str]) -> None:
+        """parent_hash is stamped only once EVERY planned edge of the parent is stored with its planned quantity (and nothing else is)."""
+        parents = {json.loads(k)[0] for k in chunk} & self.built.bom.edges_by_parent.keys()
+        with session_scope() as s:
+            for p in parents:
+                planned = {e.component_sku: e.quantity for e in self.built.bom.edges_by_parent[p]}
+                where = (BomEdgeRow.target == self.target, BomEdgeRow.parent_sku == p)
+                if dict(s.execute(select(BomEdgeRow.component_sku, BomEdgeRow.quantity).where(*where)).tuples().all()) == planned:
+                    s.execute(update(BomEdgeRow).where(*where).values(parent_hash=self.built.bom.fingerprint_by_parent[p]))
+
+    # customers: PUT is a proven upsert by code (see docs/stocktrim-api-notes.md), so a failed or lost call is simply retried by the client
+    def _customers(self) -> Optional[str]:
+        return self._chunked("customer", self._one_customer)
+
+    def _one_customer(self, key: str) -> None:
+        self._check_cancel()
+        self.api.put_customer(self.reqs["customer"][key])
+        _mark(self.id, "customer", [key], "done")
+
     # read-back: all negative-stock items + a deterministic sample of 25 ordinary products, by readable code
     def _readback(self) -> None:
         with session_scope() as s:
             done = {k: d or {} for k, d in s.execute(select(PushItem.key, PushItem.detail).where(PushItem.run_id == self.id, PushItem.entity == "product", PushItem.status == "done"))}
-        done_suppliers = _done_suppliers(self.target)
+        done_suppliers = _done_keys(self.target, "supplier")
         neg = sorted(k for k in done if self.built.list_ids[k] in self.neg_ids)
         ordinary = sorted(k for k in done if k not in neg)
         todo = neg + ordinary[::max(len(ordinary) // READBACK_SAMPLE, 1)][:READBACK_SAMPLE]
@@ -386,7 +477,7 @@ def _thread_main(run_id: UUID, settings: Settings, kw: dict[str, Any], built: Op
             built = build_plan(settings)
             if plan_fingerprint(built.plan, steps) != opts.get("plan_fingerprint"):
                 raise PlanChanged
-            _insert_items(run_id, built, steps)
+            _insert_items(run_id, built, steps, row.target)
         client = StockTrimClient.from_settings(settings, **kw)
         run = _Run(run_id, built, StockTrimApi(client), _CANCELS[run_id], row.target)
         status = run.run(steps)
@@ -437,9 +528,12 @@ def start(settings: Settings, steps: list[str], dry_run: bool, fingerprint: Opti
             raise PushError(409, "push_running")
     launched = False
     try:
-        report = build_report(settings, PreflightOptions(), kw)
         target = stocktrim_target(settings)
+        ledger = _ledger(target)  # not None = sync mode: the account may hold what an earlier run of ours pushed
+        report = build_report(settings, PreflightOptions(), kw, ledger)
         if not dry_run:
+            if ledger and any(ledger[st] for st in steps if st in ("suppliers", "products")):
+                raise PushError(409, "step_already_pushed")  # re-pushing master data is the incremental sync (a later stage); BOM and customers are diffed/upserted
             if not report.verdict.ok_to_push:
                 raise PushError(409, "preflight_not_ok")
             if report.fingerprint != fingerprint:
@@ -456,6 +550,9 @@ def start(settings: Settings, steps: list[str], dry_run: bool, fingerprint: Opti
         built = build_plan(settings)
         pfp = plan_fingerprint(built.plan, steps)
         plan_counts = {**built.plan.counts, "dropped_supplier_links": sum(w.count for w in report.verdict.warnings if w.code == "unresolved_vendor")}
+        if "bom" in steps:
+            post, gone = bom_diff(target, built)
+            plan_counts |= {"bom_to_post": len(post), "bom_to_delete": len(gone)}
         run = PushRun(target=target, requested_by="admin-cli", options={**opts, "plan_fingerprint": pfp}, status="done", finished_at=utcnow(),
                       preflight_fingerprint=report.fingerprint, summary=plan_counts)
         with session_scope() as s:
@@ -524,7 +621,7 @@ def progress(settings: Settings, run_id: UUID) -> dict[str, Any]:
             select(PushItem.entity, PushItem.ref, PushItem.error_code).where(PushItem.run_id == run_id, PushItem.error_code.is_not(None))
             .order_by(case((PushItem.status == "failed", 0), else_=1), PushItem.id).limit(SAMPLE_LIMIT))]
     pending = {e: v.get("pending", 0) for e, v in c.items()}
-    calls = math.ceil(pending.get("supplier", 0) / CHUNK) + pending.get("product", 0)
+    calls = math.ceil(pending.get("supplier", 0) / CHUNK) + sum(pending.get(e, 0) for e in ("product", "bom_edge", "customer"))
     return {"run_id": run_id, "status": row.status, "dry_run": bool(row.options.get("dry_run")), "steps": row.options.get("steps", []), "started_at": row.started_at,
             "updated_at": row.updated_at, "finished_at": row.finished_at, "counts": c, "error_codes": codes, "eta_seconds": math.ceil(calls / settings.stocktrim_max_rps) if row.status == "running" else None,
             "summary": row.summary, "samples": samples}
