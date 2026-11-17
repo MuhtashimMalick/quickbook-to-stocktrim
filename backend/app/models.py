@@ -10,7 +10,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from .db import Base
 
 # One source for the allowed values: the CHECK constraints below and the later push engine use these tuples.
-PUSH_RUN_STATUSES = ("running", "done", "failed", "interrupted", "cancelled")
+PUSH_RUN_STATUSES = ("running", "done", "done_with_failures", "failed", "interrupted", "cancelled")
 PUSH_ITEM_STATUSES = ("pending", "done", "failed", "skipped")
 PUSH_ENTITIES = ("supplier", "product", "bom_edge", "customer")
 
@@ -117,7 +117,7 @@ class PushRun(Base):
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     finished_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     # one of PUSH_RUN_STATUSES
-    status: Mapped[str] = mapped_column(String(16), default="running")
+    status: Mapped[str] = mapped_column(String(24), default="running")
     options: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)  # steps, dry_run, policies
     preflight_fingerprint: Mapped[Optional[str]] = mapped_column(Text)
     summary: Mapped[Optional[dict[str, Any]]] = mapped_column(JSONB)  # counts only
@@ -141,5 +141,6 @@ class PushItem(Base):
     status: Mapped[str] = mapped_column(String(16), default="pending")  # one of PUSH_ITEM_STATUSES
     attempts: Mapped[int] = mapped_column(Integer, default=0)
     error_code: Mapped[Optional[str]] = mapped_column(Text)  # short code (rejected_400, unavailable, ...), never a body
-    detail: Mapped[Optional[dict[str, Any]]] = mapped_column(JSONB)
+    detail: Mapped[Optional[dict[str, Any]]] = mapped_column(JSONB(none_as_null=True))  # None = SQL NULL, not JSON null
+    ref: Mapped[Optional[str]] = mapped_column(Text)  # QuickBooks ListID: what progress samples show (keys can be personal names)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)

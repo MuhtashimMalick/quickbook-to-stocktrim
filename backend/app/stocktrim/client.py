@@ -185,6 +185,8 @@ class StockTrimClient:
             except _FATAL as e:
                 stop.set()
                 return BulkItem(item, error=e)
+            except StockTrimAborted as e:  # a caller-raised "not attempted" (e.g. cancel): recorded, not noise
+                return BulkItem(item, error=e)
             except Exception as e:  # noqa: BLE001 - recorded, not swallowed: caller must inspect .error / use raise_on_failures
                 log.warning("stocktrim bulk item failed: %s", type(e).__name__)
                 return BulkItem(item, error=e)

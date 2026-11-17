@@ -7,3 +7,4 @@
 - A value cleared in QuickBooks can never be cleared in StockTrim: omitted fields are kept and nulls behave like omission.
 - Categories come from the top-level QuickBooks group. A category set in QuickBooks can never be cleared, and it will overwrite categories curated in StockTrim: needs a client decision before production.
 - Inactive records (suppliers, customers) are not pushed.
+- Cost, price and stock on hand are stored by StockTrim with 2 decimals, rounded half-up (1.005 becomes 1.01); we round the same way before sending, so a QuickBooks value with more decimals (e.g. a 3-decimal cost) will show rounded in StockTrim. For negative stock the tie rule (-1.005 -> -1.01) is assumed, not verified.

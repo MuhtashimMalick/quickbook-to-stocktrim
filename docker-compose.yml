@@ -67,6 +67,7 @@ services:
     networks: [edge, backend]
     image: quickbook-app
     restart: unless-stopped
+    stop_grace_period: 30s  # a running push cancels cleanly (lifespan shutdown waits up to 8 s for its worker)
     environment:
       <<: *app-env
       DATABASE_URL: postgresql+psycopg://qb_app:${APP_DB_PASSWORD}@db:5432/${POSTGRES_DB}

@@ -2,7 +2,7 @@
 import json
 import re
 from dataclasses import dataclass, field
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 from email.utils import parseaddr
 from typing import Optional
 
@@ -14,6 +14,15 @@ from ..stocktrim.dto import BomRequest, CustomerRequest, ProductRequest, Product
 
 _MAILTO = re.compile(r"mailto:", re.IGNORECASE)
 _WS = re.compile(r"\s+")
+
+
+_CENT = Decimal("0.01")
+
+
+def _r2(v: Optional[Decimal]) -> Optional[Decimal]:
+    """StockTrim stores cost, price and stockOnHand with 2 decimals, ROUND_HALF_UP (measured live; negatives assumed to round away from zero, unproven).
+    Rounding BEFORE building the request keeps plan fingerprints stable and read-backs exact."""
+    return None if v is None else v.quantize(_CENT, ROUND_HALF_UP)
 
 
 def bom_edge_key(parent: str, component: str) -> str:
@@ -63,8 +72,8 @@ def to_product_request(p: Product, policy: NegativeStockPolicy = "as_is") -> tup
     supplier = ([ProductSupplier(supplier_id=p.preferred_vendor_code, supplier_sku_code=p.manufacturer_part_number)]
                 if p.preferred_vendor_code else None)
     req = ProductRequest(
-        product_id=p.sku, product_code_readable=p.sku, stock_on_hand=0 if adjusted else qoh, name=_WS.sub(" ", p.description).strip(), category=category, cost=p.cost,
-        price=p.price, supplier_code=p.preferred_vendor_code, suppliers=supplier, minimum_shelf_level=p.reorder_point,
+        product_id=p.sku, product_code_readable=p.sku, stock_on_hand=0 if adjusted else _r2(qoh), name=_WS.sub(" ", p.description).strip(), category=category, cost=_r2(p.cost),
+        price=_r2(p.price), supplier_code=p.preferred_vendor_code, suppliers=supplier, minimum_shelf_level=p.reorder_point,
         maximum_shelf_level=p.max_stock if p.max_stock and p.max_stock > 0 else None, discontinued=not p.is_active,
     )
     return req, adjusted

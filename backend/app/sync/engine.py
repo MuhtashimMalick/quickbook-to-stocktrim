@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from typing import Any, Optional
 from uuid import UUID
 
-from sqlalchemy import func, insert, select, update
+from sqlalchemy import case, func, insert, null, select, update
 from sqlalchemy.exc import IntegrityError
 
 from ..config import Settings
@@ -55,8 +55,12 @@ class PushError(Exception):
         super().__init__(code)
 
 
-class _Cancelled(Exception):
-    """Raised inside a chunk when cancel was requested; the item stays `pending`."""
+class _Cancelled(StockTrimAborted):
+    """Raised inside a chunk when cancel was requested; the item stays `pending`. (An Aborted subclass: map_concurrent does not log it.)"""
+
+
+class PlanChanged(Exception):
+    """The plan built by the run thread differs from the plan_fingerprint the caller approved."""
 
 
 _ACTIVE = threading.Lock()  # ponytail: one run per process; the DB partial unique index is the second line of defence
@@ -68,6 +72,13 @@ def join(timeout: Optional[float] = None) -> None:
     """Wait for the background run (tests, shutdown)."""
     if _thread:
         _thread.join(timeout)
+
+
+def shutdown(timeout: float = 8.0) -> None:
+    """App shutdown: ask every active run to cancel (it ends `cancelled`, resumable) and wait for the worker."""
+    for ev in list(_CANCELS.values()):
+        ev.set()
+    join(timeout)
 
 
 # ---------------------------------------------------------------- plan
@@ -121,7 +132,7 @@ def classify(e: Exception) -> tuple[str, dict[str, Any]]:
 
 def _negative_stock_error(e: StockTrimRejected) -> bool:
     """A 400 whose error FIELDS name the on-hand stock (observed live: StockTrim stores negatives, so this is a safety net)."""
-    return e.status == 400 and any("onhand" in f.lower() or "stock" in f.lower() for f in _error_fields(e.body))
+    return e.status == 400 and any("onhand" in f.lower() for f in _error_fields(e.body))
 
 
 # ---------------------------------------------------------------- db helpers
@@ -129,7 +140,7 @@ def _mark(run_id: UUID, entity: str, keys: list[str], status: str, code: Optiona
     """One short transaction."""
     with session_scope() as s:
         s.execute(update(PushItem).where(PushItem.run_id == run_id, PushItem.entity == entity, PushItem.key.in_(keys))
-                  .values(status=status, error_code=code, detail=detail or None, attempts=PushItem.attempts + 1, updated_at=utcnow()))
+                  .values(status=status, error_code=code, detail=detail or null(), attempts=PushItem.attempts + 1, updated_at=utcnow()))
 
 
 def _keys(run_id: UUID, entity: str, *, done: bool) -> list[str]:
@@ -144,10 +155,28 @@ def _beat(run_id: UUID) -> None:
 
 
 def _insert_items(run_id: UUID, built: Built, steps: list[str]) -> None:
-    rows = [{"run_id": run_id, "entity": ENTITY[st], "key": k} for st in steps for k, _ in getattr(built.plan, st)]
+    ref = {"suppliers": lambda k, req: req.external_id, "products": lambda k, req: built.list_ids[k]}  # QuickBooks ListIDs
+    rows = [{"run_id": run_id, "entity": ENTITY[st], "key": k, "ref": ref[st](k, req)} for st in steps for k, req in getattr(built.plan, st)]
     with session_scope() as s:
         for i in range(0, len(rows), 1000):
             s.execute(insert(PushItem), rows[i:i + 1000])
+
+
+def _has_pending(run_id: UUID) -> bool:
+    with session_scope() as s:
+        return s.scalar(select(PushItem.id).where(PushItem.run_id == run_id, PushItem.status == "pending").limit(1)) is not None
+
+
+def _failures(run_id: UUID) -> int:
+    """Items that ended `failed`, or were never attempted because the run aborted."""
+    with session_scope() as s:
+        return s.scalar(select(func.count()).where(PushItem.run_id == run_id, (PushItem.status == "failed") | ((PushItem.status == "skipped") & (PushItem.error_code == "aborted")))) or 0
+
+
+def _done_suppliers(target: str) -> set[str]:
+    """Supplier keys that are `done` in any run on this StockTrim target (this one included; dry-runs have no items)."""
+    with session_scope() as s:
+        return set(s.scalars(select(PushItem.key).join(PushRun, PushRun.id == PushItem.run_id).where(PushRun.target == target, PushItem.entity == "supplier", PushItem.status == "done")))
 
 
 def _run_row(run_id: UUID) -> PushRun:
@@ -161,8 +190,8 @@ def _run_row(run_id: UUID) -> PushRun:
 
 # ---------------------------------------------------------------- execution
 class _Run:
-    def __init__(self, run_id: UUID, built: Built, api: StockTrimApi, cancel: threading.Event):
-        self.id, self.built, self.api, self.cancel = run_id, built, api, cancel
+    def __init__(self, run_id: UUID, built: Built, api: StockTrimApi, cancel: threading.Event, target: str):
+        self.id, self.built, self.api, self.cancel, self.target = run_id, built, api, cancel, target
         self.reqs = {"supplier": dict(built.plan.suppliers), "product": dict(built.plan.products)}
         self.neg_ids = set(built.plan.negative_stock_list_ids)
         self.clamp = threading.Event()  # set after the first negative-stock rejection: the rest of the run is clamped
@@ -175,6 +204,8 @@ class _Run:
         for step in steps:
             if out := getattr(self, "_" + step)():
                 return out
+        if self.cancel.is_set() and _has_pending(self.id):  # e.g. cancelled during the last supplier chunk's per-supplier fallback
+            return "cancelled"
         if "products" in steps:
             self._readback()
         return "done"
@@ -234,8 +265,14 @@ class _Run:
 
     # products: one POST per product (V1 upsert), concurrent inside a chunk
     def _products(self) -> Optional[str]:
+        done_suppliers = _done_suppliers(self.target)
+        with session_scope() as s:  # a resume re-pushes, WITH the link, the products that were pushed without it while their supplier is now done
+            dropped = s.scalars(select(PushItem.key).where(PushItem.run_id == self.id, PushItem.entity == "product", PushItem.status == "done",
+                                                           PushItem.detail["supplier_link_dropped"].as_boolean().is_(True))).all()
+            if relink := [k for k in dropped if self.reqs["product"][k].supplier_code in done_suppliers]:
+                s.execute(update(PushItem).where(PushItem.run_id == self.id, PushItem.entity == "product", PushItem.key.in_(relink))
+                          .values(status="pending", error_code=None, detail=null(), updated_at=utcnow()))
         keys = _keys(self.id, "product", done=False)
-        done_suppliers = set(_keys(self.id, "supplier", done=True))
         for i in range(0, len(keys), CHUNK):
             if self.cancel.is_set():
                 return "cancelled"
@@ -244,7 +281,7 @@ class _Run:
                 self._settle("product", self.api.map_concurrent(lambda k: self._one_product(k, done_suppliers), keys[i:i + CHUNK]))
             except _FATAL as e:
                 return self._fatal("product", e)
-        return "cancelled" if self.cancel.is_set() and _keys(self.id, "product", done=False) else None
+        return None
 
     def _one_product(self, key: str, done_suppliers: set[str]) -> None:
         self._check_cancel()
@@ -271,7 +308,7 @@ class _Run:
     def _readback(self) -> None:
         with session_scope() as s:
             done = {k: d or {} for k, d in s.execute(select(PushItem.key, PushItem.detail).where(PushItem.run_id == self.id, PushItem.entity == "product", PushItem.status == "done"))}
-        done_suppliers = set(_keys(self.id, "supplier", done=True))
+        done_suppliers = _done_suppliers(self.target)
         neg = sorted(k for k in done if self.built.list_ids[k] in self.neg_ids)
         ordinary = sorted(k for k in done if k not in neg)
         todo = neg + ordinary[::max(len(ordinary) // READBACK_SAMPLE, 1)][:READBACK_SAMPLE]
@@ -309,26 +346,20 @@ def _rejected_keys(run_id: UUID) -> list[str]:
         return list(s.scalars(select(PushItem.key).where(PushItem.run_id == run_id, PushItem.error_code == "negative_stock_rejected").order_by(PushItem.id)))
 
 
-def _differs(a: Optional[float], b: Optional[float], tol: float = 1e-6) -> bool:
-    return (a is None) != (b is None) or (a is not None and b is not None and abs(a - b) > tol)
-
-
-MONEY_TOL = 0.0051  # StockTrim stores cost/price with 2 decimals (observed live: 3-decimal costs read back rounded)
-
-
+# Read-back compares EXACTLY: the mapper already rounded cost/price/stockOnHand to the 2 decimals StockTrim stores.
 def _mismatches(req: ProductRequest, st: ProductResponse, sent_stock: float, link: Optional[str]) -> list[str]:
     bad = []
     if (st.name or "") != (req.name or ""):
         bad.append("name")
-    if req.cost is not None and _differs(req.cost, st.cost, MONEY_TOL):
+    if req.cost is not None and req.cost != st.cost:
         bad.append("cost")
-    if req.price is not None and _differs(req.price, st.price, MONEY_TOL):
+    if req.price is not None and req.price != st.price:
         bad.append("price")
-    if _differs(sent_stock, st.stock_on_hand):
+    if sent_stock != st.stock_on_hand:
         bad.append("stock_on_hand")
-    if req.minimum_shelf_level is not None and _differs(req.minimum_shelf_level, st.minimum_shelf_level):
+    if req.minimum_shelf_level is not None and req.minimum_shelf_level != st.minimum_shelf_level:
         bad.append("minimum_shelf_level")
-    if req.maximum_shelf_level is not None and _differs(req.maximum_shelf_level, st.maximum_shelf_level):
+    if req.maximum_shelf_level is not None and req.maximum_shelf_level != st.maximum_shelf_level:
         bad.append("maximum_shelf_level")
     if link and link != st.supplier_code and not any(x.supplier_id == link for x in st.suppliers or []):
         bad.append("supplier")
@@ -336,10 +367,10 @@ def _mismatches(req: ProductRequest, st: ProductResponse, sent_stock: float, lin
 
 
 # ---------------------------------------------------------------- lifecycle
-def _summary(run_id: UUID, run: Optional[_Run], t0: float, extra: dict[str, Any]) -> dict[str, Any]:
+def _summary(run_id: UUID, run: Optional[_Run], t0: float, prior: float, extra: dict[str, Any]) -> dict[str, Any]:
     rejected = _rejected_keys(run_id)
     ids = run.built.list_ids if run else {}
-    out: dict[str, Any] = {"duration_seconds": round(time.monotonic() - t0, 1), **extra}
+    out: dict[str, Any] = {"duration_seconds": round(prior + time.monotonic() - t0, 1), "items_failed": _failures(run_id), **extra}  # duration adds up over resumes
     if run:
         out |= run.extra | ({"fatal": run.fatal} if run.fatal else {})
         out["negative_stock_rejected"] = {"count": len(rejected), "list_ids": [ids[k] for k in rejected if k in ids], "clamp_switched": bool(rejected)}
@@ -347,26 +378,28 @@ def _summary(run_id: UUID, run: Optional[_Run], t0: float, extra: dict[str, Any]
 
 
 def _thread_main(run_id: UUID, settings: Settings, kw: dict[str, Any], built: Optional[Built]) -> None:
-    t0, status, run, extra, client = time.monotonic(), "failed", None, {}, None
+    t0, prior, status, run, extra, client = time.monotonic(), 0.0, "failed", None, {}, None
     try:
-        opts = _run_row(run_id).options
-        steps = opts["steps"]
-        if built is None:  # fresh run: build the plan HERE (the request returned long ago), then lay out the items
+        row = _run_row(run_id)
+        opts, steps, prior = row.options, row.options["steps"], float((row.summary or {}).get("duration_seconds", 0))
+        if built is None:  # fresh run: build the plan HERE (the request returned long ago), check it is the approved one, then lay out the items
             built = build_plan(settings)
-            with session_scope() as s:
-                s.execute(update(PushRun).where(PushRun.id == run_id).values(options={**opts, "plan_fingerprint": plan_fingerprint(built.plan, steps)}))
+            if plan_fingerprint(built.plan, steps) != opts.get("plan_fingerprint"):
+                raise PlanChanged
             _insert_items(run_id, built, steps)
         client = StockTrimClient.from_settings(settings, **kw)
-        run = _Run(run_id, built, StockTrimApi(client), _CANCELS[run_id])
+        run = _Run(run_id, built, StockTrimApi(client), _CANCELS[run_id], row.target)
         status = run.run(steps)
+        if status == "done" and _failures(run_id):
+            status = "done_with_failures"
     except Exception as e:  # noqa: BLE001 - the run is marked failed with the exception TYPE only
         log.error("push run %s crashed: %s", run_id, type(e).__name__)
-        extra = {"error": type(e).__name__}
+        extra = {"error": "plan_fingerprint_mismatch" if isinstance(e, PlanChanged) else type(e).__name__}
     finally:
         if client:
             client.close()
         try:
-            summary = _summary(run_id, run, t0, extra)
+            summary = _summary(run_id, run, t0, prior, extra)
             with session_scope() as s:
                 s.execute(update(PushRun).where(PushRun.id == run_id).values(status=status, finished_at=utcnow(), updated_at=utcnow(), summary=summary))
             log.info("push run %s finished status=%s counts=%s", run_id, status, counts(run_id))
@@ -390,7 +423,7 @@ def _set_running(run_id: UUID) -> None:
         raise PushError(409, "push_running") from e
 
 
-def start(settings: Settings, steps: list[str], dry_run: bool, fingerprint: Optional[str], kw: dict[str, Any]) -> dict[str, Any]:
+def start(settings: Settings, steps: list[str], dry_run: bool, fingerprint: Optional[str], plan_fp: Optional[str], kw: dict[str, Any]) -> dict[str, Any]:
     steps = [s for s in STEPS if s in steps]
     opts = {"steps": steps, "dry_run": dry_run, "negative_stock_policy": settings.negative_stock_policy}
     if not dry_run:
@@ -398,6 +431,8 @@ def start(settings: Settings, steps: list[str], dry_run: bool, fingerprint: Opti
             raise PushError(403, "stocktrim_writes_disabled")
         if not fingerprint:
             raise PushError(422, "preflight_fingerprint_required")
+        if not plan_fp:
+            raise PushError(422, "plan_fingerprint_required")
         if not _ACTIVE.acquire(blocking=False):
             raise PushError(409, "push_running")
     launched = False
@@ -409,7 +444,7 @@ def start(settings: Settings, steps: list[str], dry_run: bool, fingerprint: Opti
                 raise PushError(409, "preflight_not_ok")
             if report.fingerprint != fingerprint:
                 raise PushError(409, "preflight_fingerprint_mismatch")
-            run = PushRun(target=target, requested_by="admin-cli", options=opts, preflight_fingerprint=fingerprint, status="running")
+            run = PushRun(target=target, requested_by="admin-cli", options={**opts, "plan_fingerprint": plan_fp}, preflight_fingerprint=fingerprint, status="running")
             try:
                 with session_scope() as s:
                     s.add(run)
@@ -436,7 +471,7 @@ def resume(settings: Settings, run_id: UUID, kw: dict[str, Any]) -> dict[str, An
     if not settings.stocktrim_writes_enabled:
         raise PushError(403, "stocktrim_writes_disabled")
     row = _run_row(run_id)
-    if row.options.get("dry_run") or row.status not in ("interrupted", "cancelled", "failed"):
+    if row.options.get("dry_run") or row.status not in ("interrupted", "cancelled", "failed", "done_with_failures") or not counts(run_id):
         raise PushError(409, "run_not_resumable")
     if row.target != stocktrim_target(settings):
         raise PushError(409, "target_mismatch")
@@ -485,8 +520,9 @@ def progress(settings: Settings, run_id: UUID) -> dict[str, Any]:
         codes: dict[str, dict[str, int]] = {}
         for ent, code, n in s.execute(select(PushItem.entity, PushItem.error_code, func.count()).where(PushItem.run_id == run_id, PushItem.error_code.is_not(None)).group_by(PushItem.entity, PushItem.error_code)):
             codes.setdefault(ent, {})[code] = n
-        samples = [{"entity": e, "key": k, "error_code": c_} for e, k, c_ in s.execute(
-            select(PushItem.entity, PushItem.key, PushItem.error_code).where(PushItem.run_id == run_id, PushItem.error_code.is_not(None)).order_by(PushItem.id).limit(SAMPLE_LIMIT))]
+        samples = [{"entity": e, "ref": r, "error_code": c_} for e, r, c_ in s.execute(  # failed first: warnings on done items must not push real failures out
+            select(PushItem.entity, PushItem.ref, PushItem.error_code).where(PushItem.run_id == run_id, PushItem.error_code.is_not(None))
+            .order_by(case((PushItem.status == "failed", 0), else_=1), PushItem.id).limit(SAMPLE_LIMIT))]
     pending = {e: v.get("pending", 0) for e, v in c.items()}
     calls = math.ceil(pending.get("supplier", 0) / CHUNK) + pending.get("product", 0)
     return {"run_id": run_id, "status": row.status, "dry_run": bool(row.options.get("dry_run")), "steps": row.options.get("steps", []), "started_at": row.started_at,

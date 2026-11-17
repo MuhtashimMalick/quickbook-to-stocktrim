@@ -169,3 +169,20 @@ def test_category_empty_group_and_name_whitespace():
     body = to_product_request(prod("A", full_name=":A", description="  Two\n lines\t  and   gaps  "))[0].payload()
     assert "category" not in body and body["name"] == "Two lines and gaps"
     assert to_product_request(prod("A  B", description="x"))[0].payload()["productId"] == "A  B"  # keys are never collapsed
+
+
+@pytest.mark.parametrize("raw,want", [
+    ("1.005", 1.01), ("2.0006", 2.0), ("0.125", 0.13), ("0.135", 0.14), ("1.5", 1.5),  # half-up (half-even would give 0.12 / 0.14 / 1.00)
+    ("-1.005", -1.01), ("-0.125", -0.13),  # UNPROVEN assumption: negative ties round away from zero (not measured on the live account)
+])
+def test_cost_price_and_stock_are_rounded_half_up_to_two_decimals(raw, want):
+    req, _ = to_product_request(prod(cost=Decimal(raw), price=Decimal(raw), quantity_on_hand=Decimal(raw)))
+    assert (req.cost, req.price, req.stock_on_hand) == (want, want, want)
+
+
+def test_plan_fingerprint_ignores_sub_cent_noise():
+    from app.sync.engine import plan_fingerprint
+    def fp(cost):
+        ps = QuarantineResult(ok=[prod(cost=Decimal(cost), price=Decimal(cost), quantity_on_hand=Decimal(cost))], quarantined=[])
+        return plan_fingerprint(build_push_plan(QuarantineResult(ok=[], quarantined=[]), ps, QuarantineResult(ok=[], quarantined=[]), BomPlan()), ["products"])
+    assert fp("1.0100") == fp("1.0104") and fp("1.01") != fp("1.02")

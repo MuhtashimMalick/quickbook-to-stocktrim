@@ -45,7 +45,7 @@ def prod(pid, **kw):
 def make(handler: Callable[[httpx.Request], httpx.Response], **kw):
     sleeps: list[float] = []
     client = StockTrimClient("https://st.test", ID, SIG, transport=httpx.MockTransport(handler), sleep=sleeps.append,
-                             limiter=RateLimiter(kw.get("max_rps", 5), sleep=sleeps.append), **kw)
+                             limiter=RateLimiter(kw.get("max_rps", 5), clock=kw.get("clock", time.monotonic), sleep=sleeps.append), **kw)
     return client, StockTrimApi(client), sleeps
 
 
@@ -70,17 +70,24 @@ def test_none_query_params_are_not_sent():
     assert dict(seen[0].url.params) == {"pageNo": "2"}
 
 
-@pytest.mark.parametrize("status", [503, 429])
-def test_retries_then_succeeds_honouring_retry_after(status):
+@pytest.mark.parametrize("status,expected", [
+    # 503: no limiter deferral. Attempt 1 takes the first free slot (no wait); the retry sleeps Retry-After (7); attempt 2 waits 0.2 s for the
+    # limiter slot (5 rps, frozen clock), sleeps 7 again; attempt 3 waits 0.4 s for its slot and succeeds.
+    (503, [7, 0.2, 7, 0.4]),
+    # 429: each 429 defers the shared limiter by Retry-After. Attempt 1 (no wait) -> 429 -> limiter next slot = t+7, retry sleeps 7;
+    # attempt 2 waits 7 for the slot; 429 -> defer keeps t+7.2 -> sleeps 7; attempt 3 waits 7.2 for its slot and succeeds.
+    (429, [7, 7, 7, 7.2]),
+])
+def test_retries_then_succeeds_honouring_retry_after(status, expected):
     calls = []
 
     def h(req):
         calls.append(1)
         return httpx.Response(status, headers={"Retry-After": "7"}) if len(calls) < 3 else httpx.Response(200, json={"productId": "A"})
 
-    _, api, sleeps = make(h)
+    _, api, sleeps = make(h, clock=lambda: 100.0)
     assert api.post_product(prod("A")).product_id == "A"
-    assert len(calls) == 3 and sum(1 for s in sleeps if s >= 7) >= 2  # 429 also defers the shared limiter, so its waits are recorded too
+    assert len(calls) == 3 and sleeps == pytest.approx(expected)
 
 
 def test_retries_transport_error():

@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 from typing import Optional
 
@@ -13,7 +14,7 @@ from .qbwc.auth import DbAuthenticator, end_session
 from .qbwc.gate import QBWC_PATH, TunnelGate
 from .qbwc.service import LoggingQBWCService, setup_file_log
 from .quickbooks.tasks import WRITE_JOB_TYPES
-from .sync.engine import recover_push_runs
+from .sync.engine import recover_push_runs, shutdown
 
 setup_logging()
 
@@ -23,6 +24,7 @@ async def lifespan(app: FastAPI):
     jobs.recover_interrupted(WRITE_JOB_TYPES)
     recover_push_runs()
     yield
+    await asyncio.to_thread(shutdown)  # cancel the active push run (resumable) and wait for its worker
 
 
 def build_app(settings: Optional[Settings] = None) -> FastAPI:

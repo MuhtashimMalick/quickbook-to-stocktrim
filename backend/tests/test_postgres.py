@@ -65,10 +65,32 @@ def test_migration_0003_downgrade_one_step_keeps_older_tables(db_url):
     engine = create_engine(url)
     try:
         command.upgrade(alembic_cfg(url), "head")
-        command.downgrade(alembic_cfg(url), "-1")
+        command.downgrade(alembic_cfg(url), "0002")
         assert set(inspect(engine).get_table_names()) == TABLES - {"bom_edge", "push_run", "push_item"} | {"alembic_version"}
         command.upgrade(alembic_cfg(url), "head")
         assert {"bom_edge", "push_run", "push_item"} <= set(inspect(engine).get_table_names())
+    finally:
+        engine.dispose()
+        with admin_engine(db_url).connect() as c:
+            c.execute(text(f'DROP DATABASE "{name}" WITH (FORCE)'))
+
+
+def test_migration_0004_downgrade_maps_done_with_failures_and_restores_the_check(db_url):
+    name = f"qb_scratch_{uuid.uuid4().hex[:8]}"
+    create_database(db_url, name)
+    url = create_engine(db_url).url.set(database=name).render_as_string(hide_password=False)
+    engine = create_engine(url)
+    try:
+        command.upgrade(alembic_cfg(url), "head")
+        with engine.begin() as c:
+            c.execute(text("INSERT INTO push_run (target, started_at, options, status) VALUES ('t', now(), '{}', 'done_with_failures')"))
+        command.downgrade(alembic_cfg(url), "0003")
+        with engine.begin() as c:
+            assert c.execute(text("SELECT status FROM push_run")).scalar_one() == "failed"
+        assert "ref" not in {col["name"] for col in inspect(engine).get_columns("push_item")}
+        with pytest.raises(DBAPIError), engine.begin() as c:  # the old column width / check are back
+            c.execute(text("UPDATE push_run SET status = 'done_with_failures'"))
+        command.upgrade(alembic_cfg(url), "head")
     finally:
         engine.dispose()
         with admin_engine(db_url).connect() as c:
