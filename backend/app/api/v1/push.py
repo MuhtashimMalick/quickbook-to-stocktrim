@@ -23,7 +23,8 @@ class PushRequest(M):
     plan_fingerprint: Optional[str] = Field(None, max_length=128)  # required for a real run: the one the dry-run returned
     mode: Literal["auto", "initial", "sync"] = "auto"  # auto = initial while the target has no completed non-dry-run run, else sync (diff against the pushed_item ledger)
     acknowledge_foreign: Optional[str] = Field(None, max_length=128)  # sync mode: the verdict's foreign_hash, to proceed despite records StockTrim holds that we did not push
-    stamp_only: bool = False  # adopt the current state as the baseline: writes payload hashes into the ledger, NO StockTrim call (sync mode; see README)
+    stamp_only: bool = False  # adopt the current state as the baseline: writes payload hashes into the ledger, NO StockTrim call (TEST account, sync mode; see README)
+    acknowledge_requeue: Optional[dict[Literal["suppliers", "products", "customers"], int]] = None  # sync mode: per step the re-queued count a human has seen (mass_requeue); the scheduler never sets it
 
     @model_validator(mode="after")
     def _real_run_needs_plan_fingerprint(self) -> "PushRequest":
@@ -86,13 +87,13 @@ def _call(fn: Any, *a: Any) -> Any:
     try:
         return fn(*a)
     except engine.PushError as e:
-        raise HTTPException(e.status, e.code) from None
+        raise HTTPException(e.status, {"code": e.code, **e.extra} if e.extra else e.code) from None
 
 
 @router.post("", response_model=PushStarted, response_model_exclude_none=True)
 def push(request: Request, body: PushRequest, kw: dict[str, Any] = Depends(get_stocktrim_client_kw)) -> Any:
     """dry_run (default): plan + pre-flight, writes nothing to StockTrim. Real run: needs STOCKTRIM_WRITES_ENABLED, an ok pre-flight and BOTH fingerprints of the dry-run."""
-    return _call(engine.start, request.app.state.settings, body.steps, body.dry_run, body.preflight_fingerprint, body.plan_fingerprint, kw, body.mode, body.acknowledge_foreign, body.stamp_only)
+    return _call(engine.start, request.app.state.settings, body.steps, body.dry_run, body.preflight_fingerprint, body.plan_fingerprint, kw, body.mode, body.acknowledge_foreign, body.stamp_only, body.acknowledge_requeue)
 
 
 @router.get("/runs/{run_id}", response_model=PushRunOut)

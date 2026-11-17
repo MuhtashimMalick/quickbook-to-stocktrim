@@ -35,6 +35,18 @@ Read-only counts: **319 products** (7 pages), **1173 customer rows** (20 rows be
 - **DELETE `?supplierCodeOrName=`**: 200 empty; unknown -> 404 `Could not find a supplier with code or name X`. Verified by GET -> 404.
 - **Side effect**: a purchase order that names an unknown supplier code **auto-creates that supplier** (see 7). Delete it afterwards.
 
+### 3a. Clearing values (probe 2026-11-17, TEST account, ONE temporary supplier `ZZ-PROBE-SUP-CLR` and ONE temporary product `ZZ-PROBE-PROD-CLR`)
+Each case: POST the record with every field set, POST only the field under test (plus the required product fields), GET it back. Statuses were 200 everywhere (POST and GET); no 400.
+| Field | `""` | `null` | other |
+|---|---|---|---|
+| Supplier: emailAddress, primaryContactName, streetAddress, addressLine1, addressLine2, state, postCode, country, externalId | **cleared** (GET returns `""`) | ignored (value kept) | |
+| Product: name, category | **cleared** (`""`) | ignored | |
+| Product: cost, price, minimumShelfLevel, maximumShelfLevel | ignored (200, value kept) | ignored | `0` -> stored `0.0` (a value, not a clear) |
+| Product: supplierCode | sets `supplierCode` to `""` BUT the `suppliers` list entry stays (inconsistent link) | ignored | |
+| Product: suppliers | `[]` ignored (list kept) | ignored | |
+| Product: discontinued | n/a | ignored (kept) | `false` stored |
+Decisions: the mappers send `""` for the supplier fields and the product category when QuickBooks has no value; cost/price/min/max (only `0`, which changes planning) and the supplier link (partial clear) are never sent to clear. Cleanup: the product and the supplier were deleted (both DELETE 200) and GET answered 404 for both. About 130 calls in total.
+
 ## 4. Bill of materials (`/api/boms`)  (multi-level add-on: NOT blocked on this account)
 - **KEY FINDING: `/api/boms` is keyed by `productCodeReadable`, NOT by `productId`** (write probe 2026-11-16 on the TEST account: products `productId=ZZ-PROBE-A` / `productCodeReadable=ZZ-PROBE-A-R`, same for B; V1 POST product accepts differing values and stores them as sent; internal ids 13150143 / 13150144):
   | Call | Key used | Result |

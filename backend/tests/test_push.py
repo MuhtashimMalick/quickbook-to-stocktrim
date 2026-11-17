@@ -484,7 +484,11 @@ def test_done_with_failures_resume_resends_only_failed_keys_and_relinks(clean_db
 
 
 def test_products_only_run_after_a_suppliers_run_keeps_the_links(clean_db, tmp_path):
-    fake = Fake()
+    class Listing(Fake):  # lists its suppliers, like the real account: a products-only sync run must see them as present
+        def __call__(self, req):
+            return httpx.Response(200, json=[{"supplierCode": c} for c in self.suppliers]) if req.method == "GET" and req.url.path == "/api/SuppliersBulk" else super().__call__(req)
+
+    fake = Listing()
     env = mk(clean_db, tmp_path, fake)
     assert finish(env, go(env, ("suppliers",)).json()["run_id"])["status"] == "done"
     out = finish(env, go(env, ("products",)).json()["run_id"])

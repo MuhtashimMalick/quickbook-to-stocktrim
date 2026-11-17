@@ -55,19 +55,23 @@ def _address(a: Optional[Address], *names: str) -> dict[str, Optional[str]]:
             "address_line2": ", ".join(lines[2:]) or None, "city": a.city, "state": a.state, "post_code": a.postal_code, "country": a.country}
 
 
+_CLEAR = ("email_address", "primary_contact_name", "street_address", "address_line1", "address_line2", "state", "post_code", "country")  # probed: "" clears them, null is ignored
+
+
 def to_supplier_request(s: Supplier) -> SupplierRequest:
-    addr = _address(s.address, s.code, s.name)
+    """A supplier field QuickBooks has no value for is sent as "" (StockTrim clears it; omission or null would keep the old value, see docs/stocktrim-api-notes.md section 3a)."""
+    addr = {"street_address": None, "address_line1": None, "address_line2": None, "state": None, "post_code": None, "country": None, **_address(s.address, s.code, s.name)}
     addr.pop("city", None)  # the swagger SupplierDto has no city
-    return SupplierRequest(supplier_code=s.code, supplier_name=s.name, email_address=first_email(s.email), primary_contact_name=s.contact,
-                           external_id=s.list_id, **addr)
+    f = {"email_address": first_email(s.email), "primary_contact_name": s.contact, **addr}
+    return SupplierRequest(supplier_code=s.code, supplier_name=s.name, external_id=s.list_id, **{k: f[k] or "" for k in _CLEAR})
 
 
 def to_product_request(p: Product, policy: NegativeStockPolicy = "as_is") -> tuple[ProductRequest, bool]:
     """(request, stock_adjusted): stock_adjusted is True when the `clamp` policy replaced a negative on-hand by 0. stockOnOrder is never sent.
-    category = the top-level QuickBooks group of full_name ('Group:Item'); omitted for a top-level item or an empty group (':Item'); name = description with whitespace runs collapsed (default, change if the client wants another)."""
+    category = the top-level QuickBooks group of full_name ('Group:Item'); "" (clears it in StockTrim) for a top-level item or an empty group (':Item'); name = description with whitespace runs collapsed (default, change if the client wants another)."""
     qoh = p.quantity_on_hand or Decimal(0)
     adjusted = policy == "clamp" and qoh < 0
-    category = (p.full_name.split(":", 1)[0] or None) if p.full_name and ":" in p.full_name else None
+    category = p.full_name.split(":", 1)[0] if p.full_name and ":" in p.full_name else ""  # "" clears a category (probed; null is ignored)
     # supplierName is deliberately NOT sent: its behaviour is undocumented and it could rename the supplier created by the supplier push
     supplier = ([ProductSupplier(supplier_id=p.preferred_vendor_code, supplier_sku_code=p.manufacturer_part_number)]
                 if p.preferred_vendor_code else None)

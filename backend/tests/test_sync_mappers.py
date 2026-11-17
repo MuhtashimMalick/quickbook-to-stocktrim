@@ -48,8 +48,12 @@ def test_supplier_fields_and_address_dropping():
     assert "defaultLeadTime" not in r and "city" not in r  # no lead time (A9); SupplierDto has no city
 
 
-def test_supplier_minimal_sends_no_nulls():
-    assert to_supplier_request(sup("S1")).payload() == {"supplierCode": "S1", "supplierName": "S1", "externalId": "V-S1"}
+def test_supplier_fields_without_a_value_are_sent_as_empty_strings_so_stocktrim_clears_them():
+    """Probed on the TEST account: "" clears every one of these fields, null is ignored (docs/stocktrim-api-notes.md 3a)."""
+    cleared = {k: "" for k in ("emailAddress", "primaryContactName", "streetAddress", "addressLine1", "addressLine2", "state", "postCode", "country")}
+    assert to_supplier_request(sup("S1")).payload() == {"supplierCode": "S1", "supplierName": "S1", "externalId": "V-S1", **cleared}
+    r = to_supplier_request(sup("S1", email="not an address", address=Address(lines=["S1"], state="TX"))).payload()  # no valid email, only a name line: those are empty
+    assert r["emailAddress"] == "" and r["streetAddress"] == "" and r["state"] == "TX" and "city" not in r and None not in r.values()
 
 
 # ---- products -----------------------------------------------------------------------------------
@@ -73,7 +77,7 @@ def test_product_full_mapping_and_json_numbers():
 def test_product_always_sends_stock_and_readable_even_without_data():
     body = to_product_request(prod("A B  "))[0].payload()  # exact name, double/trailing space kept
     assert body["productId"] == body["productCodeReadable"] == "A B  " and body["stockOnHand"] == 0
-    assert "category" not in body and "supplierCode" not in body and "suppliers" not in body and "maximumShelfLevel" not in body
+    assert body["category"] == "" and "supplierCode" not in body and "suppliers" not in body and "maximumShelfLevel" not in body  # category "" clears (probed); the supplier link and numbers cannot be cleared safely
     assert body["discontinued"] is False
 
 
@@ -167,7 +171,7 @@ def test_plan_rejects_inconsistent_inputs():
 
 def test_category_empty_group_and_name_whitespace():
     body = to_product_request(prod("A", full_name=":A", description="  Two\n lines\t  and   gaps  "))[0].payload()
-    assert "category" not in body and body["name"] == "Two lines and gaps"
+    assert body["category"] == "" and body["name"] == "Two lines and gaps"
     assert to_product_request(prod("A  B", description="x"))[0].payload()["productId"] == "A  B"  # keys are never collapsed
 
 

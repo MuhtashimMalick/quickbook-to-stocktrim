@@ -56,8 +56,8 @@ _FATAL = (StockTrimUnavailable, StockTrimConfigError, StockTrimAuthError)
 
 
 class PushError(Exception):
-    def __init__(self, status: int, code: str):
-        self.status, self.code = status, code
+    def __init__(self, status: int, code: str, **extra: Any):
+        self.status, self.code, self.extra = status, code, extra  # extra (step names, counts) ends up in the HTTP detail next to the code
         super().__init__(code)
 
 
@@ -116,12 +116,13 @@ def payload_hash(req: Any) -> str:
     return hashlib.sha256(json.dumps(req.payload(), sort_keys=True).encode()).hexdigest()
 
 
-def plan_fingerprint(plan: PushPlan, sel: "dict[str, list[str]] | list[str]") -> str:
+def plan_fingerprint(plan: PushPlan, sel: "dict[str, list[str]] | list[str]", mode: str = "") -> str:
     """sha256 over the sorted selected keys per step and the payload hash of each ('' for a key that is not planned = a BOM DELETE).
-    `sel` is a list of steps (every planned key: initial runs) or {step: keys} (sync runs: only the items that WILL be pushed)."""
+    `sel` is a list of steps (every planned key: initial runs) or {step: keys} (sync runs: only the items that WILL be pushed). `mode` ('stamp') is part of the hash,
+    so a sync fingerprint can never approve a stamp and vice-versa."""
     if not isinstance(sel, dict):
         sel = {st: [k for k, _ in getattr(plan, PLAN_ATTR[st])] for st in sel}
-    h = hashlib.sha256()
+    h = hashlib.sha256(mode.encode())
     for step in STEPS:
         reqs = dict(getattr(plan, PLAN_ATTR[step])) if step in sel else {}
         for key in sorted(sel.get(step, ())):
@@ -184,13 +185,16 @@ def _beat(run_id: UUID) -> None:
 
 def bom_diff(target: str, built: Built, requeued: frozenset[str] = frozenset()) -> tuple[list[str], list[str]]:
     """(edge keys to POST in plan order = new or changed quantity, edge keys to DELETE = stored for this target but no longer planned).
-    Stored edges that touch a re-queued product (it vanished from StockTrim) are treated as not stored: they are re-POSTed, never DELETEd."""
+    Stored edges that touch a re-queued product (it vanished from StockTrim) are treated as not stored: they are re-POSTed, never DELETEd.
+    Pairs are compared by their normalised form (StockTrim keys are case-insensitive): a case-only rename is neither a POST nor a DELETE."""
+    rq = {norm(x) for x in requeued}
     with session_scope() as s:
-        stored = {(p, c): q for p, c, q in s.execute(select(BomEdgeRow.parent_sku, BomEdgeRow.component_sku, BomEdgeRow.quantity).where(BomEdgeRow.target == target))
-                  if p not in requeued and c not in requeued}
-    post = [k for k, r in built.plan.bom_edges if stored.get((r.product_code, r.component_code)) != built.quantities[k]]
-    planned = {(r.product_code, r.component_code) for _, r in built.plan.bom_edges}
-    return post, sorted(bom_edge_key(p, c) for p, c in stored.keys() - planned)
+        raw = [(p, c, q) for p, c, q in s.execute(select(BomEdgeRow.parent_sku, BomEdgeRow.component_sku, BomEdgeRow.quantity).where(BomEdgeRow.target == target))
+               if norm(p) not in rq and norm(c) not in rq]
+    stored = {(norm(p), norm(c)): q for p, c, q in raw}
+    post = [k for k, r in built.plan.bom_edges if stored.get((norm(r.product_code), norm(r.component_code))) != built.quantities[k]]
+    planned = {(norm(r.product_code), norm(r.component_code)) for _, r in built.plan.bom_edges}
+    return post, sorted(bom_edge_key(p, c) for p, c, _ in raw if (norm(p), norm(c)) not in planned)
 
 
 def _unstamp(target: str, parent: str) -> Any:
@@ -206,6 +210,7 @@ class Diff:
     vanished_refs: dict[str, list[str]]  # step -> QuickBooks ListIDs of ledger keys that are no longer planned (reported only)
     requeued: dict[str, list[str]]  # step -> ledger keys missing from StockTrim (pushed again as new)
     nulls: dict[str, list[str]]  # step -> present, planned ledger keys whose hash is NULL (what `stamp_only` adopts)
+    ledger_rows: dict[str, int]  # step -> number of ledger rows (the mass_requeue threshold is relative to it)
     bom_post: list[str]
     bom_gone: list[str]
 
@@ -221,32 +226,43 @@ def _pushed(target: str, entity: str) -> dict[str, tuple[Optional[str], Optional
         return {k: (r, h) for k, r, h in s.execute(select(PushedItem.key, PushedItem.ref, PushedItem.payload_hash).where(PushedItem.target == target, PushedItem.entity == entity))}
 
 
+def _inexact(target: str) -> int:
+    """Ledger products whose LAST push was not the planned payload (supplier link dropped / stock clamped): their hash is the hash of what was sent, so the next sync re-sends them."""
+    with session_scope() as s:
+        return s.scalar(select(func.count()).select_from(PushedItem).join(PushItem, (PushItem.run_id == PushedItem.last_run_id) & (PushItem.entity == PushedItem.entity) & (PushItem.key == PushedItem.key))
+                        .where(PushedItem.target == target, PushedItem.entity == "product",
+                               (PushItem.detail["supplier_link_dropped"].as_boolean().is_(True)) | (PushItem.detail["clamped"].as_boolean().is_(True)))) or 0
+
+
 def compute_diff(target: str, built: Built, steps: list[str], exists: dict[str, Any]) -> Diff:
     """new = not in the ledger; requeued = in the ledger but missing from StockTrim (`exists` = the pre-flight key sets; an entity it does not cover is assumed present);
-    changed = payload hash differs or is NULL; unchanged = no item, no call. The BOM diff is bom_diff() (with the re-queued products' edges re-posted)."""
-    d = Diff({}, {}, {}, {}, {}, [], [])
+    changed = payload hash differs, is NULL or the key only differs in case (StockTrim keys are case-insensitive and a push rewrites the stored casing); unchanged = no item, no call.
+    The ledger is indexed by the NORMALISED key. The BOM diff is bom_diff() (with the re-queued products' edges re-posted)."""
+    d = Diff({}, {}, {}, {}, {}, {}, [], [])
     for st in LEDGER_STEPS:
         if st not in steps:
             continue
-        led, plan = _pushed(target, ENTITY[st]), getattr(built.plan, PLAN_ATTR[st])
+        led = {norm(k): (k, r, h) for k, (r, h) in _pushed(target, ENTITY[st]).items()}
+        plan = getattr(built.plan, PLAN_ATTR[st])
         present = exists.get(st, {}).get("keys")
         out: dict[str, list[str]] = {"new": [], "changed": [], "unchanged": [], "requeued": []}
-        d.nulls[st] = []
+        d.nulls[st], d.ledger_rows[st] = [], len(led)
         for k, req in plan:
-            if k not in led:
+            old = led.get(norm(k))
+            if old is None:
                 out["new"].append(k)
             elif present is not None and norm(k) not in present:
                 out["requeued"].append(k)
-            elif led[k][1] != payload_hash(req):
+            elif old[2] != payload_hash(req) or old[0] != k:
                 out["changed"].append(k)
-                if led[k][1] is None:
+                if old[2] is None and old[0] == k:
                     d.nulls[st].append(k)
             else:
                 out["unchanged"].append(k)
-        keys = {k for k, _ in plan}
-        d.vanished_refs[st] = [r for k, (r, _) in sorted(led.items()) if k not in keys and r]
+        keys = {norm(k) for k, _ in plan}
+        d.vanished_refs[st] = [r for n, (_, r, _) in sorted(led.items()) if n not in keys and r]
         d.requeued[st] = out["requeued"]
-        d.stats[st] = {**{n: len(v) for n, v in out.items()}, "vanished": sum(1 for k in led if k not in keys)}
+        d.stats[st] = {**{n: len(v) for n, v in out.items()}, "vanished": sum(1 for n in led if n not in keys), **({"inexact": _inexact(target)} if st == "products" else {})}
         push = {*out["new"], *out["changed"], *out["requeued"]}
         d.sel[st] = [k for k, _ in plan if k in push]  # plan order
     if "bom" in steps:
@@ -273,8 +289,8 @@ def _insert_items(run_id: UUID, built: Built, steps: list[str], target: str, dif
             for st, keys in diff.requeued.items():
                 if keys:
                     s.execute(delete(PushedItem).where(PushedItem.target == target, PushedItem.entity == ENTITY[st], PushedItem.key.in_(keys)))
-            if gone := diff.requeued.get("products"):
-                touched = (BomEdgeRow.parent_sku.in_(gone)) | (BomEdgeRow.component_sku.in_(gone))
+            if gone := [g.lower() for g in diff.requeued.get("products", ())]:  # ponytail: SQL lower() approximates norm(); an exotic (NFKC-only) case difference would leave a stale edge row
+                touched = (func.lower(BomEdgeRow.parent_sku).in_(gone)) | (func.lower(BomEdgeRow.component_sku).in_(gone))
                 parents = select(BomEdgeRow.parent_sku).where(BomEdgeRow.target == target, touched)
                 s.execute(update(BomEdgeRow).where(BomEdgeRow.target == target, BomEdgeRow.parent_sku.in_(parents)).values(parent_hash=""))  # siblings of a lost edge are no longer complete
                 s.execute(delete(BomEdgeRow).where(BomEdgeRow.target == target, touched))
@@ -298,9 +314,12 @@ def _done_keys(target: str, entity: str) -> set[str]:
     return set(_pushed(target, entity))
 
 
+_REAL = (PushRun.status == "done", PushRun.options["dry_run"].as_boolean().is_(False), func.coalesce(PushRun.options["mode"].as_string(), "") != "stamp")  # a completed REAL run (a stamp is no baseline)
+
+
 def _completed(target: str) -> bool:
     with session_scope() as s:
-        return s.scalar(select(PushRun.id).where(PushRun.target == target, PushRun.status == "done", PushRun.options["dry_run"].as_boolean().is_(False)).limit(1)) is not None
+        return s.scalar(select(PushRun.id).where(PushRun.target == target, *_REAL).limit(1)) is not None
 
 
 def _ledger(target: str) -> Optional[dict[str, set[str]]]:
@@ -328,6 +347,7 @@ class _Run:
         self.fatal: Optional[str] = None
         self.extra: dict[str, Any] = {}
         self._lock = threading.Lock()
+        self._led: dict[str, dict[str, str]] = {}  # entity -> normalised key -> ledger key (lazy, see _stale)
 
     def run(self, steps: list[str]) -> str:
         if _rejected_keys(self.id):
@@ -345,12 +365,26 @@ class _Run:
         if self.cancel.is_set():
             raise _Cancelled
 
-    def _done(self, entity: str, keys: list[str], code: Optional[str] = None, detail: Optional[dict] = None, exact: bool = True) -> None:
-        """ONE transaction: the push_item is `done` and its pushed_item ledger row (payload hash, NULL when what was sent is not the planned payload) stands with it."""
+    def _stale(self, entity: str, keys: list[str]) -> list[str]:
+        """Ledger keys that are the SAME record in another casing (a case-only rename): the push rewrote the stored casing, so the old row must go."""
+        with self._lock:
+            if entity not in self._led:
+                self._led[entity] = {norm(k): k for k in _pushed(self.target, entity)}
+            led = self._led[entity]
+            old = [led[n] for k in keys if (n := norm(k)) in led and led[n] != k]
+            led.update({norm(k): k for k in keys})
+        return old
+
+    def _done(self, entity: str, keys: list[str], code: Optional[str] = None, detail: Optional[dict] = None, sent: Any = None) -> None:
+        """ONE transaction: the push_item is `done` and its pushed_item ledger row stands with it. The hash is that of what was actually SENT (`sent`, default the planned
+        payload): a product pushed without its supplier link / clamped therefore never equals the plan and is re-sent by the next sync (NULL means only 'unknown' = backfill)."""
         ref = {"supplier": lambda k: self.reqs["supplier"][k].external_id, "product": lambda k: self.built.list_ids[k], "customer": lambda k: k}[entity]
-        rows = [{"target": self.target, "entity": entity, "key": k, "ref": ref(k), "payload_hash": payload_hash(self.reqs[entity][k]) if exact else None,
+        rows = [{"target": self.target, "entity": entity, "key": k, "ref": ref(k), "payload_hash": payload_hash(sent if sent is not None else self.reqs[entity][k]),
                  "last_run_id": self.id, "pushed_at": utcnow()} for k in keys]
+        stale = self._stale(entity, keys)
         with session_scope() as s:
+            if stale:
+                s.execute(delete(PushedItem).where(PushedItem.target == self.target, PushedItem.entity == entity, PushedItem.key.in_(stale)))
             ins = pg_insert(PushedItem).values(rows)
             s.execute(ins.on_conflict_do_update(index_elements=["target", "entity", "key"], set_={c: ins.excluded[c] for c in ("ref", "payload_hash", "last_run_id", "pushed_at")}))
             s.execute(_mark_stmt(self.id, entity, keys, "done", code, detail))
@@ -449,7 +483,7 @@ class _Run:
             self.api.post_product(req)  # ONCE, clamped; a failure here is the item's failure
         if negative:
             detail["sent_stock"] = req.stock_on_hand
-        self._done("product", [key], code, detail, exact=req == self.reqs["product"][key])  # a dropped link / clamped stock is not the planned payload: hash NULL, re-sent by the next sync
+        self._done("product", [key], code, detail, sent=req)  # a dropped link / clamped stock is not the planned payload: its (different) hash makes the next sync re-send it
 
     # BOM edges (bottom-up, plan order): POST = upsert by pair; a vanished edge is DELETEd with both readable codes
     def _bom(self) -> Optional[str]:
@@ -480,6 +514,8 @@ class _Run:
             s.execute(_unstamp(self.target, parent))  # first, see the delete branch
             s.execute(pg_insert(BomEdgeRow).values(target=self.target, parent_sku=parent, component_sku=comp, quantity=qty, parent_hash="")
                       .on_conflict_do_update(index_elements=["target", "parent_sku", "component_sku"], set_={"quantity": qty, "pushed_at": utcnow()}))
+            s.execute(delete(BomEdgeRow).where(BomEdgeRow.target == self.target, func.lower(BomEdgeRow.parent_sku) == parent.lower(), func.lower(BomEdgeRow.component_sku) == comp.lower(),
+                                               (BomEdgeRow.parent_sku != parent) | (BomEdgeRow.component_sku != comp)))  # the same edge in another casing (case-only rename)
             s.execute(_mark_stmt(self.id, "bom_edge", [key], "done"))
 
     def _finish_parents(self, chunk: list[str]) -> None:
@@ -632,13 +668,38 @@ def _set_running(run_id: UUID) -> None:
         raise PushError(409, "push_running") from e
 
 
+MASS_REQUEUE_MIN, MASS_REQUEUE_PCT = 25, 0.05
+
+
+def _requires_step(target: str, steps: list[str], exists: dict[str, Any]) -> None:
+    """A wipe that took ledger entities of a step that is NOT in this run cannot be repaired by it (a bom-only run with a wiped product, a products-only run with a wiped supplier):
+    refuse and name the steps to add."""
+    gone = [st for st in LEDGER_STEPS if st not in steps and (present := exists.get(st, {}).get("keys")) is not None and any(norm(k) not in present for k in _pushed(target, ENTITY[st]))]
+    if gone:
+        raise PushError(409, "requeue_requires_step", steps=gone)
+
+
+def _mass_requeue(diff: Diff, ack: Optional[dict[str, int]]) -> None:
+    """An empty/failed StockTrim listing looks like a wipe: a step that would re-queue more than max(25, 5% of its ledger rows) needs `acknowledge_requeue` = that count per step.
+    ponytail: the (future) scheduler must never pass acknowledge_requeue; a human confirms a mass re-send."""
+    big = {st: v["requeued"] for st, v in diff.stats.items() if v["requeued"] > max(MASS_REQUEUE_MIN, MASS_REQUEUE_PCT * diff.ledger_rows[st])}
+    if big and any((ack or {}).get(st) != n for st, n in big.items()):
+        raise PushError(409, "mass_requeue", requeued=big)
+
+
 def _stamp(built: Built, target: str, steps: list[str], dry_run: bool, report: Any, diff: Diff, plan_fp: Optional[str]) -> dict[str, Any]:
     """`stamp_only`: adopt the current state as the baseline. Writes the plan's payload hashes into the NULL-hash ledger rows (no StockTrim call), only when no ledger key is
-    missing from StockTrim and only the NULL rows (a genuinely changed record keeps its hash, so it is still pushed). Same gates as a real run."""
+    missing from StockTrim, only the NULL rows (a genuinely changed record keeps its hash, so it is still pushed; an inexact row has the hash of what was sent, never NULL) and only
+    when the snapshot is not newer than the last completed real run. Same gates as a real run; the plan fingerprint carries the mode, so a sync fingerprint cannot approve it."""
+    newest = max(report.snapshot.synced_at_max.values(), default=None)
+    with session_scope() as s:
+        last = s.scalar(select(func.max(PushRun.finished_at)).where(PushRun.target == target, *_REAL))
+    if newest and last and newest > last:
+        raise PushError(409, "stamp_snapshot_newer")  # QuickBooks data changed after the push: stamping would hide those differences
     if any(diff.requeued[st] for st in steps):
         raise PushError(409, "stamp_requires_all_present")
     sel = {st: diff.nulls[st] for st in steps}
-    pfp = plan_fingerprint(built.plan, sel)
+    pfp = plan_fingerprint(built.plan, sel, "stamp")
     stamped = {st: len(v) for st, v in sel.items()}
     run = PushRun(target=target, requested_by="admin-cli", options={"steps": steps, "dry_run": dry_run, "mode": "stamp", "plan_fingerprint": pfp}, status="done",
                   finished_at=utcnow(), preflight_fingerprint=report.fingerprint, summary={"stamped": stamped})
@@ -661,10 +722,12 @@ def _stamp(built: Built, target: str, steps: list[str], dry_run: bool, report: A
 
 
 def start(settings: Settings, steps: list[str], dry_run: bool, fingerprint: Optional[str], plan_fp: Optional[str], kw: dict[str, Any], mode: str = "auto",
-          acknowledge_foreign: Optional[str] = None, stamp_only: bool = False) -> dict[str, Any]:
+          acknowledge_foreign: Optional[str] = None, stamp_only: bool = False, acknowledge_requeue: Optional[dict[str, int]] = None) -> dict[str, Any]:
     steps = [s for s in STEPS if s in steps]
     if stamp_only and "bom" in steps:
         raise PushError(422, "stamp_has_no_bom_step")
+    if stamp_only and settings.stocktrim_environment != "test":
+        raise PushError(409, "stamp_test_only")  # a stamp trusts the operator that StockTrim holds what was pushed: only ever on the TEST account
     if not dry_run:
         if not settings.stocktrim_writes_enabled:
             raise PushError(403, "stocktrim_writes_disabled")
@@ -685,17 +748,25 @@ def start(settings: Settings, steps: list[str], dry_run: bool, fingerprint: Opti
             raise PushError(409, "stamp_needs_sync_mode")
         opts = {"steps": steps, "dry_run": dry_run, "mode": mode, "negative_stock_policy": settings.negative_stock_policy}
         ledger = _ledger(target)  # not None = the account may hold what an earlier run of ours pushed
-        if mode == "initial" and ledger and any(ledger[st] for st in steps if st in ("suppliers", "products")):  # before the minutes-long StockTrim reads; dry-runs too (same 409)
-            raise PushError(409, "step_already_pushed")  # re-pushing master data on a used target is the incremental sync (mode sync/auto); BOM and customers are diffed/upserted
+        if mode == "initial" and ledger and any(ledger[st] for st in steps if st in LEDGER_STEPS):  # before the minutes-long StockTrim reads; dry-runs too (same 409)
+            raise PushError(409, "step_already_pushed")  # re-pushing master data on a used target is the incremental sync (mode sync/auto); only BOM edges are diffed in initial mode
         exists: dict[str, Any] = {}
         report = build_report(settings, PreflightOptions(), kw, ledger, exists, acknowledge_foreign)
         if acknowledge_foreign and acknowledge_foreign != report.verdict.foreign_hash:
             raise PushError(409, "acknowledge_foreign_mismatch")
+        if acknowledge_foreign and settings.stocktrim_environment == "production" and any(w.code == "foreign_in_plan" for w in report.verdict.warnings):
+            raise PushError(409, "foreign_in_plan_production")  # the push would overwrite (adopt) foreign records: never acknowledgeable in production
         if not dry_run:
             if not report.verdict.ok_to_push:
                 raise PushError(409, "preflight_not_ok")
             if report.fingerprint != fingerprint:
                 raise PushError(409, "preflight_fingerprint_mismatch")
+        built, diff = None, None
+        if mode == "sync" and not stamp_only:  # the sync guards need the diff, so the plan is built here (dry-run and real run alike)
+            _requires_step(target, steps, exists)
+            built = build_plan(settings)
+            diff = compute_diff(target, built, steps, exists)
+            _mass_requeue(diff, acknowledge_requeue)
         if stamp_only:
             built = build_plan(settings)
             return _stamp(built, target, steps, dry_run, report, compute_diff(target, built, steps, exists), plan_fp)
@@ -709,8 +780,7 @@ def start(settings: Settings, steps: list[str], dry_run: bool, fingerprint: Opti
             _launch(run.id, settings, kw, None, exists)
             launched = True  # the thread now owns the lock
             return {"run_id": run.id, "status": "running", "dry_run": False, "mode": mode}
-        built = build_plan(settings)
-        diff = compute_diff(target, built, steps, exists) if mode == "sync" else None
+        built = built or build_plan(settings)
         pfp = plan_fingerprint(built.plan, diff.sel if diff else steps)
         plan_counts = {**built.plan.counts, "dropped_supplier_links": sum(w.count for w in report.verdict.warnings if w.code == "unresolved_vendor")}
         extra: dict[str, Any] = {"mode": mode}

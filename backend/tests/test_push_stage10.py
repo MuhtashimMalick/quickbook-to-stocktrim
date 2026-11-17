@@ -371,13 +371,17 @@ def refused(env: Env, steps) -> dict:
     return dry(env, steps)["verdict"]
 
 
-def test_sync_gate_a_purchase_order_blocks(clean_db, tmp_path):
+def test_purchase_orders_block_the_initial_load_but_only_warn_in_sync_mode(clean_db, tmp_path):
     fake = Fake10()
-    env = mk(clean_db, tmp_path, fake, rows=ROWS10)
-    assert run_all(env)["status"] == "done" and refused(env, ("bom",))["ok_to_push"]
     fake.pos = ["PO"]
-    v = refused(env, ("bom",))
+    env = mk(clean_db, tmp_path, fake, rows=ROWS10)
+    v = refused(env, ("bom",))  # initial mode: the account must be empty
     assert not v["ok_to_push"] and v["blocking"][0]["code"] == "stocktrim_not_empty" and v["blocking"][0]["detail"] == {"purchase_orders": 1}
+    fake.pos = []
+    assert run_all(env)["status"] == "done" and refused(env, ("bom",))["ok_to_push"]
+    fake.pos = ["PO"]  # the client's first PO must not stop every sync
+    v = refused(env, ("bom",))
+    assert v["ok_to_push"] and v["blocking"] == [] and {"code": "purchase_orders_present", "count": 1} in v["warnings"]
 
 
 def test_sync_gate_done_with_failures_and_dry_runs_do_not_establish_it(clean_db, tmp_path):

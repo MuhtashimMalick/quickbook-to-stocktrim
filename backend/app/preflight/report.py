@@ -19,7 +19,7 @@ from ..config import Settings
 from ..db import session_scope
 from ..domain.bom import plan_bom
 from ..domain.from_qb import load_snapshot
-from ..domain.keys import resolve_customers, resolve_products, resolve_suppliers
+from ..domain.keys import norm, resolve_customers, resolve_products, resolve_suppliers
 from ..domain.models import Issue
 from ..models import QBRecord
 from ..stocktrim.api import StockTrimApi
@@ -81,10 +81,11 @@ def _issue_count(qb: dict[str, Any], code: str) -> int:
     return sum(g["count"] for k, g in qb["issues"].items() if k.endswith("." + code))
 
 
-def verdict(qb: dict[str, Any], st: dict[str, Any], sync: bool = False, acked: bool = False) -> dict[str, Any]:
+def verdict(qb: dict[str, Any], st: dict[str, Any], sync: bool = False, acked: bool = False, foreign_in_plan: int = 0) -> dict[str, Any]:
     """ok_to_push is NOT permission to push. It is never true while any check is incomplete. `sync` (the account may hold what we pushed earlier):
-    only FOREIGN products/suppliers/customers (and any purchase order) count as existing, and a readable-code overlap is then covered by that count;
-    `acked` (the caller's acknowledge_foreign equals the foreign hash) stops foreign records from counting; purchase orders still block."""
+    only FOREIGN products/suppliers/customers count as existing (purchase orders are then a warning, `purchase_orders_present`; they block the initial load), and a readable-code overlap
+    is then covered by that count; `acked` (the caller's acknowledge_foreign equals the foreign hash) stops foreign records from counting; `foreign_in_plan` = foreign
+    records that share a planned key (a push would overwrite them): warning."""
     blocking: list[dict[str, Any]] = []
     warnings: list[dict[str, Any]] = []
 
@@ -112,6 +113,8 @@ def verdict(qb: dict[str, Any], st: dict[str, Any], sync: bool = False, acked: b
     add(blocking, "stocktrim_suppliers_not_checked", int(steps.get("suppliers", {}).get("status") == "skipped"))
     add(warnings, "sales_orders_not_checked", int(steps.get("sales_orders", {}).get("status") == "skipped"))  # StockTrim keeps sales orders of unknown products: no products != no sales orders
     existing = {n: (0 if acked else v["foreign"]) if sync and "foreign" in v else v.get("count", v.get("found", 0)) for n, v in steps.items() if v["status"] == "ok"}
+    add(warnings, "purchase_orders_present", existing.pop("purchase_orders", 0) if sync else 0)
+    add(warnings, "foreign_in_plan", foreign_in_plan)
     p_id = 0 if sync else steps.get("products", {}).get("overlap_product_id", {}).get("count", 0)
     add(blocking, "stocktrim_not_empty", sum(existing.values()), detail={**{k: v for k, v in existing.items() if v}, **({"products_overlap_product_id": p_id} if p_id else {})})
     add(blocking, "stocktrim_readable_conflict", 0 if sync else steps.get("products", {}).get("overlap_readable", {}).get("count", 0))  # duplicate readable codes make BOM keys ambiguous
@@ -147,10 +150,15 @@ def _plan(keys: Keys, bom_edges: int, rps: float) -> dict[str, Any]:
     return {"planned_calls": calls, "total_calls": total, "rps": rps, "eta_seconds": math.ceil(total / rps)}
 
 
-def foreign_hash(sink: dict[str, Any]) -> Optional[str]:
-    """sha256 over the sorted JSON list of 'entity:normalised key' of every foreign StockTrim record (None when there is none)."""
+def foreign_in_plan(sink: dict[str, Any], keys: Keys) -> int:
+    """Foreign StockTrim records (normalised keys) that are ALSO planned keys: a push would overwrite (adopt) them."""
+    return sum(len(set(v["foreign"]) & {norm(k) for k, _ in getattr(keys, e)}) for e, v in sink.items())
+
+
+def foreign_hash(sink: dict[str, Any], in_plan: int = 0) -> Optional[str]:
+    """sha256 over the sorted JSON list of 'entity:normalised key' of every foreign StockTrim record, plus a distinct 'foreign_in_plan:N' entry when N > 0 (None when there is none)."""
     bad = sorted(f"{e}:{k}" for e, v in sink.items() for k in v["foreign"])
-    return hashlib.sha256(json.dumps(bad).encode()).hexdigest() if bad else None
+    return hashlib.sha256(json.dumps(bad + ([f"foreign_in_plan:{in_plan}"] if in_plan else [])).encode()).hexdigest() if bad else None
 
 
 def build_report(settings: Settings, opts: PreflightOptions, client_kw: Optional[dict[str, Any]] = None, ledger: Optional[Ledger] = None,
@@ -160,8 +168,9 @@ def build_report(settings: Settings, opts: PreflightOptions, client_kw: Optional
     with session_scope() as s:  # released before the (slow) StockTrim reads
         qb, keys, snap = qb_report(s, settings.product_key_field, opts.sample_limit)
     st, facts = _stocktrim(settings, opts, keys, client_kw or {}, ledger, sink)
-    fh = foreign_hash(sink)
+    fip = foreign_in_plan(sink, keys)
+    fh = foreign_hash(sink, fip)
     # fingerprint: a later push can require it to be unchanged (pushable keys, BOM edges and what StockTrim held, incl. full overlap lists)
     fp = hashlib.sha256(json.dumps([sorted(keys.products), sorted(keys.suppliers), snap["bom"], facts], sort_keys=True, default=str).encode()).hexdigest()
-    return PreflightReport.model_validate({"quickbooks": qb, "stocktrim": st, "verdict": {**verdict(qb, st, ledger is not None, fh is not None and fh == acknowledge_foreign), "foreign_hash": fh}, "snapshot": {"synced_at_max": snap["synced_at_max"]},
+    return PreflightReport.model_validate({"quickbooks": qb, "stocktrim": st, "verdict": {**verdict(qb, st, ledger is not None, fh is not None and fh == acknowledge_foreign, fip), "foreign_hash": fh}, "snapshot": {"synced_at_max": snap["synced_at_max"]},
                                            "plan": _plan(keys, qb["bom"]["edges"], settings.stocktrim_max_rps), "fingerprint": fp})
