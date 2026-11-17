@@ -90,16 +90,15 @@ def setup_file_log(log_dir: Path, retention_days: int) -> None:
 
 
 class LoggingQBWCService(QBWCService):
-    _contact_at = -1e9  # monotonic time of the last last_qbwc_contact write (throttled to once a minute)
-
-    def _touch_contact(self) -> None:
-        if time.monotonic() - self._contact_at < 60:
+    def _touch(self, key: str) -> None:
+        last = self.__dict__.setdefault("_contact_at", {})  # per state key: monotonic time of the last write (throttled to once a minute)
+        if time.monotonic() - last.get(key, -1e9) < 60:
             return
-        self._contact_at = time.monotonic()
+        last[key] = time.monotonic()
         try:
-            set_state("last_qbwc_contact", {"at": utcnow().isoformat()})
+            set_state(key, {"at": utcnow().isoformat()})
         except Exception as e:  # noqa: BLE001 - health bookkeeping must never break the Web Connector
-            logger.warning("last_qbwc_contact not recorded: %s", type(e).__name__)
+            logger.warning("%s not recorded: %s", key, type(e).__name__)
 
     def dispatch(self, body: "str | bytes") -> str:
         try:
@@ -108,8 +107,6 @@ class LoggingQBWCService(QBWCService):
             logger.warning("unparseable SOAP request: %d chars, receiveResponseXML=%s", len(body), "receiveResponseXML" in str(body))
             return super().dispatch(body)
         _emit("->", call.method, _describe(call))
-        if call.method == "authenticate":
-            self._touch_contact()
         if call.method == "receiveResponseXML":
             raw = call.get("response")  # real QBWC always sends named parameters (qbwc-kit also falls back to positional(1))
             try:
@@ -122,5 +119,7 @@ class LoggingQBWCService(QBWCService):
             if (fixed := repair_qbxml(raw)) != raw:
                 body = soap.build_request(call.method, [(k, fixed if k == "response" else v) for k, v in call.params.items()])
         result = super().dispatch(body)
+        if call.method == "authenticate":
+            self._touch("last_qbwc_auth_refused" if _result_texts(result, "authenticate")[-1] == "nvu" else "last_qbwc_contact")  # [ticket, status]: "nvu" = credentials rejected; "none" (idle) is a good login
         _emit("<-", call.method, _summary(call.method, result))
         return result

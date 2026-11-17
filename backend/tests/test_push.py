@@ -536,6 +536,8 @@ def test_clean_shutdown_cancels_the_active_run_and_waits(clean_db, tmp_path, mon
     assert state["locked_after_shutdown"] is False  # the worker was joined inside the shutdown
     out = env.get(f"/api/v1/push/runs/{state['run_id']}").json()
     assert out["status"] == "cancelled" and out["counts"]["product"].get("pending", 0) > 0
+    resume(env, state["run_id"], expect=503)  # no new real run after the shutdown began
+    engine._SHUTTING_DOWN.clear()  # (the next process start clears it)
     release.clear()
     fake.on_product = None
     resume(env, state["run_id"])  # and it is resumable

@@ -69,7 +69,7 @@ class Settings(DatabaseSettings):
     scheduler_read_jobs: str = "customers,vendors,items,other_items,assemblies,sales_orders,purchase_orders"  # comma-separated QuickBooks read job types (sites is unsupported on this client)
     scheduler_read_timeout_hours: float = Field(6, gt=0)
     scheduler_allow_production: bool = False  # production: the cycle's real run needs this, else it ends dry_run_only
-    sync_max_planned_calls: int = Field(20000, ge=1)
+    sync_max_planned_calls: int = Field(2000, ge=1)  # ~3x a normal daily volume; raise it only for a supervised run
     alert_webhook_url: Optional[SecretStr] = None  # Slack-compatible incoming webhook (the URL is a secret)
 
     @field_validator("scheduler_tz")

@@ -25,6 +25,7 @@ class PushRequest(M):
     acknowledge_foreign: Optional[str] = Field(None, max_length=128)  # sync mode: the verdict's foreign_hash, to proceed despite records StockTrim holds that we did not push
     stamp_only: bool = False  # adopt the current state as the baseline: writes payload hashes into the ledger, NO StockTrim call (TEST account, sync mode; see README)
     acknowledge_requeue: Optional[dict[Literal["suppliers", "products", "customers"], int]] = None  # sync mode: per step the re-queued count a human has seen (mass_requeue); the scheduler never sets it
+    acknowledge_delete: Optional[dict[Literal["bom"], int]] = None  # sync mode: the BOM edge DELETE count a human has seen (mass_delete); the scheduler never sets it
 
     @model_validator(mode="after")
     def _real_run_needs_plan_fingerprint(self) -> "PushRequest":
@@ -95,7 +96,7 @@ def _call(fn: Any, *a: Any) -> Any:
 @router.post("", response_model=PushStarted, response_model_exclude_none=True)
 def push(request: Request, body: PushRequest, kw: dict[str, Any] = Depends(get_stocktrim_client_kw)) -> Any:
     """dry_run (default): plan + pre-flight, writes nothing to StockTrim. Real run: needs STOCKTRIM_WRITES_ENABLED, an ok pre-flight and BOTH fingerprints of the dry-run."""
-    return _call(engine.start, request.app.state.settings, body.steps, body.dry_run, body.preflight_fingerprint, body.plan_fingerprint, kw, body.mode, body.acknowledge_foreign, body.stamp_only, body.acknowledge_requeue)
+    return _call(engine.start, request.app.state.settings, body.steps, body.dry_run, body.preflight_fingerprint, body.plan_fingerprint, kw, body.mode, body.acknowledge_foreign, body.stamp_only, body.acknowledge_requeue, body.acknowledge_delete)
 
 
 @router.get("/runs/{run_id}", response_model=PushRunOut)

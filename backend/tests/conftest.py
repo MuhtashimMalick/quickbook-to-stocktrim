@@ -177,5 +177,7 @@ def env(make_env) -> Env:
 @pytest.fixture(autouse=True)
 def _fresh_shared_limiters():
     from app.stocktrim.limiter import reset_shared_limiters  # noqa: PLC0415
+    from app.sync import engine  # noqa: PLC0415
 
+    engine._SHUTTING_DOWN.clear()  # a lifespan shutdown in an earlier test must not block this test's real runs
     reset_shared_limiters()

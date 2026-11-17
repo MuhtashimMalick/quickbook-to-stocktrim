@@ -77,6 +77,7 @@ class PlanChanged(Exception):
 _ACTIVE = threading.Lock()  # ponytail: one run per process; the DB partial unique index is the second line of defence
 _CANCELS: dict[UUID, threading.Event] = {}
 _thread: Optional[threading.Thread] = None
+_SHUTTING_DOWN = threading.Event()  # set at app shutdown: no NEW real run may start (cleared at startup)
 
 
 def join(timeout: Optional[float] = None) -> None:
@@ -85,8 +86,13 @@ def join(timeout: Optional[float] = None) -> None:
         _thread.join(timeout)
 
 
+def begin_shutdown() -> None:
+    _SHUTTING_DOWN.set()
+
+
 def shutdown(timeout: float = 8.0) -> None:
-    """App shutdown: ask every active run to cancel (it ends `cancelled`, resumable) and wait for the worker."""
+    """App shutdown: refuse new real runs, ask every active run to cancel (it ends `cancelled`, resumable) and wait for the worker."""
+    _SHUTTING_DOWN.set()
     for ev in list(_CANCELS.values()):
         ev.set()
     join(timeout)
@@ -737,6 +743,17 @@ def _set_running(run_id: UUID) -> None:
 MASS_REQUEUE_MIN, MASS_REQUEUE_PCT = 25, 0.05
 
 
+def _mass_delete(diff: Diff, ack: Optional[dict[str, int]], target: str) -> None:
+    """BOM edges to DELETE above max(25, 5% of the stored edges of this target) (an empty assemblies read looks like this) need `acknowledge_delete` = {"bom": that count}. The scheduler never passes it."""
+    n = len(diff.bom_gone)
+    if not n:
+        return
+    with session_scope() as s:
+        stored = s.scalar(select(func.count()).select_from(BomEdgeRow).where(BomEdgeRow.target == target)) or 0
+    if n > max(MASS_REQUEUE_MIN, MASS_REQUEUE_PCT * stored) and (ack or {}).get("bom") != n:
+        raise PushError(409, "mass_delete", to_delete=n)
+
+
 def _requires_step(target: str, steps: list[str], exists: dict[str, Any]) -> None:
     """A wipe that took ledger entities of a step that is NOT in this run cannot be repaired by it (a bom-only run with a wiped product, a products-only run with a wiped supplier):
     refuse and name the steps to add."""
@@ -788,13 +805,16 @@ def _stamp(built: Built, target: str, steps: list[str], dry_run: bool, report: A
 
 
 def start(settings: Settings, steps: list[str], dry_run: bool, fingerprint: Optional[str], plan_fp: Optional[str], kw: dict[str, Any], mode: str = "auto",
-          acknowledge_foreign: Optional[str] = None, stamp_only: bool = False, acknowledge_requeue: Optional[dict[str, int]] = None) -> dict[str, Any]:
+          acknowledge_foreign: Optional[str] = None, stamp_only: bool = False, acknowledge_requeue: Optional[dict[str, int]] = None,
+          acknowledge_delete: Optional[dict[str, int]] = None, requested_by: str = "admin-cli") -> dict[str, Any]:
     steps = [s for s in STEPS if s in steps]
     if stamp_only and "bom" in steps:
         raise PushError(422, "stamp_has_no_bom_step")
     if stamp_only and settings.stocktrim_environment != "test":
         raise PushError(409, "stamp_test_only")  # a stamp trusts the operator that StockTrim holds what was pushed: only ever on the TEST account
     if not dry_run:
+        if _SHUTTING_DOWN.is_set():
+            raise PushError(503, "shutting_down")
         if not settings.stocktrim_writes_enabled:
             raise PushError(403, "stocktrim_writes_disabled")
         if not fingerprint:
@@ -833,11 +853,12 @@ def start(settings: Settings, steps: list[str], dry_run: bool, fingerprint: Opti
             built = build_plan(settings, steps)
             diff = compute_diff(target, built, steps, exists)
             _mass_requeue(diff, acknowledge_requeue)
+            _mass_delete(diff, acknowledge_delete, target)
         if stamp_only:
             built = build_plan(settings, steps)
             return _stamp(built, target, steps, dry_run, report, compute_diff(target, built, steps, exists), plan_fp)
         if not dry_run:
-            run = PushRun(target=target, requested_by="admin-cli", options={**opts, "plan_fingerprint": plan_fp}, preflight_fingerprint=fingerprint, status="running")
+            run = PushRun(target=target, requested_by=requested_by, options={**opts, "plan_fingerprint": plan_fp}, preflight_fingerprint=fingerprint, status="running")
             try:
                 with session_scope() as s:
                     s.add(run)
@@ -856,7 +877,7 @@ def start(settings: Settings, steps: list[str], dry_run: bool, fingerprint: Opti
             plan_counts |= {"bom_to_post": len(post), "bom_to_delete": len(gone)}
         if diff:
             extra |= {"sync": _sync_summary(diff)}
-        run = PushRun(target=target, requested_by="admin-cli", options={**opts, "plan_fingerprint": pfp}, status="done", finished_at=utcnow(),
+        run = PushRun(target=target, requested_by=requested_by, options={**opts, "plan_fingerprint": pfp}, status="done", finished_at=utcnow(),
                       preflight_fingerprint=report.fingerprint, summary={**plan_counts, **extra})
         with session_scope() as s:
             s.add(run)
@@ -869,6 +890,8 @@ def start(settings: Settings, steps: list[str], dry_run: bool, fingerprint: Opti
 
 
 def resume(settings: Settings, run_id: UUID, kw: dict[str, Any]) -> dict[str, Any]:
+    if _SHUTTING_DOWN.is_set():
+        raise PushError(503, "shutting_down")
     if not settings.stocktrim_writes_enabled:
         raise PushError(403, "stocktrim_writes_disabled")
     row = _run_row(run_id)
@@ -905,6 +928,7 @@ def cancel(run_id: UUID) -> None:
 
 def recover_push_runs() -> int:
     """Startup: one worker, so any `running` push_run is stale."""
+    _SHUTTING_DOWN.clear()
     with session_scope() as s:
         n = s.execute(update(PushRun).where(PushRun.status == "running").values(status="interrupted", finished_at=utcnow())).rowcount
     if n:

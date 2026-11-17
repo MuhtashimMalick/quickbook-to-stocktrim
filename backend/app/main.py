@@ -15,7 +15,7 @@ from .qbwc.gate import QBWC_PATH, TunnelGate
 from .qbwc.service import LoggingQBWCService, setup_file_log
 from .quickbooks.tasks import WRITE_JOB_TYPES
 from .scheduler import Scheduler, recover_cycles
-from .sync.engine import recover_push_runs, shutdown
+from .sync.engine import recover_push_runs
 
 setup_logging()
 
@@ -27,8 +27,7 @@ async def lifespan(app: FastAPI):
     recover_cycles()
     app.state.scheduler.start()  # only when SCHEDULER_ENABLED
     yield
-    await asyncio.to_thread(app.state.scheduler.stop)  # a running cycle ends `interrupted`; stop before cancelling its push run
-    await asyncio.to_thread(shutdown)  # cancel the active push run (resumable) and wait for its worker
+    await asyncio.to_thread(app.state.scheduler.stop)  # one shared deadline (25 s < stop_grace_period): scheduler thread, then the push worker is cancelled (resumable)
 
 
 def build_app(settings: Optional[Settings] = None) -> FastAPI:

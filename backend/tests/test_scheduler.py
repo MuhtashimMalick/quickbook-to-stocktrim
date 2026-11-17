@@ -12,19 +12,20 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 from pydantic import SecretStr
-from sqlalchemy import select, text
+from sqlalchemy import delete, select, text
 
 from app import appstate, jobs
+from app import scheduler as sched_mod
 from app.api.v1.preflight import get_stocktrim_client_kw
 from app.db import get_engine, session_scope
-from app.models import PushRun, SyncCycle
+from app.models import PushRun, QBRecord, SyncCycle
 from app.preflight.schema import Finding, Verdict
 from app.scheduler import LOCK_KEY, CycleBusy, Scheduler, next_run, recover_cycles, send_alert
 from app.sync import engine
 
 from .conftest import HEADERS, QB, rs_error
-from .test_push import mk
-from .test_push_stage10 import ROWS10, Fake10, run_all
+from .test_push import finish, mk, post
+from .test_push_stage10 import ROWS10, Fake10, dry, run_all
 
 UTC = timezone.utc
 EXTRA_CUSTOMERS = [("Customer", f"CX{i}", {"ListID": f"CX{i}", "FullName": f"SENTINEL-x{i}"}) for i in range(30)]
@@ -126,10 +127,11 @@ def test_full_cycle_done_queues_once_and_never_acknowledges(h, calls):
     assert sum(h.fake.posts.values()) - before == 2  # exactly the two changed products were pushed
     with session_scope() as s:
         run = s.get(PushRun, row.push_run_id)
-        assert (run.status, run.options["dry_run"], run.options["mode"]) == ("done", False, "sync")
+        assert (run.status, run.options["dry_run"], run.options["mode"], run.requested_by) == ("done", False, "sync", "scheduler")
+    assert isinstance(row.summary["warnings"], dict)
     # the dry-run first, then the real run with ITS fingerprints; nothing but (settings, steps, dry_run, fp, plan_fp, kw, mode) is ever passed
     (d_args, d_kw), (r_args, r_kw) = calls[-2], calls[-1]
-    assert not d_kw and not r_kw and len(d_args) == len(r_args) == 7
+    assert d_kw == r_kw == {"requested_by": "scheduler"} and len(d_args) == len(r_args) == 7  # no acknowledge_* / stamp_only, positionally or by keyword
     assert d_args[2] is True and r_args[2] is False and d_args[6] == r_args[6] == "sync" and list(d_args[1]) == list(engine.STEPS)
     assert r_args[3:5] == (calls_fp(h, 0), calls_fp(h, 1))
     assert appstate.get_state("last_cycle")["status"] == "done" and h.alerts == []
@@ -205,7 +207,7 @@ def test_mass_requeue_aborts_and_is_never_acknowledged(clean_db, tmp_path, calls
     h.fake.customers.clear()  # looks like a wipe
     row = h.cycle()
     assert (row.status, row.reason) == ("aborted", "mass_requeue") and row.push_run_id is None
-    assert all(len(a) == 7 and not k for a, k in calls[-1:])
+    assert all(len(a) == 7 and set(k) == {"requested_by"} for a, k in calls[-1:])
 
 
 def test_blocking_verdict_aborts(h, monkeypatch):
@@ -260,7 +262,7 @@ def test_push_with_failures_fails_the_cycle(clean_db, tmp_path):
     fail["on"] = True
     row = h.cycle()
     assert (row.status, row.reason) == ("failed", "push_done_with_failures") and row.push_run_id and row.summary["push"]["items"] == {"failed": 1}
-    assert h.alerts[0]["cycle_status"] == "failed"
+    assert h.alerts[0]["cycle_status"] == "failed" and h.alerts[0]["environment"] == "test" and h.alerts[0]["cycle_id"] == str(row.id)
 
 
 def test_a_crash_is_recorded_by_type_only(h, monkeypatch):
@@ -277,24 +279,26 @@ def test_shutdown_during_the_read_wait_interrupts(h):
 
 # ---- lock, startup recovery, loop ---------------------------------------------------------------
 
-def test_advisory_lock_and_running_index_prevent_a_second_cycle(h):
+def test_advisory_lock_prevents_a_second_cycle_and_a_stale_row_is_interrupted(h):
     cid, conn = h.sch._begin("manual")
     with pytest.raises(CycleBusy):
         h.sch._begin("schedule")
-    h.sch._release(conn)  # lock free again, but the row is still `running`: the partial unique index refuses
-    with pytest.raises(CycleBusy):
-        h.sch._begin("schedule")
-    assert recover_cycles() == 1
+    h.sch._release(conn)  # the lock is free but the row is still `running` (a crashed process): holding the lock proves nobody is alive
     cid2, conn2 = h.sch._begin("schedule")
     h.sch._release(conn2)
-    assert cid2 != cid
-    # the lock itself, with no running row: held by another connection
+    with session_scope() as s:
+        old, new = s.get(SyncCycle, cid), s.get(SyncCycle, cid2)
+    assert (old.status, old.reason) == ("interrupted", "stale") and old.finished_at and new.status == "running"
+    # the lock itself held by another connection: no cycle, and recover_cycles leaves the `running` row alone
     with get_engine().connect() as other:
         other.execute(text("SELECT pg_advisory_lock(:k)"), {"k": LOCK_KEY})
-        recover_cycles()
+        assert recover_cycles() == 0
         with pytest.raises(CycleBusy):
             h.sch._begin("manual")
         other.execute(text("SELECT pg_advisory_unlock_all()"))
+    with session_scope() as s:
+        assert s.get(SyncCycle, cid2).status == "running"
+    assert recover_cycles() == 1
 
 
 def test_stale_running_cycle_is_interrupted_at_startup(env):
@@ -364,7 +368,7 @@ def test_alert_webhook_payload_and_failures(h, caplog):
     h.env.settings.alert_webhook_url = SecretStr("https://hooks.example.test/SECRET-PATH")
     with caplog.at_level(logging.ERROR):
         send_alert(h.env.settings, "aborted", "stale_snapshot", transport=httpx.MockTransport(h._webhook))
-    assert h.alerts == [{"text": "QuickBook sync cycle aborted: stale_snapshot", "cycle_status": "aborted", "reason": "stale_snapshot"}]
+    assert h.alerts == [{"text": "QuickBook sync cycle aborted: stale_snapshot", "cycle_status": "aborted", "reason": "stale_snapshot", "environment": "test", "cycle_id": None}]
     assert "sync cycle aborted: stale_snapshot" in caplog.text
     caplog.clear()
 
@@ -417,7 +421,7 @@ def test_health_shape_and_content(h):
     r = h.env.get("/api/v1/health")
     assert r.status_code == 200
     b = r.json()
-    assert set(b) == {"database", "environment", "stocktrim_writes_enabled", "scheduler", "last_qbwc_contact", "last_qbwc_contact_age_seconds", "last_cycle", "jobs", "snapshot",
+    assert set(b) == {"database", "environment", "stocktrim_writes_enabled", "scheduler", "last_qbwc_contact", "last_qbwc_contact_age_seconds", "last_qbwc_auth_refused", "last_cycle", "jobs", "snapshot",
                       "push_run", "stocktrim"} and b["stocktrim"] is None  # the probe only runs with ?probe=true
     assert b["database"] is True and b["environment"] == "test" and b["stocktrim_writes_enabled"] is True
     assert b["scheduler"] == {"enabled": True, "running": False, "daily_at": "02:00", "tz": "UTC", "next_run_at": b["scheduler"]["next_run_at"]} and b["scheduler"]["next_run_at"]
@@ -466,19 +470,23 @@ def test_health_reports_a_database_failure(env, monkeypatch):
     assert b["database"] is False and b["jobs"] == {} and b["scheduler"]["enabled"] is False
 
 
-def test_last_qbwc_contact_is_written_on_authenticate_and_throttled(env):
+def test_last_qbwc_contact_only_for_successful_logins_refusals_are_kept_apart(env):
+    svc = env.app.state.qbwc_service
     assert appstate.get_state("last_qbwc_contact") is None
+    assert env.connector(password="wrong").run_update(QB()).authenticated is False
+    assert appstate.get_state("last_qbwc_contact") is None and appstate.get_state("last_qbwc_auth_refused")  # a refused login is NOT contact
+    health = env.get("/api/v1/health").json()
+    assert health["last_qbwc_contact"] is None and health["last_qbwc_auth_refused"]
     env.run(QB())
     first = appstate.get_state("last_qbwc_contact")["at"]
     env.run(QB())
     assert appstate.get_state("last_qbwc_contact")["at"] == first  # within a minute: not written again
-    env.app.state.qbwc_service._contact_at = -1e9
+    svc._contact_at.pop("last_qbwc_contact")
     env.run(QB())
     assert appstate.get_state("last_qbwc_contact")["at"] > first
-    assert env.connector(password="wrong").run_update(QB()).authenticated is False  # every authenticate counts, even a refused one
-    env.app.state.qbwc_service._contact_at = -1e9
+    refused = appstate.get_state("last_qbwc_auth_refused")["at"]
     env.connector(password="wrong").run_update(QB())
-    assert appstate.get_state("last_qbwc_contact")["at"] > first
+    assert appstate.get_state("last_qbwc_auth_refused")["at"] == refused  # throttled too
 
 
 # ---- migration 0007 / leakage ------------------------------------------------------------------------
@@ -508,3 +516,186 @@ def test_leakage_sentinel(h, caplog):
     with session_scope() as s:
         stored = json.dumps([[c.reason, c.summary] for c in s.scalars(select(SyncCycle))]) + json.dumps(appstate.get_state("last_cycle"))
     assert not any("SENTINEL" in t for t in (stored, health, caplog.text, json.dumps(h.alerts)))
+
+
+# ---- stage 12b: review fixes -----------------------------------------------------------------------------
+
+def writes(h: H) -> int:
+    return len(h.fake.writes)
+
+
+def real_runs() -> int:
+    with session_scope() as s:
+        return len(list(s.scalars(select(PushRun).where(PushRun.options["dry_run"].as_boolean().is_(False)))))
+
+
+def after_dry_run(monkeypatch, fn: Callable[[], None]) -> None:
+    """Run fn() right after the scheduler dry-run returned (between the dry-run and the real run)."""
+    orig = engine.start
+
+    def wrapped(*a, **k):
+        out = orig(*a, **k)
+        if a[2] is True:
+            fn()
+        return out
+    monkeypatch.setattr(engine, "start", wrapped)
+
+
+def test_empty_assemblies_read_aborts_and_writes_nothing(h):
+    h.baseline()
+    h.qb.entities["ItemInventoryAssembly"] = []  # QuickBooks returned no assemblies: a successful, empty read
+    w = writes(h)
+    row = h.cycle()
+    assert (row.status, row.reason, row.summary["empty_entities"]) == ("aborted", "empty_entity", ["assemblies"]) and row.push_run_id is None
+    assert writes(h) == w and h.alerts[0]["reason"] == "empty_entity"
+
+
+def test_an_empty_entity_without_a_ledger_is_fine(h):
+    h.baseline()
+    h.qb.entities["Customer"] = []
+    with session_scope() as s:  # nothing was ever pushed for customers
+        s.execute(text("DELETE FROM pushed_item WHERE entity = 'customer'"))
+    assert h.cycle().reason != "empty_entity"
+
+
+def test_mass_vanish_aborts(clean_db, tmp_path):
+    h = H(clean_db, tmp_path, rows=[*ROWS10, *EXTRA_CUSTOMERS])
+    h.baseline()
+    h.qb.entities["Customer"] = [c for c in h.qb.entities["Customer"] if not c["ListID"].startswith("CX")]
+    row = h.cycle()
+    assert (row.status, row.reason, row.summary["vanished"]) == ("aborted", "mass_vanish", {"customers": 30}) and row.push_run_id is None
+
+
+def test_mass_delete_needs_the_exact_acknowledgement(clean_db, tmp_path):
+    asm = [("ItemInventoryAssembly", f"AX{i}", {"ListID": f"AX{i}", "Name": f"ASMX{i}", "QuantityOnHand": "0", "ItemInventoryAssemblyLine": [{"ItemInventoryRef": {"ListID": "I1"}, "Quantity": "1"}]}) for i in range(30)]
+    env = mk(clean_db, tmp_path, Fake10(), rows=[*ROWS10, *asm])
+    assert run_all(env)["status"] == "done"
+    with session_scope() as s:
+        s.execute(delete(QBRecord).where(QBRecord.qb_id.like("AX%")))  # 30 assemblies (and their 30 edges) gone from QuickBooks
+    r = post(env, steps=["bom"])
+    assert (r.status_code, r.json()["detail"]) == (409, {"code": "mass_delete", "to_delete": 30})
+    assert post(env, steps=["bom"], acknowledge_delete={"bom": 29}).json()["detail"]["code"] == "mass_delete"
+    assert post(env, steps=["bom"], acknowledge_delete={"products": 30}).status_code == 422  # typed
+    ok = post(env, steps=["bom"], acknowledge_delete={"bom": 30}).json()
+    assert ok["sync"]["bom"]["to_delete"] == 30
+    body = {"steps": ["bom"], "dry_run": False, "preflight_fingerprint": ok["preflight_fingerprint"], "plan_fingerprint": ok["plan_fingerprint"]}
+    assert post(env, **body).json()["detail"]["code"] == "mass_delete"  # the real run needs it too
+    out = finish(env, post(env, **body, acknowledge_delete={"bom": 30}).json()["run_id"])
+    assert out["status"] == "done" and out["counts"] == {"bom_edge": {"done": 30}}
+
+
+def test_a_failing_bookkeeping_write_still_alerts_and_the_next_cycle_runs(h, monkeypatch):
+    h.connect()  # reads only: no completed push, so the cycle aborts (no_completed_initial_run)
+    orig, boom = sched_mod._update_cycle, {"n": 0}
+
+    def flaky(*a, **k):
+        boom["n"] += 1
+        if boom["n"] == 1:
+            raise RuntimeError("db hiccup")
+        return orig(*a, **k)
+    monkeypatch.setattr(sched_mod, "_update_cycle", flaky)
+    first = h.cycle()
+    assert first.status == "running" and [a["reason"] for a in h.alerts] == ["no_completed_initial_run"]  # the row could not be updated, the alert went out
+    second = h.cycle()  # holding the lock proves the `running` row is stale: it is interrupted, the cycle runs
+    assert (second.status, second.reason) == ("aborted", "no_completed_initial_run")
+    with session_scope() as s:
+        old = s.get(SyncCycle, first.id)
+    assert (old.status, old.reason) == ("interrupted", "stale")
+
+
+def test_a_start_failure_alerts(h):
+    def boom(trigger):
+        raise RuntimeError("x")
+    h.sch._begin = boom
+    h.sch._run_scheduled()
+    assert [(a["cycle_status"], a["reason"]) for a in h.alerts] == [("failed", "start_RuntimeError")]
+
+
+def test_shutdown_between_dry_run_and_real_run_interrupts(h, monkeypatch):
+    h.baseline()
+    products(h, 1)
+    before = real_runs()
+    after_dry_run(monkeypatch, h.sch._stop.set)
+    row = h.cycle()
+    assert (row.status, row.reason) == ("interrupted", "shutdown") and row.push_run_id is None and real_runs() == before
+
+
+def test_no_new_real_run_while_shutting_down(h):
+    h.baseline()
+    products(h, 1)
+    d = dry(h.env, tuple(engine.STEPS))
+    with session_scope() as s:
+        run_id = s.scalars(select(PushRun).where(PushRun.status == "done")).first().id
+    h.sch.stop(timeout=1)  # sets the engine flag
+    body = {"steps": list(engine.STEPS), "dry_run": False, "preflight_fingerprint": d["preflight_fingerprint"], "plan_fingerprint": d["plan_fingerprint"]}
+    r = post(h.env, **body)
+    assert (r.status_code, r.json()["detail"]) == (503, "shutting_down") and not engine._ACTIVE.locked()
+    assert h.env.client.post(f"/api/v1/push/runs/{run_id}/resume", headers=HEADERS).status_code == 503
+
+
+def test_missed_slot_runs_once_at_startup_only_without_a_cycle_since(h, monkeypatch):
+    ran: list[str] = []
+    monkeypatch.setattr(h.sch, "_run_scheduled", lambda: (ran.append("x"), h.sch._stop.set()))
+    h.clock.t = datetime(2026, 11, 18, 2, 30, tzinfo=UTC)  # the 02:00 slot passed 30 minutes ago and nothing ran
+    h.sch._loop()
+    assert ran == ["x"]
+    h.sch._stop.clear()
+    ran.clear()
+    with session_scope() as s:
+        s.add(SyncCycle(trigger="schedule", status="done", started_at=datetime(2026, 11, 18, 2, 0, tzinfo=UTC)))
+    h.sch.sleep = lambda s_: h.sch._stop.set()  # (waiting for the next slot)
+    h.sch._loop()
+    assert ran == []  # a cycle started at the slot: no double run
+    h.sch._stop.clear()
+    with session_scope() as s:
+        s.execute(delete(SyncCycle))
+    h.clock.t = datetime(2026, 11, 18, 9, 0, tzinfo=UTC)  # 7 h after the slot: beyond the read timeout (6 h)
+    h.sch._loop()
+    assert ran == []
+
+
+def test_a_running_manual_push_stops_the_cycle_before_the_dry_run(h):
+    h.baseline()
+    with session_scope() as s:
+        s.add(PushRun(target="x", status="running", options={}))
+    h.fake.log.clear()
+    row = h.cycle()
+    assert (row.status, row.reason) == ("aborted", "push_running") and h.fake.log == []  # no StockTrim read: the dry-run never started
+
+
+def test_a_plan_change_between_dry_run_and_real_run_fails_the_cycle(h, monkeypatch):
+    h.baseline()
+    products(h, 1)
+
+    def change_customer() -> None:
+        with session_scope() as s:
+            rec = s.scalars(select(QBRecord).where(QBRecord.qb_id == "C1")).one()
+            rec.payload = {**rec.payload, "Phone": "SENTINEL-changed"}
+    after_dry_run(monkeypatch, change_customer)
+    w = writes(h)
+    row = h.cycle()
+    assert (row.status, row.reason) == ("failed", "push_failed") and row.summary["push"]["error"] == "plan_fingerprint_mismatch" and writes(h) == w
+    assert h.alerts[0]["push_error"] == "plan_fingerprint_mismatch"
+
+
+def test_a_killed_lock_connection_aborts_before_the_real_run(h, monkeypatch):
+    h.baseline()
+    products(h, 1)
+    cid, conn = h.sch._begin("schedule")
+    pid = conn.scalar(text("SELECT pg_backend_pid()"))
+
+    def kill() -> None:
+        with get_engine().connect() as c:
+            c.execute(text("SELECT pg_terminate_backend(:p)"), {"p": pid})
+    after_dry_run(monkeypatch, kill)
+    before, w = real_runs(), writes(h)
+    h.sch._execute(cid, conn)
+    with session_scope() as s:
+        row = s.get(SyncCycle, cid)
+    assert (row.status, row.reason) == ("aborted", "lock_lost") and real_runs() == before and writes(h) == w
+
+
+def test_reads_done_needs_every_job(h):
+    j = jobs.create_job("customers")
+    jobs.set_job_status(j.id, "done")
+    assert h.sch._reads_done([j.id]) is True and h.sch._reads_done([j.id, j.id + 99]) is False  # a vanished job is not "done"

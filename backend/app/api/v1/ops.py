@@ -72,6 +72,7 @@ class Health(M):
     scheduler: SchedulerOut
     last_qbwc_contact: Optional[datetime] = None
     last_qbwc_contact_age_seconds: Optional[int] = None
+    last_qbwc_auth_refused: Optional[datetime] = None  # the last refused Web Connector login (wrong credentials)
     last_cycle: Optional[CycleOut] = None
     jobs: dict[str, int] = {}  # queued / running QuickBooks jobs
     snapshot: dict[str, Freshness] = {}  # per QuickBooks entity
@@ -122,6 +123,8 @@ def health(request: Request, probe: bool = False) -> Any:
                                        "finished_at": run.finished_at, "counts": item_counts(run.id)}
         if (contact := get_state("last_qbwc_contact")) and (at := datetime.fromisoformat(contact["at"])):
             out |= {"last_qbwc_contact": at, "last_qbwc_contact_age_seconds": max(0, int((utcnow() - at).total_seconds()))}
+        if refused := get_state("last_qbwc_auth_refused"):
+            out["last_qbwc_auth_refused"] = datetime.fromisoformat(refused["at"])
     except Exception:  # noqa: BLE001 - the endpoint exists to report this
         out["database"] = False
     if probe:

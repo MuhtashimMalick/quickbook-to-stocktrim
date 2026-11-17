@@ -4,6 +4,7 @@ second process can never run a cycle at the same time.
 Never passed to the engine: acknowledge_foreign, acknowledge_requeue, stamp_only. Logs, alerts, cycle rows carry short codes and counts only (never record contents)."""
 import logging
 import threading
+import time as _time
 from datetime import datetime, time, timedelta, timezone
 from typing import Any, Callable, Optional
 from uuid import UUID
@@ -17,14 +18,16 @@ from . import jobs
 from .appstate import set_state
 from .config import Settings
 from .db import get_engine, session_scope
-from .models import Job, PushRun, QBRecord, SyncCycle, utcnow
+from .models import BomEdge, Job, PushedItem, PushRun, QBRecord, SyncCycle, utcnow
 from .quickbooks.tasks import ENTITY_ALIASES, READ_JOB_TYPES
+from .stocktrim.target import stocktrim_target
 from .sync import engine
 from .tz import tz_of
 
 log = logging.getLogger("app.scheduler")
 LOCK_KEY = 0x51425343  # pg advisory lock id of "a cycle is running"
 POLL_SECONDS = 30
+LEDGER_OF = {"customers": "customer", "vendors": "supplier", "items": "product", "assemblies": "bom_edge", "sales_orders": "sales_order_line", "purchase_orders": "purchase_order"}  # read type -> what it feeds
 PUSH_FAILED = {"done_with_failures", "failed", "interrupted", "cancelled"}
 
 
@@ -51,22 +54,40 @@ def next_run(now: datetime, hhmm: str, tz: "timezone | ZoneInfo") -> datetime:
     raise AssertionError("unreachable")  # pragma: no cover
 
 
-def send_alert(settings: Settings, status: str, reason: str, **http_kw: Any) -> None:
+def send_alert(settings: Settings, status: str, reason: str, cycle_id: Optional[UUID] = None, push_error: Optional[str] = None, **http_kw: Any) -> None:
     """ERROR log line always; a Slack-compatible webhook POST when ALERT_WEBHOOK_URL is set. Never raises, never carries record contents."""
     log.error("sync cycle %s: %s", status, reason)
     if not settings.alert_webhook_url:
         return
+    body = {"text": f"QuickBook sync cycle {status}: {reason}", "cycle_status": status, "reason": reason, "environment": settings.stocktrim_environment,
+            "cycle_id": str(cycle_id) if cycle_id else None, **({"push_error": push_error} if push_error else {})}
     try:
         with httpx.Client(timeout=5, **http_kw) as c:
-            c.post(settings.alert_webhook_url.get_secret_value(), json={"text": f"QuickBook sync cycle {status}: {reason}", "cycle_status": status, "reason": reason}).raise_for_status()
+            c.post(settings.alert_webhook_url.get_secret_value(), json=body).raise_for_status()
     except Exception as e:  # noqa: BLE001 - an alert that cannot be sent is logged (type only: the URL is a secret)
         log.error("alert webhook failed: %s", type(e).__name__)
 
 
-def recover_cycles() -> int:
-    """Startup: one worker, so any `running` cycle is stale."""
+def _interrupt_stale(reason: str) -> int:
+    """Only call while holding the advisory lock: no cycle can be alive, so a `running` row is stale."""
     with session_scope() as s:
-        n = s.execute(update(SyncCycle).where(SyncCycle.status == "running").values(status="interrupted", reason="restart", finished_at=utcnow())).rowcount
+        return s.execute(update(SyncCycle).where(SyncCycle.status == "running").values(status="interrupted", reason=reason, finished_at=utcnow())).rowcount
+
+
+def recover_cycles() -> int:
+    """Startup: mark a stale `running` cycle interrupted, but only when the advisory lock can be taken (another live process may own it)."""
+    conn = get_engine().connect().execution_options(isolation_level="AUTOCOMMIT")
+    try:
+        if not conn.scalar(select(func.pg_try_advisory_lock(LOCK_KEY))):
+            conn.close()
+            return 0
+    except BaseException:
+        conn.close()
+        raise
+    try:
+        n = _interrupt_stale("restart")
+    finally:
+        Scheduler._release(conn)
     if n:
         log.warning("marked %d stale sync cycle(s) interrupted after restart", n)
     return n
@@ -107,29 +128,53 @@ class Scheduler:
             self._thread = threading.Thread(target=self._loop, name="scheduler", daemon=True)
             self._thread.start()
 
-    def stop(self, timeout: float = 10.0) -> None:
+    def stop(self, timeout: float = 25.0) -> None:
+        """One shared deadline (must stay under stop_grace_period) for the scheduler thread, a manual cycle and the push worker."""
+        end = _time.monotonic() + timeout
+        engine.begin_shutdown()  # no NEW real run from here on
         self._stop.set()
         for t in (self._thread, self._worker):
             if t:
-                t.join(timeout)
+                t.join(max(0.0, end - _time.monotonic()))
+        engine.shutdown(max(0.0, end - _time.monotonic()))
 
     @property
     def running(self) -> bool:
         return bool(self._thread and self._thread.is_alive())
 
+    def _missed_slot(self) -> bool:
+        """Today's slot has passed, no cycle started since it, and it is still within the read timeout: the process was down at the slot."""
+        now = self.clock()
+        slot = next_run(now - timedelta(days=1), self.settings.sync_daily_at, self.tz)  # walk to the latest slot <= now
+        while (nxt := next_run(slot, self.settings.sync_daily_at, self.tz)) <= now:
+            slot = nxt
+        if slot > now or now - slot > timedelta(hours=self.settings.scheduler_read_timeout_hours):
+            return False
+        with session_scope() as s:
+            return s.scalar(select(func.count()).select_from(SyncCycle).where(SyncCycle.started_at >= slot)) == 0
+
+    def _run_scheduled(self) -> None:
+        try:
+            self._execute(*self._begin("schedule"))
+        except CycleBusy:
+            log.warning("scheduled sync cycle skipped: another cycle is running")
+        except Exception as e:  # noqa: BLE001
+            send_alert(self.settings, "failed", "start_" + type(e).__name__, **self.http_kw)
+
     def _loop(self) -> None:
+        try:
+            if self._missed_slot():
+                log.warning("daily slot was missed (process down?): running the cycle now")
+                self._run_scheduled()
+        except Exception as e:  # noqa: BLE001
+            log.error("missed-slot check failed: %s", type(e).__name__)
         while not self._stop.is_set():
             due = next_run(self.clock(), self.settings.sync_daily_at, self.tz)
             while (rem := (due - self.clock()).total_seconds()) > 0:
                 self.sleep(min(rem, 60))
                 if self._stop.is_set():
                     return
-            try:
-                self._execute(*self._begin("schedule"))
-            except CycleBusy:
-                log.warning("scheduled sync cycle skipped: another cycle is running")
-            except Exception as e:  # noqa: BLE001
-                log.error("scheduled sync cycle could not start: %s", type(e).__name__)
+            self._run_scheduled()
 
     # ---- one cycle
     def trigger_now(self) -> UUID:
@@ -149,6 +194,7 @@ class Scheduler:
             conn.close()
             raise
         try:
+            _interrupt_stale("stale")  # holding the lock proves no cycle is alive
             row = SyncCycle(trigger=trigger, status="running")
             with session_scope() as s:
                 s.add(row)
@@ -164,11 +210,16 @@ class Scheduler:
     def _release(conn: Any) -> None:
         try:
             conn.scalar(select(func.pg_advisory_unlock(LOCK_KEY)))
+        except Exception as e:  # noqa: BLE001 - a dead connection has already dropped the lock
+            log.warning("advisory lock release failed: %s", type(e).__name__)
         finally:
-            conn.close()
+            try:
+                conn.close()
+            except Exception:  # noqa: BLE001
+                pass
 
     def _execute(self, cid: UUID, conn: Any) -> None:
-        ctx: dict[str, Any] = {"summary": {}}
+        ctx: dict[str, Any] = {"summary": {}, "conn": conn}
         status, reason = "failed", "crashed"
         try:
             self._cycle(cid, ctx)
@@ -179,10 +230,16 @@ class Scheduler:
         except Exception as e:  # noqa: BLE001 - the cycle row carries the exception TYPE only
             status, reason = "failed", type(e).__name__
         try:
-            _update_cycle(cid, status=status, reason=reason, finished_at=utcnow(), summary=ctx["summary"])
-            set_state("last_cycle", {"id": str(cid), "status": status, "reason": reason, "finished_at": utcnow().isoformat(), "summary": ctx["summary"]})
+            try:
+                _update_cycle(cid, status=status, reason=reason, finished_at=utcnow(), summary=ctx["summary"])
+            except Exception as e:  # noqa: BLE001 - each bookkeeping step is independent: the alert must go out even if the DB write fails
+                log.error("sync cycle row not updated: %s", type(e).__name__)
+            try:
+                set_state("last_cycle", {"id": str(cid), "status": status, "reason": reason, "finished_at": utcnow().isoformat(), "summary": ctx["summary"]})
+            except Exception as e:  # noqa: BLE001
+                log.error("last_cycle not recorded: %s", type(e).__name__)
             if status != "done":
-                send_alert(self.settings, status, reason or "-", **self.http_kw)
+                send_alert(self.settings, status, reason or "-", cid, ctx["summary"].get("push", {}).get("error"), **self.http_kw)
             else:
                 log.info("sync cycle %s done %s", cid, ctx["summary"])
         finally:
@@ -211,41 +268,64 @@ class Scheduler:
         deadline = self.clock() + timedelta(hours=s_.scheduler_read_timeout_hours)
         if not self._wait(lambda: self._reads_done(ids), deadline):
             raise _End("aborted", "read_timeout", read_jobs_pending=self._open_jobs(ids))
-        # (c) freshness: every pulled entity must have been rewritten since the cycle began
-        # ponytail: an entity with no rows (empty in QuickBooks) is skipped; a job that finished `done` already proved the read
+        # (c) freshness: every pulled entity must have been rewritten since the cycle began; an entity with NO rows while its ledger has rows is an empty read (a wipe), never a sync
         with session_scope() as s:
             newest = dict(s.execute(select(QBRecord.entity, func.max(QBRecord.synced_at)).group_by(QBRecord.entity)).all())
-        stale = [t for t in self.types if t != "sites" and (m := max((newest[e] for e in ENTITY_ALIASES[t] if e in newest), default=None)) is not None and m <= started]
+        target = stocktrim_target(s_)
+        empty, stale = [], []
+        for t in self.types:
+            if t == "sites":
+                continue
+            m = max((newest[e] for e in ENTITY_ALIASES[t] if e in newest), default=None)
+            if m is None:
+                if t in LEDGER_OF and self._ledger_rows(target, LEDGER_OF[t]):
+                    empty.append(t)
+            elif m <= started:
+                stale.append(t)
+        if empty:
+            raise _End("aborted", "empty_entity", empty_entities=empty)
         if stale:
             raise _End("aborted", "stale_snapshot", stale_entities=len(stale))
         # (d) sync: dry-run, automatic checks, real run
         steps = list(engine.STEPS)
+        with session_scope() as s:
+            if s.scalar(select(func.count()).select_from(PushRun).where(PushRun.status == "running")):
+                raise _End("aborted", "push_running")  # a manual push is running: do not start the (minutes-long) dry-run reads
         try:
-            d = engine.start(s_, steps, True, None, None, kw, "sync")  # the scheduler never passes acknowledge_foreign / acknowledge_requeue / stamp_only
+            d = engine.start(s_, steps, True, None, None, kw, "sync", requested_by="scheduler")  # never acknowledge_foreign / acknowledge_requeue / acknowledge_delete / stamp_only
         except engine.PushError as e:
             raise _End("aborted", e.code) from None  # no_completed_initial_run, mass_requeue, requeue_requires_step, ...
         v = d["verdict"]
         ctx["summary"]["planned_calls"] = d["planned_calls"]
         ctx["summary"]["sync"] = {st: {k: n for k, n in c.items() if isinstance(n, int)} for st, c in d["sync"].items()}
+        ctx["summary"]["warnings"] = {w.code: w.count for w in v.warnings}
         if v.foreign_hash or any(w.code == "foreign_in_plan" for w in v.warnings):
             raise _End("aborted", "foreign_records")
         if not v.ok_to_push or v.blocking:
             raise _End("aborted", "preflight_not_ok", blocking=[f.code for f in v.blocking])
+        if vanish := {st: c["vanished"] for st, c in d["sync"].items() if c.get("vanished", 0) > max(engine.MASS_REQUEUE_MIN, engine.MASS_REQUEUE_PCT * sum(c.get(k, 0) for k in ("changed", "unchanged", "requeued", "vanished")))}:
+            raise _End("aborted", "mass_vanish", vanished=vanish)
         if d["planned_calls"] > s_.sync_max_planned_calls:
             raise _End("aborted", "too_many_calls")
         if not s_.stocktrim_writes_enabled:
             raise _End("dry_run_only", "writes_disabled")
         if s_.stocktrim_environment == "production" and not s_.scheduler_allow_production:
             raise _End("dry_run_only", "production_not_allowed")
+        if self._stop.is_set():
+            raise _End("interrupted", "shutdown")
         try:
-            r = engine.start(s_, steps, False, d["preflight_fingerprint"], d["plan_fingerprint"], kw, "sync")
+            ctx["conn"].scalar(select(1))  # the advisory lock lives on this connection: if it died, another process could start a cycle
+        except Exception:  # noqa: BLE001
+            raise _End("aborted", "lock_lost") from None
+        try:
+            r = engine.start(s_, steps, False, d["preflight_fingerprint"], d["plan_fingerprint"], kw, "sync", requested_by="scheduler")
         except engine.PushError as e:
             raise _End("aborted", e.code) from None
         run_id = r["run_id"]
         _update_cycle(cid, push_run_id=run_id)
         self._wait(lambda: self._push_status(run_id) != "running")
         status = self._push_status(run_id)
-        ctx["summary"]["push"] = {"status": status, "items": item_counts(run_id)}
+        ctx["summary"]["push"] = {"status": status, "items": item_counts(run_id), **({"error": err} if (err := self._push_error(run_id)) else {})}
         if status in PUSH_FAILED:
             raise _End("failed", f"push_{status}")
 
@@ -255,7 +335,7 @@ class Scheduler:
             rows = list(s.execute(select(Job.job_type, Job.status).where(Job.id.in_(ids))))
         if bad := [t for t, st in rows if st in ("error", "unsupported") and t != "sites"]:
             raise _End("aborted", "read_job_failed", failed_jobs=bad)
-        return all(st in jobs.TERMINAL for _, st in rows)
+        return len(rows) == len(ids) and all(st in jobs.TERMINAL for _, st in rows)
 
     @staticmethod
     def _open_jobs(ids: list[int]) -> int:
@@ -266,3 +346,16 @@ class Scheduler:
     def _push_status(run_id: UUID) -> str:
         with session_scope() as s:
             return s.scalar(select(PushRun.status).where(PushRun.id == run_id)) or "failed"
+
+    @staticmethod
+    def _push_error(run_id: UUID) -> Optional[str]:
+        with session_scope() as s:
+            summary = s.scalar(select(PushRun.summary).where(PushRun.id == run_id)) or {}
+        return summary.get("error")
+
+    @staticmethod
+    def _ledger_rows(target: str, entity: str) -> int:
+        with session_scope() as s:
+            if entity == "bom_edge":
+                return s.scalar(select(func.count()).select_from(BomEdge).where(BomEdge.target == target)) or 0
+            return s.scalar(select(func.count()).select_from(PushedItem).where(PushedItem.target == target, PushedItem.entity == entity)) or 0
