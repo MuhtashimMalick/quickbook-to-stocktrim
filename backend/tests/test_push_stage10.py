@@ -287,8 +287,8 @@ def test_products_only_and_bom_only_runs_on_an_existing_target(clean_db, tmp_pat
     assert run_all(env, ("customers",))["counts"] == {"customer": {"done": 2}}
     n = len(fake.log)
     for body in ({}, {"dry_run": False, "preflight_fingerprint": "x", "plan_fingerprint": "y"}):  # the dry-run and the real run: same 409, BEFORE any StockTrim read
-        r = post(env, steps=["products"], **body)
-        assert (r.status_code, r.json()["detail"]) == (409, "step_already_pushed") and not engine._ACTIVE.locked()  # master data re-push = the incremental sync
+        r = post(env, steps=["products"], mode="initial", **body)
+        assert (r.status_code, r.json()["detail"]) == (409, "step_already_pushed") and not engine._ACTIVE.locked()  # master data re-push = the incremental sync (mode auto/sync)
     assert len(fake.log) == n
 
 

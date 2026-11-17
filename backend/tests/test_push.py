@@ -423,15 +423,15 @@ def test_thread_crash_fails_the_run_and_releases_the_lock(clean_db, tmp_path, mo
 def test_db_failure_after_a_200_resends_exactly_that_item(clean_db, tmp_path, monkeypatch):
     fake = Fake()
     env = mk(clean_db, tmp_path, fake)
-    orig, boom = engine._mark, []
+    orig, boom = engine._Run._done, []
 
-    def flaky(run_id, entity, keys, status, *a):
-        if entity == "product" and status == "done" and keys == ["P1"] and not boom:
+    def flaky(self, entity, keys, *a, **kw):
+        if entity == "product" and keys == ["P1"] and not boom:
             boom.append(1)
             raise RuntimeError("db went away")
-        return orig(run_id, entity, keys, status, *a)
+        return orig(self, entity, keys, *a, **kw)
 
-    monkeypatch.setattr(engine, "_mark", flaky)
+    monkeypatch.setattr(engine._Run, "_done", flaky)
     out = finish(env, go(env).json()["run_id"])
     assert out["status"] == "done_with_failures" and fake.posts["P1"] == 1  # the POST happened, the DB write did not
     assert {i.key: i.error_code for i in items("product") if i.status == "failed"} == {"P1": "internal"}

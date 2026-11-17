@@ -133,6 +133,7 @@ class Verdict(M):
     ok_to_push: bool
     blocking: list[Finding]
     warnings: list[Finding]
+    foreign_hash: Optional[str] = None  # sync mode with foreign StockTrim records: acknowledge_foreign must equal it to proceed
 
 
 class Snapshot(M):

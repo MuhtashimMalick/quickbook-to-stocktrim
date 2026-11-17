@@ -22,7 +22,7 @@ from app.quickbooks.tasks.base import QuerySpec
 
 from .conftest import QB, admin_engine, alembic_cfg, create_database, make_records, rs_error
 
-TABLES = {"jobs", "sync_log", "qb_records", "po_link", "bom_edge", "push_run", "push_item"}
+TABLES = {"jobs", "sync_log", "qb_records", "po_link", "bom_edge", "push_run", "push_item", "pushed_item"}
 
 
 def keys(env, entity):
@@ -66,7 +66,7 @@ def test_migration_0003_downgrade_one_step_keeps_older_tables(db_url):
     try:
         command.upgrade(alembic_cfg(url), "head")
         command.downgrade(alembic_cfg(url), "0002")
-        assert set(inspect(engine).get_table_names()) == TABLES - {"bom_edge", "push_run", "push_item"} | {"alembic_version"}
+        assert set(inspect(engine).get_table_names()) == TABLES - {"bom_edge", "push_run", "push_item", "pushed_item"} | {"alembic_version"}
         command.upgrade(alembic_cfg(url), "head")
         assert {"bom_edge", "push_run", "push_item"} <= set(inspect(engine).get_table_names())
     finally:

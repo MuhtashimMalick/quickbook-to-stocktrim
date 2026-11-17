@@ -39,16 +39,20 @@ def _overlap(refs: list[str], limit: int, code: str) -> dict[str, Any]:
     return {"count": len(refs), "samples": _samples(refs, limit, code)}
 
 
-def _foreign(entity: str, codes: Iterable[Optional[str]], ours: Optional[set[str]], probe_exempt: bool) -> dict[str, int]:
+def _foreign(entity: str, codes: Iterable[Optional[str]], ours: Optional[set[str]], probe_exempt: bool, sink: Optional[dict] = None) -> dict[str, int]:
     """Sync mode only: how many StockTrim records are NOT in our ledger (and not a documented probe record, test target only). A blank code is foreign.
-    Empty when not in sync mode."""
+    Empty when not in sync mode. `sink` (engine only) receives {entity: {"keys": normalised codes present, "foreign": sorted foreign normalised codes}}; it never leaves the process."""
     if ours is None:
         return {}
     exempt = PROBE_CODES.get(entity, frozenset()) if probe_exempt else frozenset()
-    return {"foreign": sum(1 for c in codes if (n := norm(c or "")) not in ours and n not in exempt)}
+    norms = [norm(c or "") for c in codes]
+    bad = sorted(n for n in norms if n not in ours and n not in exempt)
+    if sink is not None:
+        sink[entity] = {"keys": {n for n in norms if n}, "foreign": bad}
+    return {"foreign": len(bad)}
 
 
-def _products(api: StockTrimApi, first: list[ProductResponse], ours: Pairs, limit: int, facts: dict, ledger: Optional[Ledger], probe_exempt: bool) -> dict[str, Any]:
+def _products(api: StockTrimApi, first: list[ProductResponse], ours: Pairs, limit: int, facts: dict, ledger: Optional[Ledger], probe_exempt: bool, sink: Optional[dict] = None) -> dict[str, Any]:
     rows, capped = _paged(lambda p: api.get_products(page_no=p), None, first)
     mine = {norm(k): lid for k, lid in ours}
     by_id = [mine[norm(r.product_id)] for r in rows if norm(r.product_id) in mine]
@@ -59,18 +63,18 @@ def _products(api: StockTrimApi, first: list[ProductResponse], ours: Pairs, limi
     facts["products"] = {"count": len(rows), "id": sorted(by_id), "readable": sorted(by_read)}
     return {"count": len(rows), "capped": capped, "overlap_product_id": _overlap(by_id, limit, "overlap_product_id"),
             "overlap_readable": _overlap(by_read, limit, "overlap_readable"), "overlap_readable_only": _overlap(read_only, limit, "overlap_readable_only"),
-            "duplicate_readable_groups": dup, **_foreign("products", (r.product_id for r in rows), ledger and ledger["products"], probe_exempt),
+            "duplicate_readable_groups": dup, **_foreign("products", (r.product_id for r in rows), ledger and ledger["products"], probe_exempt, sink),
             "readable_differs_from_product_id": sum(1 for r in rows if r.product_code_readable and r.product_code_readable != r.product_id)}
 
 
-def _customers(api: StockTrimApi, ours: Pairs, limit: int, facts: dict, ledger: Optional[Ledger], probe_exempt: bool) -> dict[str, Any]:
+def _customers(api: StockTrimApi, ours: Pairs, limit: int, facts: dict, ledger: Optional[Ledger], probe_exempt: bool, sink: Optional[dict] = None) -> dict[str, Any]:
     rows = api.get_customers()
     codes = [c.code for c in rows if c.code and c.code.strip()]
     mine = {norm(k): lid for k, lid in ours}
     clash = [mine[norm(c)] for c in codes if norm(c) in mine]
     facts["customers"] = {"count": len(rows), "clash": sorted(clash)}
     return {"count": len(rows), "code_collisions": len(clash), "samples": _samples(clash, limit, "code_collision"),
-            "duplicate_code_groups": sum(1 for n in Counter(map(norm, codes)).values() if n > 1), **_foreign("customers", (c.code for c in rows), ledger and ledger["customers"], probe_exempt)}
+            "duplicate_code_groups": sum(1 for n in Counter(map(norm, codes)).values() if n > 1), **_foreign("customers", (c.code for c in rows), ledger and ledger["customers"], probe_exempt, sink)}
 
 
 def _po_count(api: StockTrimApi, status: Optional[str]) -> tuple[int, bool]:
@@ -90,13 +94,13 @@ def _purchase_orders(api: StockTrimApi, facts: dict) -> dict[str, Any]:
     return {"count": count, "by_status": by_status, "capped": capped}
 
 
-def _suppliers(api: StockTrimApi, ours: Pairs, limit: int, facts: dict, ledger: Optional[Ledger], probe_exempt: bool) -> dict[str, Any]:
+def _suppliers(api: StockTrimApi, ours: Pairs, limit: int, facts: dict, ledger: Optional[Ledger], probe_exempt: bool, sink: Optional[dict] = None) -> dict[str, Any]:
     """GET /api/SuppliersBulk lists every supplier (6 on the TEST account), so no per-key probing is needed."""
     rows = api.list_suppliers_bulk()
     mine = {norm(k): lid for k, lid in ours}
     clash = [mine[norm(s.supplier_code)] for s in rows if norm(s.supplier_code) in mine]
     facts["suppliers"] = {"count": len(rows), "overlap": sorted(clash)}
-    return {"count": len(rows), "overlap": len(clash), "samples": _samples(clash, limit, "overlap"), **_foreign("suppliers", (s.supplier_code for s in rows), ledger and ledger["suppliers"], probe_exempt)}
+    return {"count": len(rows), "overlap": len(clash), "samples": _samples(clash, limit, "overlap"), **_foreign("suppliers", (s.supplier_code for s in rows), ledger and ledger["suppliers"], probe_exempt, sink)}
 
 
 def _probe(api: StockTrimApi, ours: Pairs, fn: Callable[[str], Any], limit: int, found_code: str, name: str, facts: dict) -> dict[str, Any]:
@@ -109,19 +113,20 @@ def _probe(api: StockTrimApi, ours: Pairs, fn: Callable[[str], Any], limit: int,
 
 
 def inventory(api: StockTrimApi, first_products: list[ProductResponse], products: Pairs, suppliers: Pairs, customers: Pairs, *,
-              check_suppliers: bool, check_suppliers_by_code: bool, check_sales_orders: bool, limit: int, ledger: Optional[Ledger] = None, probe_exempt: bool = False) -> tuple[dict[str, Any], dict[str, Any]]:
+              check_suppliers: bool, check_suppliers_by_code: bool, check_sales_orders: bool, limit: int, ledger: Optional[Ledger] = None, probe_exempt: bool = False, sink: Optional[dict] = None) -> tuple[dict[str, Any], dict[str, Any]]:
     """(report section, facts for the fingerprint). `first_products` is page 1 from the credential check (not fetched twice).
-    `ledger` switches on sync mode: products/customers/suppliers sections also report `foreign` (not pushed by us); `probe_exempt` (test target only) spares PROBE_CODES."""
+    `ledger` switches on sync mode: products/customers/suppliers sections also report `foreign` (not pushed by us); `probe_exempt` (test target only) spares PROBE_CODES;
+    `sink` collects the key sets for the engine (re-queue, foreign hash)."""
     facts: dict[str, Any] = {}
 
     def skipped() -> dict[str, Any]:
         return {"status": "skipped"}
 
     steps: list[tuple[str, Callable[[], dict[str, Any]]]] = [
-        ("products", lambda: _products(api, first_products, products, limit, facts, ledger, probe_exempt)),
-        ("customers", lambda: _customers(api, customers, limit, facts, ledger, probe_exempt)),
+        ("products", lambda: _products(api, first_products, products, limit, facts, ledger, probe_exempt, sink)),
+        ("customers", lambda: _customers(api, customers, limit, facts, ledger, probe_exempt, sink)),
         ("purchase_orders", lambda: _purchase_orders(api, facts)),
-        ("suppliers", (lambda: _suppliers(api, suppliers, limit, facts, ledger, probe_exempt)) if check_suppliers else skipped),
+        ("suppliers", (lambda: _suppliers(api, suppliers, limit, facts, ledger, probe_exempt, sink)) if check_suppliers else skipped),
     ]
     if check_suppliers_by_code:
         steps.append(("suppliers_by_code", lambda: _probe(api, suppliers, api.get_supplier, limit, "found", "suppliers_by_code", facts)))

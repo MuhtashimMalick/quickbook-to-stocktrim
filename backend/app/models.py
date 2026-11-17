@@ -13,6 +13,7 @@ from .db import Base
 PUSH_RUN_STATUSES = ("running", "done", "done_with_failures", "failed", "interrupted", "cancelled")
 PUSH_ITEM_STATUSES = ("pending", "done", "failed", "skipped")
 PUSH_ENTITIES = ("supplier", "product", "bom_edge", "customer")
+LEDGER_ENTITIES = ("supplier", "product", "customer")  # pushed_item; BOM keeps bom_edge
 
 
 def _in(column: str, values: tuple[str, ...]) -> str:
@@ -144,3 +145,18 @@ class PushItem(Base):
     detail: Mapped[Optional[dict[str, Any]]] = mapped_column(JSONB(none_as_null=True))  # None = SQL NULL, not JSON null
     ref: Mapped[Optional[str]] = mapped_column(Text)  # QuickBooks ListID: what progress samples show (keys can be personal names)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+
+class PushedItem(Base):
+    """Incremental-sync ledger: what we last pushed to a StockTrim target per record. payload_hash = sha256 of the exact request payload (NULL = unknown, re-sent once)."""
+
+    __tablename__ = "pushed_item"
+    __table_args__ = (CheckConstraint(_in("entity", LEDGER_ENTITIES), name="ck_pushed_item_entity"),)
+
+    target: Mapped[str] = mapped_column(Text, primary_key=True)
+    entity: Mapped[str] = mapped_column(Text, primary_key=True)
+    key: Mapped[str] = mapped_column(Text, primary_key=True)  # supplier code | SKU | customer ListID
+    ref: Mapped[Optional[str]] = mapped_column(Text)  # QuickBooks ListID
+    payload_hash: Mapped[Optional[str]] = mapped_column(Text)
+    last_run_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("push_run.id", ondelete="SET NULL"))
+    pushed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

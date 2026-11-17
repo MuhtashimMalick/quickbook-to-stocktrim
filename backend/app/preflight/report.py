@@ -81,9 +81,10 @@ def _issue_count(qb: dict[str, Any], code: str) -> int:
     return sum(g["count"] for k, g in qb["issues"].items() if k.endswith("." + code))
 
 
-def verdict(qb: dict[str, Any], st: dict[str, Any], sync: bool = False) -> dict[str, Any]:
+def verdict(qb: dict[str, Any], st: dict[str, Any], sync: bool = False, acked: bool = False) -> dict[str, Any]:
     """ok_to_push is NOT permission to push. It is never true while any check is incomplete. `sync` (the account may hold what we pushed earlier):
-    only FOREIGN products/suppliers/customers (and any purchase order) count as existing, and a readable-code overlap is then covered by that count."""
+    only FOREIGN products/suppliers/customers (and any purchase order) count as existing, and a readable-code overlap is then covered by that count;
+    `acked` (the caller's acknowledge_foreign equals the foreign hash) stops foreign records from counting; purchase orders still block."""
     blocking: list[dict[str, Any]] = []
     warnings: list[dict[str, Any]] = []
 
@@ -110,7 +111,7 @@ def verdict(qb: dict[str, Any], st: dict[str, Any], sync: bool = False) -> dict[
     add(blocking, "stocktrim_incomplete", len(incomplete), detail=incomplete)
     add(blocking, "stocktrim_suppliers_not_checked", int(steps.get("suppliers", {}).get("status") == "skipped"))
     add(warnings, "sales_orders_not_checked", int(steps.get("sales_orders", {}).get("status") == "skipped"))  # StockTrim keeps sales orders of unknown products: no products != no sales orders
-    existing = {n: v.get("foreign", v.get("count", v.get("found", 0))) if sync else v.get("count", v.get("found", 0)) for n, v in steps.items() if v["status"] == "ok"}
+    existing = {n: (0 if acked else v["foreign"]) if sync and "foreign" in v else v.get("count", v.get("found", 0)) for n, v in steps.items() if v["status"] == "ok"}
     p_id = 0 if sync else steps.get("products", {}).get("overlap_product_id", {}).get("count", 0)
     add(blocking, "stocktrim_not_empty", sum(existing.values()), detail={**{k: v for k, v in existing.items() if v}, **({"products_overlap_product_id": p_id} if p_id else {})})
     add(blocking, "stocktrim_readable_conflict", 0 if sync else steps.get("products", {}).get("overlap_readable", {}).get("count", 0))  # duplicate readable codes make BOM keys ambiguous
@@ -122,7 +123,7 @@ def preflight_client(settings: Settings, client_kw: dict[str, Any], **kw: Any) -
     return StockTrimClient.from_settings(settings, **{"event_hooks": {"request": [read_only_guard]}, **kw, **client_kw})
 
 
-def _stocktrim(settings: Settings, opts: PreflightOptions, keys: Keys, client_kw: dict[str, Any], ledger: Optional[Ledger]) -> tuple[dict[str, Any], dict[str, Any]]:
+def _stocktrim(settings: Settings, opts: PreflightOptions, keys: Keys, client_kw: dict[str, Any], ledger: Optional[Ledger], sink: Optional[dict]) -> tuple[dict[str, Any], dict[str, Any]]:
     if not opts.stocktrim:
         return {"status": "skipped"}, {}
     try:  # credential check on its own short-retry client (a wrong api-auth-id answers 500 and would retry for ~15 s)
@@ -136,7 +137,7 @@ def _stocktrim(settings: Settings, opts: PreflightOptions, keys: Keys, client_kw
     with closing(preflight_client(settings, client_kw)) as c:
         return inventory(StockTrimApi(c), first, *keys, check_suppliers=opts.check_suppliers, check_suppliers_by_code=opts.check_suppliers_by_code,
                          check_sales_orders=opts.check_sales_orders, limit=opts.sample_limit, ledger=ledger,
-                         probe_exempt=settings.stocktrim_environment == "test")
+                         probe_exempt=settings.stocktrim_environment == "test", sink=sink)
 
 
 def _plan(keys: Keys, bom_edges: int, rps: float) -> dict[str, Any]:
@@ -146,12 +147,21 @@ def _plan(keys: Keys, bom_edges: int, rps: float) -> dict[str, Any]:
     return {"planned_calls": calls, "total_calls": total, "rps": rps, "eta_seconds": math.ceil(total / rps)}
 
 
-def build_report(settings: Settings, opts: PreflightOptions, client_kw: Optional[dict[str, Any]] = None, ledger: Optional[Ledger] = None) -> PreflightReport:
-    """`ledger` (push engine only) = sync mode, see stocktrim_inventory.inventory."""
+def foreign_hash(sink: dict[str, Any]) -> Optional[str]:
+    """sha256 over the sorted JSON list of 'entity:normalised key' of every foreign StockTrim record (None when there is none)."""
+    bad = sorted(f"{e}:{k}" for e, v in sink.items() for k in v["foreign"])
+    return hashlib.sha256(json.dumps(bad).encode()).hexdigest() if bad else None
+
+
+def build_report(settings: Settings, opts: PreflightOptions, client_kw: Optional[dict[str, Any]] = None, ledger: Optional[Ledger] = None,
+                 sink: Optional[dict[str, Any]] = None, acknowledge_foreign: Optional[str] = None) -> PreflightReport:
+    """`ledger` (push engine only) = sync mode, see stocktrim_inventory.inventory; `sink` receives the StockTrim key sets; `acknowledge_foreign` = the foreign_hash of an earlier verdict."""
+    sink = {} if sink is None else sink
     with session_scope() as s:  # released before the (slow) StockTrim reads
         qb, keys, snap = qb_report(s, settings.product_key_field, opts.sample_limit)
-    st, facts = _stocktrim(settings, opts, keys, client_kw or {}, ledger)
+    st, facts = _stocktrim(settings, opts, keys, client_kw or {}, ledger, sink)
+    fh = foreign_hash(sink)
     # fingerprint: a later push can require it to be unchanged (pushable keys, BOM edges and what StockTrim held, incl. full overlap lists)
     fp = hashlib.sha256(json.dumps([sorted(keys.products), sorted(keys.suppliers), snap["bom"], facts], sort_keys=True, default=str).encode()).hexdigest()
-    return PreflightReport.model_validate({"quickbooks": qb, "stocktrim": st, "verdict": verdict(qb, st, ledger is not None), "snapshot": {"synced_at_max": snap["synced_at_max"]},
+    return PreflightReport.model_validate({"quickbooks": qb, "stocktrim": st, "verdict": {**verdict(qb, st, ledger is not None, fh is not None and fh == acknowledge_foreign), "foreign_hash": fh}, "snapshot": {"synced_at_max": snap["synced_at_max"]},
                                            "plan": _plan(keys, qb["bom"]["edges"], settings.stocktrim_max_rps), "fingerprint": fp})
