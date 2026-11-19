@@ -1,7 +1,7 @@
 import { screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { renderApp } from "../test/render";
-import { http, HttpResponse, me, server, signedIn, token } from "../test/server";
+import { http, HttpResponse, liveData, me, server, signedIn, token } from "../test/server";
 
 describe("app shell", () => {
   it("renders landmarks, a skip link and one h1", async () => {
@@ -45,6 +45,7 @@ describe("environment fails safe", () => {
       http.post("*/api/v1/auth/refresh", () => HttpResponse.json(token("t1"))),
       http.get("*/api/v1/auth/me", () => HttpResponse.json(me())),
       http.get("*/api/v1/settings", () => HttpResponse.json({ detail: "boom" }, { status: 500 })),
+      ...liveData(),
     );
     renderApp("/");
     expect(await screen.findByText("Environment: unknown")).toBeInTheDocument();

@@ -1,4 +1,4 @@
-# QuickBook admin UI (stage F1)
+# QuickBook admin UI (stages F1 to F3: shell, overview, runs)
 
 React 19 + TypeScript (strict, no `any`) + Tailwind v4 + GSAP. Nothing needs a local Node install; everything runs through Docker.
 
@@ -24,3 +24,6 @@ Same-origin `/api/v1`. The access token lives in memory only (`src/api/session.t
 
 ## Serving
 `web` (nginx-unprivileged, port 8080, not published, read-only root fs) sits behind Caddy, which owns the security headers and the SPA CSP; nginx only sets `Cache-Control` (immutable for `/assets`, `no-cache` for `index.html`). `web` sits on an internal `spa` network shared with Caddy only, with all capabilities dropped. A broken SPA never stops `/qbwc`: Caddy does not depend on `web`. `npm ci` uses `.npmrc` `legacy-peer-deps=true` (npm 10 crashes resolving the vitest peer tree otherwise), so peer deps such as `@testing-library/dom` are listed explicitly.
+
+## Screens (F2, F3)
+`/` overview (one `GET /overview` plus the last 5 cycles and, while a push runs, its progress), `/runs` (cycles, `?view=push` for push runs, `Load more` uses the `before` cursor), `/runs/:cycleId` (phase ledger, outcome, progress, event log), `/runs/push/:runId` (a push run without a cycle). Read-only: cancel and resume are CLI-only, so the pages show the command to copy. Run one test file: `docker compose -f docker-compose.yml -f compose.dev.yml --profile test run --rm test-web npx vitest run src/features/runs`.

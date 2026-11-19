@@ -3,13 +3,14 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { getToken } from "../../api/session";
 import { renderApp } from "../../test/render";
-import { delay, http, HttpResponse, me, server, settings, signedIn, token, unauthorized } from "../../test/server";
+import { delay, http, HttpResponse, me, server, liveData, settings, signedIn, token, unauthorized } from "../../test/server";
 
 const where = () => screen.getByTestId("location").textContent;
 const noSession = http.post("*/api/v1/auth/refresh", () => unauthorized("invalid_refresh"));
 const afterLogin = [
   http.get("*/api/v1/auth/me", () => HttpResponse.json(me())),
   http.get("*/api/v1/settings", () => HttpResponse.json(settings())),
+  ...liveData(),
 ];
 
 async function signIn(user: ReturnType<typeof userEvent.setup>) {
@@ -38,6 +39,7 @@ describe("route guard", () => {
       http.post("*/api/v1/auth/refresh", () => (++refreshes === 1 ? HttpResponse.json(token("t1")) : unauthorized("invalid_refresh"))),
       http.get("*/api/v1/auth/me", () => HttpResponse.json(me())),
       http.get("*/api/v1/settings", () => unauthorized("token_expired")),
+      ...liveData(),
     );
     renderApp("/");
     expect(await screen.findByText("You are signed out. Sign in again.")).toBeInTheDocument();

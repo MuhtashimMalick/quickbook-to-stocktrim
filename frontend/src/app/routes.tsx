@@ -7,6 +7,8 @@ import { AppShell } from "./AppShell";
 
 const OverviewPage = lazy(() => import("../features/overview/OverviewPage"));
 const RunsPage = lazy(() => import("../features/runs/RunsPage"));
+const CycleDetailPage = lazy(() => import("../features/runs/CycleDetailPage"));
+const PushRunDetailPage = lazy(() => import("../features/runs/PushRunDetailPage"));
 const EntriesPage = lazy(() => import("../features/entries/EntriesPage"));
 const OperationsPage = lazy(() => import("../features/operations/OperationsPage"));
 const SettingsPage = lazy(() => import("../features/settings/SettingsPage"));
@@ -21,6 +23,8 @@ export function AppRoutes() {
           <Route element={<AppShell />}>
             <Route index element={<OverviewPage />} />
             <Route path="runs" element={<RunsPage />} />
+            <Route path="runs/push/:runId" element={<PushRunDetailPage />} />
+            <Route path="runs/:cycleId" element={<CycleDetailPage />} />
             <Route path="entries" element={<EntriesPage />} />
             <Route path="operations" element={<OperationsPage />} />
             <Route path="settings" element={<SettingsPage />} />

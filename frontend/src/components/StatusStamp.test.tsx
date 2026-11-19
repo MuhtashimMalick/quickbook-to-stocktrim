@@ -9,8 +9,8 @@ describe("StatusStamp", () => {
     expect(container.textContent?.trim().length).toBeGreaterThan(0);
   });
 
-  it("covers all seven statuses and draws dry run dashed", () => {
-    expect(STATUSES).toHaveLength(7);
+  it("covers all eleven statuses and draws dry run dashed", () => {
+    expect(STATUSES).toHaveLength(11);
     render(<StatusStamp status="dry-run" />);
     expect(screen.getByText("Dry run").className).toContain("border-dashed");
   });
