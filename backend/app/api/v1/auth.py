@@ -27,10 +27,11 @@ def current_user(request: Request, cred: Optional[HTTPAuthorizationCredentials] 
 def require_admin(request: Request, token: Optional[str] = Security(_token_header), cred: Optional[HTTPAuthorizationCredentials] = Security(_bearer)) -> None:
     """Bearer access token, or X-Admin-Token on a direct loopback call only (the CLI); on a proxied request X-Admin-Token is ignored."""
     if cred is not None:
-        current_user(request, cred)
+        request.state.actor = current_user(request, cred).username  # who the run log attributes the action to
         return
     expected = request.app.state.settings.admin_token.get_secret_value()
     if token and is_direct(request.scope) and secrets.compare_digest(token.encode("utf-8"), expected.encode("utf-8")):
+        request.state.actor = "cli"
         return
     raise HTTPException(401, "invalid_token")
 

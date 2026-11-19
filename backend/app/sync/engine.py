@@ -9,7 +9,7 @@ import math
 import threading
 import time
 from collections import Counter
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any, Callable, Optional
@@ -25,8 +25,9 @@ from ..domain.bom import BomPlan, plan_bom
 from ..domain.from_qb import load_snapshot, stream_payloads
 from ..domain.keys import norm, resolve_customers, resolve_products, resolve_suppliers
 from ..models import BomEdge as BomEdgeRow
-from ..models import PushedItem, PushItem, PushRun, utcnow
+from ..models import PushedItem, PushExclusion, PushItem, PushRun, utcnow
 from ..preflight.report import PreflightOptions, build_report
+from ..runlog import event
 from ..stocktrim.api import StockTrimApi
 from ..stocktrim.client import BulkItem, StockTrimClient
 from ..stocktrim.dto import ProductRequest, ProductResponse
@@ -40,7 +41,7 @@ from ..stocktrim.errors import (
     StockTrimUnavailable,
 )
 from ..stocktrim.target import stocktrim_target
-from .mappers import PushPlan, bom_edge_key, build_push_plan, purchase_orders, sales_order_lines
+from .mappers import Excl, PushPlan, bom_edge_key, build_push_plan, domain_exclusions, purchase_orders, sales_order_lines
 
 log = logging.getLogger("app.push")
 STEPS = ("suppliers", "products", "bom", "customers", "sales_orders", "purchase_orders")  # push order
@@ -105,6 +106,7 @@ class Built:
     list_ids: dict[str, str]  # product SKU -> QuickBooks ListID
     bom: BomPlan
     quantities: dict[str, Decimal]  # bom_edge_key -> planned quantity (exact Decimal, already rounded to StockTrim's 5 decimals)
+    exclusions: list[Excl] = field(default_factory=list)  # what the plan leaves out (push_exclusion rows)
 
 
 def build_plan(settings: Settings, steps: "tuple[str, ...] | list[str]" = ()) -> Built:
@@ -117,14 +119,15 @@ def build_plan(settings: Settings, steps: "tuple[str, ...] | list[str]" = ()) ->
     bom = plan_bom(prod, snap.assemblies, unusable_list_ids={i.ref for i in snap.issues})
     cust = resolve_customers(snap.customers)
     plan = build_push_plan(sup, prod, cust, bom, settings.negative_stock_policy)
+    excl = domain_exclusions(sup, prod, cust, bom, snap.issues)
     sku_of = {p.list_id: p.sku for p in prod.ok}
     if "sales_orders" in orders:
         since = datetime.now(timezone.utc).date() - timedelta(days=round(365.25 * settings.sales_history_years))  # ponytail: ~N years, not calendar-exact
-        plan.sales_orders, plan.order_stats["sales_orders"] = sales_order_lines(orders["sales_orders"], sku_of, {c.list_id for c in cust.ok}, since)
+        plan.sales_orders, plan.order_stats["sales_orders"] = sales_order_lines(orders["sales_orders"], sku_of, {c.list_id for c in cust.ok}, since, excl)
     if "purchase_orders" in orders:
-        plan.purchase_orders, plan.order_stats["purchase_orders"] = purchase_orders(orders["purchase_orders"], sku_of, {s.list_id: s.code for s in sup.ok})
+        plan.purchase_orders, plan.order_stats["purchase_orders"] = purchase_orders(orders["purchase_orders"], sku_of, {s.list_id: s.code for s in sup.ok}, excl)
     return Built(plan, {p.sku: p.list_id for p in prod.ok}, bom,
-                 {bom_edge_key(e.parent_sku, e.component_sku): e.quantity for es in bom.edges_by_parent.values() for e in es})
+                 {bom_edge_key(e.parent_sku, e.component_sku): e.quantity for es in bom.edges_by_parent.values() for e in es}, excl)
 
 
 def payload_hash(req: Any) -> str:
@@ -303,14 +306,16 @@ def _insert_items(run_id: UUID, built: Built, steps: list[str], target: str, dif
     reqs = {st: dict(getattr(built.plan, PLAN_ATTR[st])) for st in LEDGER_STEPS}
     rows: list[dict[str, Any]] = []
     for st in steps:
+        gone: set[str] = set()  # BOM edges that vanished from the plan: DELETE, everything else is an upsert
         if st == "bom":
             keys = diff.sel["bom"] if diff else [k for part in bom_diff(target, built) for k in part]
+            gone = set(keys) - {k for k, _ in built.plan.bom_edges}
         else:
             keys = diff.sel[st] if diff else [k for k, _ in getattr(built.plan, PLAN_ATTR[st])]
         ref = {"suppliers": lambda k: reqs["suppliers"][k].external_id, "products": lambda k: built.list_ids[k], "customers": lambda k: k,  # customer code == QuickBooks ListID
                "sales_orders": lambda k: k.split(":")[0], "purchase_orders": lambda k: k[3:],  # TxnID of the order
                "bom": lambda k: built.list_ids.get(json.loads(k)[0])}[st]
-        rows += [{"run_id": run_id, "entity": ENTITY[st], "key": k, "ref": ref(k)} for k in keys]
+        rows += [{"run_id": run_id, "entity": ENTITY[st], "key": k, "ref": ref(k), "action": "delete" if k in gone else "upsert"} for k in keys]
     with session_scope() as s:
         if diff:
             for st, keys in diff.requeued.items():
@@ -323,6 +328,14 @@ def _insert_items(run_id: UUID, built: Built, steps: list[str], target: str, dif
                 s.execute(delete(BomEdgeRow).where(BomEdgeRow.target == target, touched))
         for i in range(0, len(rows), 1000):
             s.execute(insert(PushItem), rows[i:i + 1000])
+
+
+def _write_exclusions(run_id: UUID, built: Built) -> None:
+    """The plan's exclusions as push_exclusion rows (dry-runs and real runs); a repeated (entity, key, code) is stored once."""
+    rows = [{"run_id": run_id, "entity": x.entity, "key": x.key, "ref": x.ref, "code": x.code} for x in built.exclusions]
+    with session_scope() as s:
+        for i in range(0, len(rows), 1000):
+            s.execute(pg_insert(PushExclusion).values(rows[i:i + 1000]).on_conflict_do_nothing(index_elements=["run_id", "entity", "key", "code"]))
 
 
 def _has_pending(run_id: UUID) -> bool:
@@ -381,7 +394,12 @@ class _Run:
         if _rejected_keys(self.id):
             self.clamp.set()  # a resumed run keeps the clamp decision
         for step in steps:
-            if out := getattr(self, "_" + step)():
+            ent = ENTITY[step]
+            event("step_started", run_id=self.id, entity=ent)
+            out = getattr(self, "_" + step)()
+            c = counts(self.id).get(ent, {})
+            event("step_finished", run_id=self.id, entity=ent, counts=c, level="warning" if c.get("failed") else "info")
+            if out:
                 return out
         if self.cancel.is_set() and _has_pending(self.id):  # e.g. cancelled during the last supplier chunk's per-supplier fallback
             return "cancelled"
@@ -683,6 +701,14 @@ def _summary(run_id: UUID, run: Optional[_Run], t0: float, prior: float, extra: 
     return out
 
 
+def _totals(run_id: UUID) -> dict[str, int]:
+    """Item counts by status over all steps."""
+    out: Counter[str] = Counter()
+    for per in counts(run_id).values():
+        out.update(per)
+    return dict(out)
+
+
 def _sync_summary(diff: Diff) -> dict[str, Any]:
     """New/changed/unchanged/requeued/vanished counts per step; vanished and re-queued records are reported by QuickBooks ListID only (never deleted: suppliers, customers, products)."""
     out: dict[str, Any] = {st: {**v, "vanished_list_ids": diff.vanished_refs[st][:SAMPLE_LIMIT]} for st, v in diff.stats.items()}
@@ -702,7 +728,9 @@ def _thread_main(run_id: UUID, settings: Settings, kw: dict[str, Any], built: Op
             diff = compute_diff(row.target, built, steps, exists or {}) if opts.get("mode") == "sync" else None
             if plan_fingerprint(built.plan, diff.sel if diff else steps) != opts.get("plan_fingerprint"):
                 raise PlanChanged
+            event("run_started", run_id=run_id, actor=row.requested_by)
             _insert_items(run_id, built, steps, row.target, diff)
+            _write_exclusions(run_id, built)
             extra = {"mode": opts.get("mode", "initial"), **({"sync": _sync_summary(diff)} if diff else {})}
         client = StockTrimClient.from_settings(settings, **kw)
         run = _Run(run_id, built, StockTrimApi(client), _CANCELS[run_id], row.target)
@@ -720,6 +748,7 @@ def _thread_main(run_id: UUID, settings: Settings, kw: dict[str, Any], built: Op
             with session_scope() as s:
                 s.execute(update(PushRun).where(PushRun.id == run_id).values(status=status, finished_at=utcnow(), updated_at=utcnow(), summary=summary))
             log.info("push run %s finished status=%s counts=%s", run_id, status, counts(run_id))
+            event("run_finished", run_id=run_id, counts=_totals(run_id), level={"done": "info", "failed": "error"}.get(status, "warning"))
         finally:
             _CANCELS.pop(run_id, None)
             _ACTIVE.release()
@@ -806,7 +835,7 @@ def _stamp(built: Built, target: str, steps: list[str], dry_run: bool, report: A
 
 def start(settings: Settings, steps: list[str], dry_run: bool, fingerprint: Optional[str], plan_fp: Optional[str], kw: dict[str, Any], mode: str = "auto",
           acknowledge_foreign: Optional[str] = None, stamp_only: bool = False, acknowledge_requeue: Optional[dict[str, int]] = None,
-          acknowledge_delete: Optional[dict[str, int]] = None, requested_by: str = "admin-cli") -> dict[str, Any]:
+          acknowledge_delete: Optional[dict[str, int]] = None, requested_by: str = "cli") -> dict[str, Any]:
     steps = [s for s in STEPS if s in steps]
     if stamp_only and "bom" in steps:
         raise PushError(422, "stamp_has_no_bom_step")
@@ -881,6 +910,8 @@ def start(settings: Settings, steps: list[str], dry_run: bool, fingerprint: Opti
                       preflight_fingerprint=report.fingerprint, summary={**plan_counts, **extra})
         with session_scope() as s:
             s.add(run)
+        _write_exclusions(run.id, built)
+        event("run_finished", run_id=run.id, counts={**plan_counts, "exclusions": len(built.exclusions)}, actor=requested_by)
         return {"run_id": run.id, "status": "done", "dry_run": True, "mode": mode, "plan": plan_counts, "verdict": report.verdict, "plan_fingerprint": pfp,
                 "preflight_fingerprint": report.fingerprint,
                 **({"sync": extra["sync"], "planned_calls": diff.calls, "eta_seconds": math.ceil(diff.calls / settings.stocktrim_max_rps)} if diff else {})}
@@ -889,7 +920,7 @@ def start(settings: Settings, steps: list[str], dry_run: bool, fingerprint: Opti
             _ACTIVE.release()
 
 
-def resume(settings: Settings, run_id: UUID, kw: dict[str, Any]) -> dict[str, Any]:
+def resume(settings: Settings, run_id: UUID, kw: dict[str, Any], actor: str = "cli") -> dict[str, Any]:
     if _SHUTTING_DOWN.is_set():
         raise PushError(503, "shutting_down")
     if not settings.stocktrim_writes_enabled:
@@ -915,14 +946,16 @@ def resume(settings: Settings, run_id: UUID, kw: dict[str, Any]) -> dict[str, An
     except BaseException:
         _ACTIVE.release()
         raise
+    event("run_resumed", run_id=run_id, actor=actor)
     _launch(run_id, settings, kw, built)
     return {"run_id": run_id, "status": "running", "dry_run": False}
 
 
-def cancel(run_id: UUID) -> None:
+def cancel(run_id: UUID, actor: str = "cli") -> None:
     _run_row(run_id)
     if (ev := _CANCELS.get(run_id)) is None:
         raise PushError(409, "run_not_active")
+    event("run_cancel_requested", run_id=run_id, actor=actor)
     ev.set()
 
 

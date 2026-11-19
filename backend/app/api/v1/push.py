@@ -97,7 +97,7 @@ def _call(fn: Any, *a: Any) -> Any:
 @router.post("", response_model=PushStarted, response_model_exclude_none=True)
 def push(request: Request, body: PushRequest, kw: dict[str, Any] = Depends(get_stocktrim_client_kw)) -> Any:
     """dry_run (default): plan + pre-flight, writes nothing to StockTrim. Real run: needs STOCKTRIM_WRITES_ENABLED, an ok pre-flight and BOTH fingerprints of the dry-run."""
-    return _call(engine.start, request.app.state.settings, body.steps, body.dry_run, body.preflight_fingerprint, body.plan_fingerprint, kw, body.mode, body.acknowledge_foreign, body.stamp_only, body.acknowledge_requeue, body.acknowledge_delete)
+    return _call(engine.start, request.app.state.settings, body.steps, body.dry_run, body.preflight_fingerprint, body.plan_fingerprint, kw, body.mode, body.acknowledge_foreign, body.stamp_only, body.acknowledge_requeue, body.acknowledge_delete, request.state.actor)
 
 
 @runs_router.get("/runs/{run_id}", response_model=PushRunOut)
@@ -107,10 +107,10 @@ def run_progress(request: Request, run_id: UUID) -> Any:
 
 @router.post("/runs/{run_id}/cancel", response_model=PushRunOut)
 def cancel(request: Request, run_id: UUID) -> Any:
-    _call(engine.cancel, run_id)
+    _call(engine.cancel, run_id, request.state.actor)
     return _call(engine.progress, request.app.state.settings, run_id)
 
 
 @router.post("/runs/{run_id}/resume", response_model=PushStarted, response_model_exclude_none=True)
 def resume(request: Request, run_id: UUID, kw: dict[str, Any] = Depends(get_stocktrim_client_kw)) -> Any:
-    return _call(engine.resume, request.app.state.settings, run_id, kw)
+    return _call(engine.resume, request.app.state.settings, run_id, kw, request.state.actor)

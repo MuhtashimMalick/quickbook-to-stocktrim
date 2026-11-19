@@ -60,8 +60,21 @@ def users(argv):
     print(f"{a.action} {name}: ok")
 
 
+def prune(argv):
+    from .config import Settings  # noqa: PLC0415
+    from .db import init_engine  # noqa: PLC0415
+    from .runlog import prune as run_prune  # noqa: PLC0415
+
+    argparse.ArgumentParser(prog="python -m app.cli prune", description="Apply the run-log retention now (HISTORY_RETENTION_DAYS).").parse_args(argv)
+    settings = Settings()
+    init_engine(settings.database_url)
+    print(run_prune(settings))
+
+
 def main(argv=None):
     argv = sys.argv[1:] if argv is None else argv
+    if argv[:1] == ["prune"]:
+        return prune(argv[1:])
     if argv[:1] == ["users"]:
         return users(argv[1:])
     ap = argparse.ArgumentParser(prog="python -m app.cli", description="Call /api/v1<path> with the ADMIN_TOKEN from the environment.")

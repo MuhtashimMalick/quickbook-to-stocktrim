@@ -14,7 +14,7 @@ import httpx
 from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
 
-from . import jobs
+from . import jobs, runlog
 from .appstate import set_state
 from .config import Settings
 from .db import get_engine, session_scope
@@ -27,6 +27,7 @@ from .tz import tz_of
 log = logging.getLogger("app.scheduler")
 LOCK_KEY = 0x51425343  # pg advisory lock id of "a cycle is running"
 POLL_SECONDS = 30
+WAITING_EVENT_EVERY = timedelta(minutes=15)  # one waiting_for_web_connector event per this long
 LEDGER_OF = {"customers": "customer", "vendors": "supplier", "items": "product", "assemblies": "bom_edge", "sales_orders": "sales_order_line", "purchase_orders": "purchase_order"}  # read type -> what it feeds
 PUSH_FAILED = {"done_with_failures", "failed", "interrupted", "cancelled"}
 
@@ -177,10 +178,10 @@ class Scheduler:
             self._run_scheduled()
 
     # ---- one cycle
-    def trigger_now(self) -> UUID:
-        """Manual trigger: claims the cycle here (CycleBusy -> 409), runs it in the background."""
+    def trigger_now(self, actor: str = "cli") -> UUID:
+        """Manual trigger: claims the cycle here (CycleBusy -> 409), runs it in the background. `actor` (username or cli) goes to the run log."""
         cid, conn = self._begin("manual")
-        self._worker = threading.Thread(target=self._execute, args=(cid, conn), name="sync-cycle", daemon=False)
+        self._worker = threading.Thread(target=self._execute, args=(cid, conn, actor), name="sync-cycle", daemon=False)
         self._worker.start()
         return cid
 
@@ -218,18 +219,26 @@ class Scheduler:
             except Exception:  # noqa: BLE001
                 pass
 
-    def _execute(self, cid: UUID, conn: Any) -> None:
+    def _execute(self, cid: UUID, conn: Any, actor: str = "scheduler") -> None:
         ctx: dict[str, Any] = {"summary": {}, "conn": conn}
         status, reason = "failed", "crashed"
+        runlog.event("cycle_started", cycle_id=cid, actor=actor)
         try:
             self._cycle(cid, ctx)
             status, reason = "done", None
         except _End as e:
             status, reason = e.status, e.reason
             ctx["summary"] |= e.summary
+            if status == "aborted":
+                runlog.event(f"check_failed:{reason}", cycle_id=cid, level="warning")
         except Exception as e:  # noqa: BLE001 - the cycle row carries the exception TYPE only
             status, reason = "failed", type(e).__name__
+        runlog.event("cycle_finished", cycle_id=cid, level={"done": "info", "failed": "error"}.get(status, "warning"))  # the status itself is the cycle row's
         try:
+            try:
+                runlog.prune(self.settings)
+            except Exception as e:  # noqa: BLE001 - retention must never fail a cycle
+                log.error("run log prune failed: %s", type(e).__name__)
             try:
                 _update_cycle(cid, status=status, reason=reason, finished_at=utcnow(), summary=ctx["summary"])
             except Exception as e:  # noqa: BLE001 - each bookkeeping step is independent: the alert must go out even if the DB write fails
@@ -257,6 +266,10 @@ class Scheduler:
 
     def _cycle(self, cid: UUID, ctx: dict[str, Any]) -> None:
         s_, kw = self.settings, self.kw
+
+        def ev(code: str, **k: Any) -> None:
+            runlog.event(code, cycle_id=cid, **k)
+
         with session_scope() as s:
             started = s.get(SyncCycle, cid).started_at
         # (a) queue the read jobs once: a type that is still queued/running from an earlier cycle is waited for, not queued again
@@ -264,10 +277,22 @@ class Scheduler:
             pending = {j.job_type: j.id for j in s.scalars(select(Job).where(Job.job_type.in_(self.types), Job.status.in_(("queued", "running"))))}
         ids = [pending.get(t) or jobs.create_job(t).id for t in self.types]
         ctx["summary"]["read_jobs"] = {"queued": len(ids) - len(pending), "reused": len(pending)}
+        ev("reads_queued", counts=ctx["summary"]["read_jobs"])
         # (b) wait for the Web Connector to run them
         deadline = self.clock() + timedelta(hours=s_.scheduler_read_timeout_hours)
-        if not self._wait(lambda: self._reads_done(ids), deadline):
+        last_event: list[datetime] = []
+
+        def reads_done() -> bool:
+            if done := self._reads_done(ids):
+                return done
+            if not last_event or self.clock() - last_event[0] >= WAITING_EVENT_EVERY:
+                last_event[:] = [self.clock()]
+                ev("waiting_for_web_connector", counts={"jobs_open": self._open_jobs(ids)})
+            return False
+
+        if not self._wait(reads_done, deadline):
             raise _End("aborted", "read_timeout", read_jobs_pending=self._open_jobs(ids))
+        ev("reads_done")
         # (c) freshness: every pulled entity must have been rewritten since the cycle began; an entity with NO rows while its ledger has rows is an empty read (a wipe), never a sync
         with session_scope() as s:
             newest = dict(s.execute(select(QBRecord.entity, func.max(QBRecord.synced_at)).group_by(QBRecord.entity)).all())
@@ -286,6 +311,7 @@ class Scheduler:
             raise _End("aborted", "empty_entity", empty_entities=empty)
         if stale:
             raise _End("aborted", "stale_snapshot", stale_entities=len(stale))
+        ev("snapshot_fresh")
         # (d) sync: dry-run, automatic checks, real run
         steps = list(engine.STEPS)
         with session_scope() as s:
@@ -298,6 +324,7 @@ class Scheduler:
         v = d["verdict"]
         ctx["summary"]["planned_calls"] = d["planned_calls"]
         ctx["summary"]["sync"] = {st: {k: n for k, n in c.items() if isinstance(n, int)} for st, c in d["sync"].items()}
+        ev("dry_run_planned", run_id=d["run_id"], counts={"planned_calls": d["planned_calls"], **{k: sum(c.get(k, 0) for c in ctx["summary"]["sync"].values()) for k in ("new", "changed", "unchanged", "requeued", "vanished")}})
         ctx["summary"]["warnings"] = {w.code: w.count for w in v.warnings}
         if v.foreign_hash or any(w.code == "foreign_in_plan" for w in v.warnings):
             raise _End("aborted", "foreign_records")
@@ -323,6 +350,7 @@ class Scheduler:
             raise _End("aborted", e.code) from None
         run_id = r["run_id"]
         _update_cycle(cid, push_run_id=run_id)
+        ev("real_run_started", run_id=run_id)
         self._wait(lambda: self._push_status(run_id) != "running")
         status = self._push_status(run_id)
         ctx["summary"]["push"] = {"status": status, "items": item_counts(run_id), **({"error": err} if (err := self._push_error(run_id)) else {})}

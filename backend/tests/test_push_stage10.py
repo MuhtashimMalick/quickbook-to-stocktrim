@@ -437,7 +437,7 @@ def test_a_start_while_a_run_is_active_is_a_running_conflict_for_bom_and_custome
     release = threading.Event()
     fake = Fake10(on_customer=lambda n, b: release.wait(10) and None)
     env = mk(clean_db, tmp_path, fake, rows=ROWS10)
-    d = dry(env, ("bom", "customers"))
+    d = dry(env, ("customers",))  # the SAME steps as the real run below: its plan fingerprint must match, or the run thread crashes (PlanChanged) and frees the lock before the 409 checks
     body = {"dry_run": False, "preflight_fingerprint": d["preflight_fingerprint"], "plan_fingerprint": d["plan_fingerprint"]}
     run_id = post(env, steps=["customers"], **body).json()["run_id"]
     try:

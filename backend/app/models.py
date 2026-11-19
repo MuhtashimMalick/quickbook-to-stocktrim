@@ -16,10 +16,27 @@ CYCLE_TRIGGERS = ("schedule", "manual")
 PUSH_ITEM_STATUSES = ("pending", "done", "failed", "skipped")
 PUSH_ENTITIES = ("supplier", "product", "bom_edge", "customer", "sales_order_line", "purchase_order")
 LEDGER_ENTITIES = ("supplier", "product", "customer", "sales_order_line", "purchase_order")  # pushed_item; BOM keeps bom_edge
+PUSH_ACTIONS = ("upsert", "delete")
+RUN_EVENT_LEVELS = ("info", "warning", "error")
+# Why a cycle ended (sync_cycle.reason) ...
+CYCLE_REASONS = ("read_timeout", "read_job_failed", "empty_entity", "stale_snapshot", "push_running", "foreign_records", "preflight_not_ok", "mass_vanish", "too_many_calls",
+                 "writes_disabled", "production_not_allowed", "shutdown", "lock_lost", "push_done_with_failures", "push_failed", "push_interrupted", "push_cancelled", "restart", "stale", "crashed")
+# ... and every PushError code (HTTP detail of the push routes; as a cycle reason when engine.start refuses). tests/test_reasons.py greps the engine source, so a new one cannot be forgotten.
+PUSH_ERROR_CODES = ("run_not_found", "stamp_has_no_bom_step", "stamp_test_only", "shutting_down", "stocktrim_writes_disabled", "preflight_fingerprint_required", "plan_fingerprint_required",
+                    "push_running", "no_completed_initial_run", "stamp_needs_sync_mode", "step_already_pushed", "acknowledge_foreign_mismatch", "foreign_in_plan_production", "preflight_not_ok",
+                    "preflight_fingerprint_mismatch", "mass_delete", "requeue_requires_step", "mass_requeue", "stamp_snapshot_newer", "plan_fingerprint_mismatch", "stamp_requires_all_present",
+                    "run_not_resumable", "target_mismatch", "run_not_active")
+EVENT_CODES = ("cycle_started", "reads_queued", "waiting_for_web_connector", "reads_done", "snapshot_fresh", "dry_run_planned", "real_run_started", "cycle_finished",
+               "run_started", "step_started", "step_finished", "run_finished", "preflight_requested", "run_cancel_requested", "run_resumed",
+               *(f"check_failed:{r}" for r in dict.fromkeys((*CYCLE_REASONS, *PUSH_ERROR_CODES))))
+# What push_exclusion.code can hold: the domain Issue codes that keep a record (or a BOM line / supplier link) out of the plan, plus the mappers' skip reasons.
+EXCLUSION_ISSUE_CODES = ("empty_key", "whitespace_key", "control_chars", "duplicate_key", "empty_list_id", "parse_error", "inactive_supplier", "inactive_customer", "unresolved_vendor",
+                         "bom_cycle", "bom_cycle_ancestor", "bom_component_excluded", "bom_component_unresolved", "bom_self_reference", "nonpositive_quantity", "bom_quantity_precision")
+EXCLUSION_CODES = (*EXCLUSION_ISSUE_CODES, "non_product", "group", "zero_quantity", "closed_uninvoiced", "vendor_not_pushed", "no_lines", "lines_non_product")
 
 
 def _in(column: str, values: tuple[str, ...]) -> str:
-    return f"{column} IN ({', '.join(repr(v) for v in values)})"
+    return f"{column} IN ({', '.join(repr(v) for v in values)})".replace(":", r"\:")  # SQLAlchemy reads a bare ':name' in a CHECK as a bind parameter
 
 
 def utcnow() -> datetime:
@@ -134,7 +151,7 @@ class PushItem(Base):
         UniqueConstraint("run_id", "entity", "key"), Index("ix_push_item_run_entity_status", "run_id", "entity", "status"),
         CheckConstraint(_in("status", PUSH_ITEM_STATUSES), name="ck_push_item_status"),
         CheckConstraint(_in("entity", PUSH_ENTITIES), name="ck_push_item_entity"),
-        CheckConstraint("attempts >= 0", name="ck_push_item_attempts_nonneg"),
+        CheckConstraint("attempts >= 0", name="ck_push_item_attempts_nonneg"), CheckConstraint(_in("action", PUSH_ACTIONS), name="ck_push_item_action"),
     )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
@@ -146,7 +163,44 @@ class PushItem(Base):
     error_code: Mapped[Optional[str]] = mapped_column(Text)  # short code (rejected_400, unavailable, ...), never a body
     detail: Mapped[Optional[dict[str, Any]]] = mapped_column(JSONB(none_as_null=True))  # None = SQL NULL, not JSON null
     ref: Mapped[Optional[str]] = mapped_column(Text)  # QuickBooks ListID: what progress samples show (keys can be personal names)
+    action: Mapped[Optional[str]] = mapped_column(Text)  # one of PUSH_ACTIONS (NULL on rows from before stage B3)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, server_default=text("now()"))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+
+class PushExclusion(Base):
+    """A record the plan leaves out (or a skipped order line / dropped link), per run: business key + QuickBooks ListID/TxnID + reason code. Never names, messages or payloads."""
+
+    __tablename__ = "push_exclusion"
+    __table_args__ = (UniqueConstraint("run_id", "entity", "key", "code"), CheckConstraint(_in("code", EXCLUSION_CODES), name="ck_push_exclusion_code"))
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    run_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("push_run.id", ondelete="CASCADE"))
+    entity: Mapped[str] = mapped_column(Text)  # one of PUSH_ENTITIES
+    key: Mapped[str] = mapped_column(Text)
+    ref: Mapped[Optional[str]] = mapped_column(Text)
+    code: Mapped[str] = mapped_column(Text)  # one of EXCLUSION_CODES
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, server_default=text("now()"))
+
+
+class RunEvent(Base):
+    """Phase log of a scheduler cycle and/or push run: code + counts (ints) only."""
+
+    __tablename__ = "run_event"
+    __table_args__ = (
+        Index("ix_run_event_cycle", "cycle_id", "id"), Index("ix_run_event_run", "run_id", "id"),
+        CheckConstraint(_in("level", RUN_EVENT_LEVELS), name="ck_run_event_level"), CheckConstraint(_in("code", EVENT_CODES), name="ck_run_event_code"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, server_default=text("now()"))
+    cycle_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("sync_cycle.id", ondelete="CASCADE"))
+    run_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("push_run.id", ondelete="CASCADE"))
+    level: Mapped[str] = mapped_column(String(8), default="info")
+    code: Mapped[str] = mapped_column(Text)  # one of EVENT_CODES
+    entity: Mapped[Optional[str]] = mapped_column(Text)
+    counts: Mapped[Optional[dict[str, int]]] = mapped_column(JSONB(none_as_null=True))
+    actor: Mapped[Optional[str]] = mapped_column(Text)  # username | scheduler | cli
 
 
 class PushedItem(Base):

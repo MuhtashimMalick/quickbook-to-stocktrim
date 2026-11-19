@@ -50,6 +50,7 @@ class Settings(DatabaseSettings):
     save_fixtures: bool = True
     log_dir: Path = Path("logs")
     log_retention_days: int = Field(14, ge=1)
+    history_retention_days: int = Field(90, ge=1)  # run_event rows (the run log); push runs have their own fixed windows, see app/runlog.py
     # Product SKU = QuickBooks item Name (decided: unique, short, matches PO lines); FullName only if the client ever changes the rule
     product_key_field: ProductKeyField = "Name"
     # Negative QuickBooks stock: send as-is first (A13); clamp = send 0. Read by the push mapper.

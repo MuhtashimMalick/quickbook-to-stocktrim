@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
 from decimal import ROUND_HALF_UP, Decimal
 from email.utils import parseaddr
-from typing import Optional
+from typing import NamedTuple, Optional
 
 from email_validator import EmailNotValidError, validate_email
 
@@ -122,12 +122,42 @@ def _qty(p: dict, field_name: str) -> Decimal:
     return _r2(_dec(p.get(field_name), field_name) or Decimal(0))  # type: ignore[return-value]
 
 
-def sales_order_lines(orders: Iterable[dict], sku_of: dict[str, str], customers: set[str], since: date) -> tuple[list[tuple[str, SalesOrderRequest]], dict[str, int]]:
+class Excl(NamedTuple):
+    """One record the plan leaves out (the run log's push_exclusion row): business key, QuickBooks ListID/TxnID, reason code."""
+    entity: str
+    key: str
+    ref: str
+    code: str
+
+
+_KEY = {"supplier": lambda r: r.code, "product": lambda r: r.sku, "customer": lambda r: r.code}
+_ENTITY = {"Vendor": "supplier", "Customer": "customer"}  # parse-issue entity -> push entity (every other one is an item)
+_KEPT_OUT_WARNINGS = ("inactive_supplier", "inactive_customer", "unresolved_vendor")  # warning issues that still leave something out (the record / the supplier link)
+
+
+def domain_exclusions(suppliers: QuarantineResult[Supplier], products: QuarantineResult[Product], customers: QuarantineResult[Customer], bom: BomPlan, parse_issues: Iterable) -> list[Excl]:
+    """Quarantined / inactive records, supplier links and BOM lines the plan leaves out, from what the resolvers already computed. Records that failed to parse and BOM issues have no
+    business key here: the ListID stands in."""
+    out = [Excl(_ENTITY.get(i.entity, "product"), i.ref, i.ref, i.code) for i in parse_issues]
+    for entity, res in (("supplier", suppliers), ("product", products), ("customer", customers)):
+        key = _KEY[entity]
+        out += [Excl(entity, key(q.record), i.ref, i.code) for q in res.quarantined for i in q.issues if i.severity == "quarantine"]
+        by_lid = {r.list_id: key(r) for r in (*res.ok, *res.inactive)}
+        out += [Excl(entity, by_lid.get(w.ref, w.ref), w.ref, w.code) for w in res.warnings if w.code in _KEPT_OUT_WARNINGS]
+    return out + [Excl("bom_edge", i.ref, i.ref, i.code) for i in bom.issues]
+
+
+def sales_order_lines(orders: Iterable[dict], sku_of: dict[str, str], customers: set[str], since: date, skipped: Optional[list[Excl]] = None) -> tuple[list[tuple[str, SalesOrderRequest]], dict[str, int]]:
     """One request per order LINE of the orders dated >= `since`; key = externalReferenceId = 'TxnID:TxnLineID'. Only lines of pushable products (`sku_of`: ListID -> SKU) are sent;
     quantity = ordered, but invoiced for a manually closed order. customerCode only when that customer is pushed (StockTrim rejects an unknown one).
-    stats: orders (in window), lines (to send), skipped by reason: non_product, group (lines inside bundles), zero_quantity, closed_uninvoiced."""
+    stats: orders (in window), lines (to send), skipped by reason: non_product, group (lines inside bundles), zero_quantity, closed_uninvoiced. `skipped` (out) receives one Excl per skipped line."""
     out: list[tuple[str, SalesOrderRequest]] = []
     st: Counter[str] = Counter()
+
+    def skip(o: dict, ln: dict, code: str) -> None:
+        st[code] += 1
+        if skipped is not None:
+            skipped.append(Excl("sales_order_line", f"{o.get('TxnID')}:{ln.get('TxnLineID')}", str(o.get("TxnID")), code))
     for o in orders:
         day = _day(o.get("TxnDate"))
         if day is None or day.date() < since:
@@ -135,14 +165,16 @@ def sales_order_lines(orders: Iterable[dict], sku_of: dict[str, str], customers:
         st["orders"] += 1
         closed = _true(o.get("IsManuallyClosed"))
         cust = first_dict(o.get("CustomerRef")).get("ListID")
-        st["group"] += sum(len(as_list(g.get("SalesOrderLineRet"))) for g in as_list(o.get("SalesOrderLineGroupRet")) if isinstance(g, dict))
+        for g in (x for x in as_list(o.get("SalesOrderLineGroupRet")) if isinstance(x, dict)):
+            for ln in as_list(g.get("SalesOrderLineRet")):
+                skip(o, ln if isinstance(ln, dict) else {}, "group")
         for ln in (x for x in as_list(o.get("SalesOrderLineRet")) if isinstance(x, dict)):
             sku = sku_of.get(first_dict(ln.get("ItemRef")).get("ListID") or "")
             qty = _qty(ln, "Invoiced" if closed else "Quantity")
             if sku is None:
-                st["non_product"] += 1
+                skip(o, ln, "non_product")
             elif qty <= 0:
-                st["closed_uninvoiced" if closed else "zero_quantity"] += 1
+                skip(o, ln, "closed_uninvoiced" if closed else "zero_quantity")
             else:
                 key = f"{o.get('TxnID')}:{ln.get('TxnLineID')}"
                 price = _dec(ln.get("Rate"), "Rate")
@@ -158,19 +190,25 @@ def _po_ref(po: dict, shared: set[str]) -> Optional[str]:
     return f"{ref}-{po.get('TxnNumber') or str(po.get('TxnID'))[:8]}" if ref and norm(str(ref)) in shared else ref
 
 
-def purchase_orders(pos: Iterable[dict], sku_of: dict[str, str], supplier_of: dict[str, str]) -> tuple[list[tuple[str, PurchaseOrderRequest]], dict[str, int]]:
+def purchase_orders(pos: Iterable[dict], sku_of: dict[str, str], supplier_of: dict[str, str], skipped: Optional[list[Excl]] = None) -> tuple[list[tuple[str, PurchaseOrderRequest]], dict[str, int]]:
     """Every PO (no window): key = clientReferenceNumber = 'QB-' + TxnID. Open -> Sent with the REMAINING quantity per line (Quantity - ReceivedQuantity, lines <= 0 dropped);
     fully received or manually closed -> Received with the full ordered quantity (history). Lines are summed per product (StockTrim merges lines by productId).
     referenceNumber: RefNumber, or RefNumber-TxnNumber when the RefNumber is shared by several POs (counted over ALL POs). Skipped: vendor not a pushed supplier (`supplier_of`: ListID -> code; StockTrim would auto-create one), no pushable line. stockOnOrder is never involved.
-    stats: sent, received (POs to send), vendor_not_pushed, no_lines (POs skipped), lines_non_product."""
+    stats: sent, received (POs to send), vendor_not_pushed, no_lines (POs skipped), lines_non_product. `skipped` (out) receives one Excl per skipped PO / non-product line."""
     pos = list(pos)
     shared = {n for n, c in Counter(norm(str(p.get("RefNumber") or "")) for p in pos).items() if n and c > 1}  # StockTrim merges POs that share a referenceNumber
     out: list[tuple[str, PurchaseOrderRequest]] = []
     st: Counter[str] = Counter()
+
+    def skip(po: dict, code: str, line: Optional[dict] = None) -> None:
+        st[code] += 1
+        if skipped is not None:
+            skipped.append(Excl("purchase_order", f"QB-{po.get('TxnID')}" + (f":{line.get('TxnLineID')}" if line is not None else ""), str(po.get("TxnID")), code))
+
     for po in pos:
         vendor = supplier_of.get(first_dict(po.get("VendorRef")).get("ListID") or "")
         if vendor is None:
-            st["vendor_not_pushed"] += 1
+            skip(po, "vendor_not_pushed")
             continue
         done = _true(po.get("IsFullyReceived")) or _true(po.get("IsManuallyClosed"))
         eta = _day(po.get("ExpectedDate"))
@@ -180,12 +218,12 @@ def purchase_orders(pos: Iterable[dict], sku_of: dict[str, str], supplier_of: di
             sku = sku_of.get(first_dict(ln.get("ItemRef")).get("ListID") or "")
             qty = _qty(ln, "Quantity") - (0 if done else _qty(ln, "ReceivedQuantity"))
             if sku is None:
-                st["lines_non_product"] += 1
+                skip(po, "lines_non_product", ln)
             elif qty > 0:
                 qtys[sku] = qtys.get(sku, Decimal(0)) + qty
                 prices.setdefault(sku, _r2(_dec(ln.get("Rate"), "Rate")))
         if not qtys:
-            st["no_lines"] += 1
+            skip(po, "no_lines")
             continue
         st["received" if done else "sent"] += 1
         key = "QB-" + str(po.get("TxnID"))

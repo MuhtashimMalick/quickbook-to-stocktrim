@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 
 from ...preflight.report import PreflightOptions, build_report
 from ...preflight.schema import PreflightReport
+from ...runlog import event
 
 router = APIRouter()
 _RUNNING = threading.Lock()  # ponytail: one run per process; two runs would double the StockTrim request rate
@@ -20,6 +21,7 @@ def preflight(request: Request, body: Optional[PreflightOptions] = None, client_
     """Read-only dry run (QuickBooks snapshot + StockTrim GETs). Seconds by default; nothing is written anywhere. 409 while another run is in progress."""
     if not _RUNNING.acquire(blocking=False):
         raise HTTPException(409, "preflight_running")
+    event("preflight_requested", actor=request.state.actor)
     try:
         return build_report(request.app.state.settings, body or PreflightOptions(), client_kw)
     finally:

@@ -370,6 +370,25 @@ One cycle per day pulls fresh QuickBooks data and then syncs it to StockTrim, wi
 - **Health:** `docker compose exec app python -m app.cli GET /health` (add `?probe=true` for one read-only StockTrim GET): database, scheduler state and next run, `last_qbwc_contact` and its age (written on every SUCCESSFUL Web Connector authenticate, at most once a minute; refused logins go to `last_qbwc_auth_refused`), the last cycle, queued/running QuickBooks jobs, per-entity snapshot `synced_at_max` and record counts, the latest push run (status, item counts), the writes flag and the environment.
 - Simplifications: a single daily cycle (no hourly stock sync yet), an entity that is empty in QuickBooks is not checked by the freshness guard, alerts go to a webhook only (no email).
 
+## Run log (stage B3)
+
+What happened in a cycle or run, and which records were left out and why, is stored in Postgres (migration 0011); the read endpoints and the UI come in the next stage. Codes, counts and business keys only: never names, payloads, API response bodies or secrets.
+
+- **`run_event`:** phase events of a cycle (`cycle_started`, `reads_queued`, `waiting_for_web_connector` (at most one per 15 minutes), `reads_done`, `snapshot_fresh`, `dry_run_planned`, `check_failed:<reason>`, `real_run_started`, `cycle_finished`) and of a push run (`run_started`, `step_started`/`step_finished` with item counts, `run_finished`), plus the admin actions `preflight_requested`, `run_cancel_requested`, `run_resumed`. `actor` = the signed-in username, `cli` (the loopback admin token) or `scheduler`; the same value is `push_run.requested_by`.
+- **`push_exclusion`:** per run (dry-runs too), one row per record the plan leaves out: `entity`, business `key`, QuickBooks `ref` (ListID/TxnID) and a `code` (quarantined keys, inactive suppliers/customers, a dropped supplier link, skipped BOM lines, and the skipped order lines / purchase orders: `non_product`, `group`, `zero_quantity`, `closed_uninvoiced`, `vendor_not_pushed`, `no_lines`, `lines_non_product`). For a record that failed to parse, and for BOM issues, the ListID stands in for the key. Their counts equal the pre-flight issue counts and the plan's `sales_orders`/`purchase_orders` stats.
+- **`push_item.action`** (`upsert`|`delete`; a vanished BOM edge is the only delete) and `created_at`.
+- **`app/reasons.py`:** the catalog of every code above, every push item error code, issue code, status and reason, as title / explanation / next step in plain English. `tests/test_reasons.py` fails when a code that can be emitted has no entry.
+- **Retention** (applied after every scheduler cycle, or by hand: `docker compose exec app python -m app.cli prune`, which prints the counts deleted):
+
+| What | Kept | Exceptions |
+|---|---|---|
+| `run_event` | `HISTORY_RETENTION_DAYS` (default 90) | none |
+| dry-run `push_run` (with items) | 30 days | the 3 below |
+| real `push_run` (with items) | 180 days | the 3 below |
+| `push_exclusion` rows | only for the newest 3 runs per StockTrim target (dry and real together; `EXCLUSION_KEEP_RUNS`), because consecutive runs repeat the same rows (~34k per run on the dev data) | a resumable run keeps its rows |
+
+  Never deleted by age: a resumable run (`interrupted`/`failed` with pending items), the latest run per target, and the latest completed real run per target (the sync baseline). Exclusions of an older run that is kept are removed; its run row, items and events stay.
+
 ## Next steps
 
 Hourly stock sync, `modified_after` incremental reads.

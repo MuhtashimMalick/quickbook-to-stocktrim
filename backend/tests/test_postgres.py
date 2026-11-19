@@ -176,8 +176,14 @@ def test_least_privilege_role_covers_new_tables(db_url):
             c.execute(text("UPDATE refresh_token SET revoked_at = now()"))
             c.execute(text("DELETE FROM app_user"))  # cascades to refresh_token
             assert c.scalar(text("SELECT count(*) FROM refresh_token")) == 0
+            c.execute(text("INSERT INTO push_exclusion (run_id, entity, key, code) VALUES (:r, 'product', 'K', 'whitespace_key')"), {"r": run})  # run log (0011): DML only
+            c.execute(text("INSERT INTO run_event (run_id, level, code) VALUES (:r, 'info', 'run_finished')"), {"r": run})
+            c.execute(text("UPDATE run_event SET entity = 'product'"))
+            c.execute(text("DELETE FROM run_event"))
+            c.execute(text("DELETE FROM push_exclusion"))
             for ddl in ("CREATE TABLE evil (x int)", "ALTER TABLE push_item ADD COLUMN x int", "DROP TABLE bom_edge", "TRUNCATE push_item",
-                        "CREATE INDEX evil_ix ON push_item (key)", "DROP TABLE sync_cycle", "TRUNCATE app_state", "ALTER TABLE app_user ADD COLUMN x int", "DROP TABLE refresh_token", "TRUNCATE app_user"):
+                        "CREATE INDEX evil_ix ON push_item (key)", "DROP TABLE sync_cycle", "TRUNCATE app_state", "ALTER TABLE app_user ADD COLUMN x int", "DROP TABLE refresh_token", "TRUNCATE app_user",
+                        "ALTER TABLE run_event ADD COLUMN x int", "DROP TABLE push_exclusion", "TRUNCATE run_event", "CREATE INDEX evil_ix2 ON push_exclusion (key)"):
                 with pytest.raises(DBAPIError):
                     c.execute(text(ddl))
         app.dispose()

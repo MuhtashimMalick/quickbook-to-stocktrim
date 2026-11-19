@@ -89,7 +89,7 @@ def run_now(request: Request) -> Any:
     if not sch.settings.scheduler_enabled:
         raise HTTPException(403, "scheduler_disabled")
     try:
-        return {"cycle_id": sch.trigger_now(), "status": "running"}
+        return {"cycle_id": sch.trigger_now(request.state.actor), "status": "running"}
     except CycleBusy:
         raise HTTPException(409, "cycle_running") from None
 
