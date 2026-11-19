@@ -254,3 +254,16 @@ describe("schedule form", () => {
     expect(screen.getByText(/^Next runs \(saved schedule\):/)).toBeInTheDocument();
   });
 });
+
+describe("next runs list", () => {
+  it("separates the times with a comma and a (non-breaking) space, so they never run together", async () => {
+    openOperations({
+      schedule: scheduleOut({
+        next_runs: [20, 21, 22].map((d) => ({ utc: `2026-11-${d}T02:00:00Z`, local: `2026-11-${d}T02:00:00+00:00` })),
+      }),
+    });
+    const line = await screen.findByText(/^Next runs:/);
+    expect(line.textContent).toMatch(/02:00,\u00a021 Nov/);
+    expect(line.textContent).not.toMatch(/\d,\d/);
+  });
+});

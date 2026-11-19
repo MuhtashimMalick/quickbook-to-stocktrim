@@ -139,3 +139,29 @@ describe("overview states", () => {
     expect(t[0]).toHaveAttribute("title", expect.stringContaining("06:00:00 UTC"));
   });
 });
+
+describe("latest real push card", () => {
+  const run = (counts: Record<string, number>) => ({
+    run_id: RUN_ID,
+    status: "done",
+    dry_run: false,
+    started_at: "2026-11-17T15:06:00Z",
+    finished_at: "2026-11-17T15:07:00Z",
+    counts,
+  });
+
+  it("a run that sent nothing says so in its own sentence, apart from the link", async () => {
+    setup(overview({ last_real_push_run: run({}) }));
+    const sentence = await screen.findByText("No records needed sending in this run.");
+    const link = screen.getByRole("link", { name: "Open the run" });
+    expect(sentence).not.toContainElement(link);
+    expect(sentence.parentElement).not.toHaveTextContent(/noneOpen/);
+    expect(link.closest("div")).not.toBe(sentence.parentElement);
+  });
+
+  it("a run with counts shows them and no 'nothing sent' sentence", async () => {
+    setup(overview({ last_real_push_run: run({ done: 12 }) }));
+    expect(await screen.findByText("12")).toBeInTheDocument();
+    expect(screen.queryByText("No records needed sending in this run.")).not.toBeInTheDocument();
+  });
+});

@@ -159,8 +159,16 @@ export function LastPushPanel({ overview }: { overview: Overview }) {
             <StatusStamp status={stampFor(run.status)} />
             <Time at={run.started_at} />
           </div>
-          <Counts counts={run.counts} />
-          <TextLink to={`/runs/push/${run.run_id}`}>Open the run</TextLink>
+          {Object.values(run.counts ?? {}).some((n) => n > 0) ? (
+            <div>
+              <Counts counts={run.counts} />
+            </div>
+          ) : (
+            <p className="text-ink-muted">No records needed sending in this run.</p>
+          )}
+          <div>
+            <TextLink to={`/runs/push/${run.run_id}`}>Open the run</TextLink>
+          </div>
         </div>
       )}
     </Panel>

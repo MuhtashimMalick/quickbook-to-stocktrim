@@ -23,7 +23,7 @@ function NextRuns({ schedule }: { schedule: ScheduleOut }) {
     <>
       {schedule.next_runs.map((r, i) => (
         <span key={r.utc}>
-          {i > 0 && ", "}
+          {i > 0 && ", "}
           <time dateTime={r.utc} title={formatUtc(r.utc)} className="font-mono tabular-nums">
             {formatDateTime(r.utc, schedule.tz)}
           </time>
