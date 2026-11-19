@@ -425,11 +425,15 @@ class Scheduler:
         except engine.PushError as e:
             raise _End("aborted", e.code) from None
         run_id = r["run_id"]
-        _update_cycle(cid, push_run_id=run_id)
+        ctx["summary"]["push"] = {"run_id": str(run_id), "items": {"done": 0, "failed": 0}}  # in place BEFORE anything can fail: the truth stays recoverable from the summary
+        try:
+            _update_cycle(cid, push_run_id=run_id)
+        except Exception as e:  # noqa: BLE001 - the real run is already going: never abandon the cycle here
+            log.error("push run id not linked to the cycle: %s", type(e).__name__)
         ev("real_run_started", run_id=run_id)
         self._wait(lambda: self._push_status(run_id) != "running")
         status = self._push_status(run_id)
-        ctx["summary"]["push"] = {"status": status, "items": item_counts(run_id), **({"error": err} if (err := self._push_error(run_id)) else {})}
+        ctx["summary"]["push"] = {"run_id": str(run_id), "status": status, "items": {"done": 0, "failed": 0} | item_counts(run_id), **({"error": err} if (err := self._push_error(run_id)) else {})}
         if status in PUSH_FAILED:
             raise _End("failed", f"push_{status}")
 

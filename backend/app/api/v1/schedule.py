@@ -15,7 +15,7 @@ from ...tz import tz_of
 from .ops import M
 
 router = APIRouter()
-MAX_SHIFT_DAYS = 365  # start_date may be at most this far from today
+MAX_FUTURE_DAYS = 365  # start_date may be at most this far AHEAD of today; any past date is fine (it only sets the phase)
 
 
 class RunTime(M):
@@ -34,7 +34,7 @@ class ScheduleOut(M):
     every_days: Literal[1, 3, 7]
     time: str
     tz: str
-    start_date: str
+    start_date: Optional[str]  # null for the env default and for daily schedules: the anchor is meaningless there
     updated_at: Optional[datetime]
     updated_by: Optional[str]
     source: Literal["database", "env_default"]
@@ -52,7 +52,7 @@ def _out(request: Request) -> ScheduleOut:
         runs.append(next_run(runs[-1] if runs else sch.clock(), schedule))
     with session_scope() as s:
         last = s.execute(select(SyncCycle.id, SyncCycle.status, SyncCycle.started_at).order_by(SyncCycle.started_at.desc()).limit(1)).first()
-    return ScheduleOut(**schedule.model_dump(exclude={"start_date"}), start_date=schedule.start_date.isoformat(), source=source,
+    return ScheduleOut(**schedule.model_dump(exclude={"start_date"}), start_date=None if source == "env_default" or schedule.every_days == 1 else schedule.start_date.isoformat(), source=source,
                        next_runs=[RunTime(utc=r.astimezone(timezone.utc), local=r) for r in runs], ceiling_enabled=st.scheduler_enabled, allow_production=st.scheduler_allow_production,
                        last_cycle=last and LastCycle(id=last.id, status=last.status, started_at=last.started_at))
 
@@ -69,7 +69,7 @@ def put_schedule(body: ScheduleIn, request: Request) -> Any:
     now = sch.clock()
     today = now.astimezone(tz_of(body.tz)).date()
     start = body.start_date or today
-    if abs(start - today) > timedelta(days=MAX_SHIFT_DAYS):
+    if start - today > timedelta(days=MAX_FUTURE_DAYS):
         raise HTTPException(422, "start_date_out_of_range")
     new = Schedule(**body.model_dump(exclude={"start_date"}), start_date=start, updated_at=now, updated_by=request.state.actor)
     set_state("schedule", new.model_dump(mode="json"))

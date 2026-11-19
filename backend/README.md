@@ -1,7 +1,7 @@
 # Specialty Archery: QuickBooks Desktop <-> StockTrim (QuickBooks side)
 
 Proves that a FastAPI backend using [`qbwc-kit`](https://pypi.org/project/qbwc-kit/) (0.1.3, untouched) can read from and
-write to QuickBooks Desktop Enterprise through QuickBooks Web Connector (QBWC). No StockTrim code yet.
+write to QuickBooks Desktop Enterprise through QuickBooks Web Connector (QBWC). The StockTrim push engine, the scheduler and the admin UI are described below.
 Single client (Specialty Archery). Runs in Docker Compose (Python 3.12) behind Caddy.
 
 ```
@@ -52,8 +52,8 @@ Migrations need only `DATABASE_URL` (`alembic -c backend/alembic.ini ...` also w
 ## Deployment (client's Linux server, Docker Compose)
 
 Services: `db` (postgres 17.12, not published), `migrate` (one-shot `alembic upgrade head` as the DB owner), `app` (non-root, one uvicorn worker, not published),
-`caddy` (80/443, automatic Let's Encrypt; proxies `/qbwc` (exact; bodies capped at 64 MB) and `/api/v1/*` (1 MB) to the app, everything else 404 until the web service arrives; see Public exposure). Volumes: `pgdata`, `appdata` (`/data`: `logs/` and `fixtures/`), `caddy_data`.
-Networks: `edge` (caddy + app; normal, so the app keeps outbound internet for the later StockTrim client) and `backend` (`internal: true`: db, migrate, app, test). Caddy has no route to the db.
+`web` (the admin SPA: nginx-unprivileged, read-only, not published), `caddy` (80/443, automatic Let's Encrypt; proxies `/qbwc` (exact; bodies capped at 64 MB) and `/api/v1/*` (1 MB) to the app and everything else to `web`; see Public exposure). Volumes: `pgdata`, `appdata` (`/data`: `logs/` and `fixtures/`), `caddy_data`.
+Networks: `edge` (caddy + app; normal, so the app keeps outbound internet for the StockTrim client), `spa` (`internal`: caddy + web only) and `backend` (`internal: true`: db, migrate, app, test). Caddy has no route to the db; `web` has no route to anything but Caddy.
 All containers use json-file log rotation (10 MB x 5).
 
 ### Server prerequisites (fresh Ubuntu)
@@ -68,8 +68,8 @@ All containers use json-file log rotation (10 MB x 5).
 
 1. `git clone <repo> && cd quickbook && cp .env.example .env && chmod 600 .env`
 2. Edit `.env`: set `DOMAIN`, `APP_URL=https://<DOMAIN>/qbwc`, optionally `ACME_EMAIL`, and generate every secret
-   (`POSTGRES_PASSWORD`, `APP_DB_PASSWORD`, `QBWC_PASSWORD`, `ADMIN_TOKEN`) with `openssl rand -hex 24`, and `JWT_SECRET` with `openssl rand -hex 32` (required, min 32 chars: the app refuses to start without it). Keep `WRITES_ENABLED=false`.
-3. `docker compose up -d --build`, then `docker compose ps` (db healthy, migrate exited 0, app healthy, caddy up) and `docker compose logs app caddy`.
+   (`POSTGRES_PASSWORD`, `APP_DB_PASSWORD`, `QBWC_PASSWORD`, `ADMIN_TOKEN`) with `openssl rand -hex 24`, and `JWT_SECRET` with `openssl rand -hex 32` (required, min 32 chars: the app refuses to start without it). Keep every flag off at first: `WRITES_ENABLED`, `STOCKTRIM_WRITES_ENABLED`, `SCHEDULER_ENABLED` and `SCHEDULER_ALLOW_PRODUCTION` all `false`, `STOCKTRIM_ENVIRONMENT=test`, `ALERT_WEBHOOK_URL` empty (the order to switch them on is in the go-live order below).
+3. Build one image at a time (2 GB server: add the swapfile first, see the runbook below): `GIT_SHA=$(git rev-parse --short HEAD) docker compose build migrate`, `docker compose build web`, then `docker compose up -d --remove-orphans`, then `docker compose up -d --force-recreate caddy` (REQUIRED: the Caddyfile is a single-file bind mount). `docker compose ps -a` (db healthy, migrate exited 0, app and web healthy, caddy up) and `docker compose logs app caddy web`.
 4. Check `https://<DOMAIN>/qbwc?wsdl` returns the WSDL.
 5. Admin API (CLI): the CLI-only routes (see Public exposure) are unreachable from outside, and the app port is not published, so call it from inside the app container with
    `python -m app.cli METHOD /path` (METHOD is GET or POST; adds `X-Admin-Token` from the container environment; paths are under `/api/v1`; `--json` sends stdin as the JSON body; on Git Bash for Windows prefix the command with `MSYS_NO_PATHCONV=1`, otherwise `/jobs` is rewritten to a Windows path):
@@ -84,7 +84,7 @@ All containers use json-file log rotation (10 MB x 5).
    echo '{"stocktrim": true, "check_suppliers": true, "check_suppliers_by_code": false, "check_sales_orders": false, "sample_limit": 50}' | docker compose exec -T app python -m app.cli POST /preflight --json
    ```
    (The `echo '{...}' |` form works in bash and PowerShell, not in cmd.exe: there put the JSON in a file and use `< body.json`.) All body fields are optional. Needs the QuickBooks snapshot in the DB and (for the StockTrim part) `STOCKTRIM_AUTH_ID`/`STOCKTRIM_AUTH_SIGNATURE`. Duration: QuickBooks-only about a second; with StockTrim and the defaults about 13 seconds measured against the TEST account (319 products, 1,173 customers, 6 suppliers; products, customers, purchase orders and one `GET /api/SuppliersBulk`). Opt-ins: `check_suppliers_by_code` adds one GET per supplier (~382 calls, measured 90 seconds in total), `check_sales_orders` one GET per product (~2,346 calls, ~8 minutes), so leave them off unless needed; the CLI waits 600 s by default (`--timeout`). One run at a time per process: a second concurrent call gets `409 preflight_running`.
-   Reading it: `verdict.ok_to_push` is true only when nothing blocks and every check completed; it is NOT permission to push (this stage pushes nothing). `verdict.blocking` lists reason codes with counts: `stocktrim_not_empty` (StockTrim already holds products/customers/POs/suppliers/sales orders: we never overwrite, someone decides; `detail` has the per-entity counts and `products_overlap_product_id`), `stocktrim_readable_conflict` (a StockTrim `productCodeReadable` equals one of our keys; BOM keys would be ambiguous), `stocktrim_incomplete` (a step had errors, hit the paging cap or aborted; `detail` is `{step: errors}`), `stocktrim_suppliers_not_checked` (`check_suppliers: false`), `stocktrim_unreachable_or_bad_credentials` (a wrong `STOCKTRIM_AUTH_ID` shows up as a 500, a wrong signature as 401; nothing else was read), `stocktrim_skipped`/`stocktrim_not_configured`, `qb_snapshot_empty` (no pushable products), `qb_products_quarantined`, `qb_suppliers_quarantined`, `bom_cycle_withheld`. `warnings` do not block (double spaces, non-ASCII/long keys, unresolved vendors, excluded BOM components, negative stock, sub-assemblies without a BOM, `sales_orders_not_checked`: StockTrim stores sales orders for unknown products, so an empty product list does not mean there are none). `quickbooks.issues` groups problems as `entity.code` with counts and up to `sample_limit` `{ref, code}` samples. `stocktrim.<entity>` give existing counts and overlap with our keys (`overlap_product_id`, `overlap_readable`, `overlap_readable_only`, each with count and ListID samples; `duplicate_readable_groups` inside StockTrim); BOM links cannot be listed (`boms: unknown_cannot_list`). `snapshot.synced_at_max` is the newest sync per QuickBooks entity (the snapshot is read in one REPEATABLE READ transaction), `fingerprint` is a sha256 over the pushable keys, BOM edges and the StockTrim counts/overlaps (a later push can require it unchanged), and `plan` is an upper bound of the calls a push would need (one per record) with the ETA at `STOCKTRIM_MAX_RPS`.
+   Reading it: `verdict.ok_to_push` is true only when nothing blocks and every check completed; it is NOT permission to push (a real push needs the gates in Push engine). `verdict.blocking` lists reason codes with counts: `stocktrim_not_empty` (StockTrim already holds products/customers/POs/suppliers/sales orders: we never overwrite, someone decides; `detail` has the per-entity counts and `products_overlap_product_id`), `stocktrim_readable_conflict` (a StockTrim `productCodeReadable` equals one of our keys; BOM keys would be ambiguous), `stocktrim_incomplete` (a step had errors, hit the paging cap or aborted; `detail` is `{step: errors}`), `stocktrim_suppliers_not_checked` (`check_suppliers: false`), `stocktrim_unreachable_or_bad_credentials` (a wrong `STOCKTRIM_AUTH_ID` shows up as a 500, a wrong signature as 401; nothing else was read), `stocktrim_skipped`/`stocktrim_not_configured`, `qb_snapshot_empty` (no pushable products), `qb_products_quarantined`, `qb_suppliers_quarantined`, `bom_cycle_withheld`. `warnings` do not block (double spaces, non-ASCII/long keys, unresolved vendors, excluded BOM components, negative stock, sub-assemblies without a BOM, `sales_orders_not_checked`: StockTrim stores sales orders for unknown products, so an empty product list does not mean there are none). `quickbooks.issues` groups problems as `entity.code` with counts and up to `sample_limit` `{ref, code}` samples. `stocktrim.<entity>` give existing counts and overlap with our keys (`overlap_product_id`, `overlap_readable`, `overlap_readable_only`, each with count and ListID samples; `duplicate_readable_groups` inside StockTrim); BOM links cannot be listed (`boms: unknown_cannot_list`). `snapshot.synced_at_max` is the newest sync per QuickBooks entity (the snapshot is read in one REPEATABLE READ transaction), `fingerprint` is a sha256 over the pushable keys, BOM edges and the StockTrim counts/overlaps (a later push can require it unchanged), and `plan` is an upper bound of the calls a push would need (one per record) with the ETA at `STOCKTRIM_MAX_RPS`.
 6. Send the `.qwc` and the QBWC password (`QBWC_PASSWORD`) to the client via separate channels.
 7. Client IT: QuickBooks Desktop open with the company file, logged in as Admin (single-user mode for the first authorization).
    On the machine running QuickBooks (needs internet) open Web Connector -> **Add an application** -> the `.qwc`. In the QuickBooks
@@ -112,7 +112,7 @@ Two servers must never answer QBWC at once.
   Keeps 14 days locally and copies offsite. OPEN QUESTION: who owns the backups and where the offsite copy lives is not decided yet.
 - Restore (with `.env` exported as above): `docker compose stop app`; `docker compose exec -T db pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --clean --if-exists --no-owner < backup.dump`;
   re-run the init script (grants, idempotent) `docker compose exec db sh /docker-entrypoint-initdb.d/init-app-role.sh`; `docker compose start app`.
-- Update: `git pull && docker compose up -d --build` (the `migrate` service applies new migrations before the app starts).
+- Update: `git pull`, then `GIT_SHA=$(git rev-parse --short HEAD) docker compose build migrate`, `docker compose build web`, `docker compose up -d --remove-orphans`, `docker compose up -d --force-recreate caddy` (REQUIRED); the `migrate` service applies new migrations before the app starts. For a release use the consolidated runbook below (backup first).
 - Secret rotation (edit `.env` first, then):
   - `POSTGRES_PASSWORD` is read only when the volume is first created: `docker compose exec db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "ALTER ROLE <POSTGRES_USER> PASSWORD '<new>'"`, then `docker compose up -d --force-recreate migrate` (the `test` service also uses it).
   - `APP_DB_PASSWORD`: `docker compose up -d db` (picks up the new env), `docker compose exec db sh /docker-entrypoint-initdb.d/init-app-role.sh`, `docker compose up -d --force-recreate app`.
@@ -145,7 +145,7 @@ Password policy: at least 14 characters, not the username, not in a built-in lis
 
 ## Public exposure (stage B2)
 
-One domain: `https://<DOMAIN>/qbwc` -> app (unchanged), `https://<DOMAIN>/api/v1/*` -> app (admin API for the future SPA, Bearer JWT), everything else -> the `web` service (SPA, stage F1); Caddy answers 404 itself for `/docs*`, `/redoc*`, `/openapi.json*`, `/health*`, `/qbwc*` (except the exact `/qbwc`) and `/api*` outside `/api/v1/*`, so the SPA fallback never turns them into a 200. Unknown other paths return the SPA `index.html` (200).
+One domain: `https://<DOMAIN>/qbwc` -> app (unchanged), `https://<DOMAIN>/api/v1/*` -> app (admin API for the SPA, Bearer JWT), everything else -> the `web` service (the SPA); Caddy answers 404 itself for `/docs*`, `/redoc*`, `/openapi.json*`, `/health*`, `/qbwc*` (except the exact `/qbwc`) and `/api*` outside `/api/v1/*`, so the SPA fallback never turns them into a 200. Unknown other paths return the SPA `index.html` (200).
 Two layers, both must allow a request:
 1. Caddy (`docker/caddy/Caddyfile`): explicit `handle`s for `/qbwc` (exact) and `/api/v1/*` (`request_body max_size 1MB`, `X-Admin-Token` stripped); everything else goes to the SPA (`web`), except the reserved backend-looking paths, which Caddy answers 404. `/docs`, `/redoc`, `/openapi.json` are never routed. No `trusted_proxies`, no Caddy rate limit (core Caddy has none; the app limits login/refresh).
    Headers on every response: `Strict-Transport-Security: max-age=31536000; includeSubDomains`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, `X-Frame-Options: DENY`, `Content-Security-Policy: frame-ancestors 'none'; default-src 'none'` (API-only on `/qbwc` and `/api/v1/*`; the SPA paths get the SPA policy), `Server` removed.
@@ -154,7 +154,7 @@ Two layers, both must allow a request:
 
 | Reachable through the proxy (Bearer; X-Admin-Token is ignored) | CLI only (loopback + X-Admin-Token; 404 when proxied, even with a valid Bearer) |
 |---|---|
-| `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout` (no auth), `GET /auth/me`, `GET /health`, `POST /scheduler/run-now`, `POST /preflight` (read-only), `GET /jobs`, `GET /jobs/{id}`, `GET /push/runs/{id}` | `GET /qwc`, `GET /records/{entity}` (raw QuickBooks records), `GET /log`, `POST /jobs/all-reads`, `POST /jobs/{job_type}` (incl. `create_test_po`), `POST /push`, `POST /push/runs/{id}/cancel`, `POST /push/runs/{id}/resume` |
+| `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout` (no auth), `GET /auth/me`, `GET /health`, `GET /overview`, `GET /settings`, `GET /reason-codes`, `GET /cycles`, `GET /cycles/{id}`, `GET /events`, `GET /push/runs`, `GET /push/runs/{id}`, `GET /push/runs/{id}/entries`, `GET /push/runs/{id}/entries.csv`, `GET /schedule`, `PUT /schedule`, `POST /scheduler/run-now`, `POST /preflight` (read-only), `GET /jobs`, `GET /jobs/{id}` | `GET /qwc`, `GET /records/{entity}` (raw QuickBooks records), `GET /log`, `POST /jobs/all-reads`, `POST /jobs/{job_type}` (incl. `create_test_po`), `POST /push`, `POST /push/runs/{id}/cancel`, `POST /push/runs/{id}/resume` |
 
 Hidden existence: `redirect_slashes` is off, and a proxied wrong-method (405) or bad-body (422) call to a CLI-only route is also answered 404 (`hide_cli_only` in `qbwc/gate.py`).
 
@@ -166,34 +166,115 @@ The refresh cookie is `Path=/api/v1/auth`, so a browser never sends it to `/qbwc
 
 Post-deploy smoke matrix (run from any machine against the real domain; expected status codes; `D=https://<DOMAIN>`):
 ```
-curl -s -o /dev/null -w '%{http_code}
-' "$D/qbwc?wsdl"                       # 200
+curl -s -o /dev/null -w '%{http_code}\n' "$D/qbwc?wsdl"                       # 200
 for p in /docs /redoc /openapi.json / /health /qbwc/x /qbwcfoo /QBWC /api/v1/qwc /api/v1/records/customers /api/v1/jobs/create_test_po /api/v1/q%77c /api/v1/../openapi.json; do
-  curl -s --path-as-is -o /dev/null -w "$p %{http_code}
-" "$D$p"; done          # all 404
-curl -s -o /dev/null -w '%{http_code}
-' "$D/api/v1/health"                    # 401 (no token)
-curl -s -o /dev/null -w '%{http_code}
-' -H "X-Admin-Token: dummy-not-the-real-token" "$D/api/v1/health"   # 401 (never send the real ADMIN_TOKEN over the internet; Caddy strips the header anyway)
+  curl -s --path-as-is -o /dev/null -w "$p %{http_code}\n" "$D$p"; done          # all 404
+curl -s -o /dev/null -w '%{http_code}\n' "$D/api/v1/health"                    # 401 (no token)
+curl -s -o /dev/null -w '%{http_code}\n' -H "X-Admin-Token: dummy-not-the-real-token" "$D/api/v1/health"   # 401 (never send the real ADMIN_TOKEN over the internet; Caddy strips the header anyway)
 curl -s -H 'Content-Type: application/json' -d '{"username":"nobody","password":"wrong-password-1"}' "$D/api/v1/auth/login"   # 401 {"detail":"invalid_credentials"}
 curl -s -D - -o /dev/null "$D/api/v1/health" | grep -iE 'strict-transport|x-content-type|referrer-policy|x-frame|content-security|^server'   # 5 headers, no Server
 ```
-Then log in as a real user (`users add`) and check `GET /api/v1/health` with the Bearer is 200 and `GET /api/v1/qwc` with the same Bearer is 404.
+Every signed-in user (there are no roles) can start a cycle (`POST /scheduler/run-now`), run the pre-flight and change the schedule (`PUT /schedule`); nothing in the proxy-reachable set pushes to StockTrim directly (`POST /push` is CLI-only). Then log in as a real user (`users add`) and check `GET /api/v1/health` with the Bearer is 200 and `GET /api/v1/qwc` with the same Bearer is 404.
 
-## Deploying B1+B2 to the server
+## Deploying the admin UI release (consolidated)
 
-1. Record the current commit: `git rev-parse HEAD` (rollback target).
-2. Backup: `set -a && . ./.env && set +a && docker compose exec -T db pg_dump -Fc -U "$POSTGRES_USER" "$POSTGRES_DB" > ~/quickbook-backups/pre-b2-$(date +%F).dump`.
-3. `git fetch && git checkout <branch/commit>` (or `git pull`).
-4. Add `JWT_SECRET` to `.env` without printing it: `printf 'JWT_SECRET=%s
-' "$(openssl rand -hex 32)" >> .env`, then check `grep '^JWT_SECRET=' .env | cut -d= -f2- | tr -d '
-' | wc -c` is 64 and that `WRITES_ENABLED`, `STOCKTRIM_WRITES_ENABLED`, `SCHEDULER_ENABLED` are all `false`.
-5. `docker compose config -q` (no output = ok) and `docker run --rm -e DOMAIN=<domain> -e ACME_EMAIL= -v "$PWD/docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro" caddy:2.10.2 caddy validate --config /etc/caddy/Caddyfile`.
-6. `docker compose up -d --build`, then `docker compose up -d --force-recreate caddy`: REQUIRED, the Caddyfile is a single-file bind mount and git replaces the file's inode, so the running Caddy would keep the old one.
-7. Checks: `docker compose ps` (migrate exited 0, app healthy), `docker compose exec app alembic current` shows `0010`, `docker compose logs caddy app --tail 50`.
-8. First admin (needs a TTY, so no `-T`): `docker compose exec app python -m app.cli users add <name>`.
-9. Run the smoke matrix from Public exposure against `https://<DOMAIN>`, then log in with that user and `GET /api/v1/health` with the Bearer (200), `GET /api/v1/qwc` with the same Bearer (404).
-10. Rollback: Caddy only: `git checkout 4ade59e -- docker/caddy/Caddyfile && docker compose up -d --force-recreate caddy`. Full rollback: check out `4ade59e` and rebuild, never further back than `4ade59e` (the DB stays at revision 0010, older code does not know the auth tables).
+One ordered runbook for the release that adds the admin API (B1-B6), the sync schedule, the run log and the SPA (`web`). It replaces the old per-stage "Deploying B1+B2" and "Deploying F1" lists. The server is a 2 GB droplet: build ONE image at a time. The database ends at Alembic revision `0012` (this release adds no migration).
+
+**0. Planning window.** Deploy BEFORE the client's Web Connector connects (outside its Auto-Run times); `/qbwc` is down for about 30 s while `app` restarts. The `.qwc` does not change when `DOMAIN`, `APP_URL`, `QWC_OWNER_ID` and `QWC_FILE_ID` are unchanged: prove it with `docker compose exec -T app python -m app.cli GET /qwc | sha256sum` before and after (same hash).
+
+**1. Pre-checks.**
+```
+git rev-parse HEAD                       # write it down: the code you are leaving
+git status --short                       # must be clean
+free -h; swapon --show; df -h /; docker system df
+sudo ss -ltnp | grep -E ':(80|443)\b'    # only caddy (docker-proxy) holds them
+docker compose exec app alembic current  # the revision you are leaving
+docker compose exec -T app python -m app.cli GET /jobs > ~/quickbook-backups/jobs-before.json   # nothing may be running or queued that matters
+```
+
+**2. Backups** (never skip; this is the rollback).
+```
+mkdir -p ~/quickbook-backups && set -a && . ./.env && set +a
+docker compose exec -T db pg_dump -Fc -U "$POSTGRES_USER" "$POSTGRES_DB" > ~/quickbook-backups/pre-ui-$(date +%F).dump
+pg_restore --list ~/quickbook-backups/pre-ui-$(date +%F).dump | head -5        # must list the TOC (a pg_restore binary on the host, or: docker compose exec -T db pg_restore --list < the dump)
+cp .env ~/quickbook-backups/env-pre-ui-$(date +%F) && chmod 600 ~/quickbook-backups/env-pre-ui-$(date +%F)
+docker run --rm -v quickbook_caddy_data:/d -v ~/quickbook-backups:/b alpine tar czf /b/caddy_data-$(date +%F).tgz -C /d .    # the volume name is <project>_caddy_data: check `docker volume ls`
+scp ~/quickbook-backups/*$(date +%F)* <offsite-host>:quickbook-backups/
+```
+Who owns the offsite copy is an OPEN decision (see Operations); until it is decided, copy it to the person doing the deployment.
+
+**3. Swapfile** (once; the Node build must not be OOM-killed on 2 GB).
+```
+sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile && echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+```
+
+**4. Check out** the release: `git fetch && git checkout <branch/commit>` (or `git pull`).
+
+**5. `.env` changes, without printing values.**
+```
+comm -13 <(grep -oE '^[A-Z_]+=' .env | sort) <(grep -oE '^[A-Z_]+=' .env.example | sort)   # keys the new .env.example has and yours lacks
+printf 'JWT_SECRET=%s\n' "$(openssl rand -hex 32)" >> .env      # only if the key is missing
+grep '^JWT_SECRET=' .env | cut -d= -f2- | tr -d '\n' | wc -c    # must print 64
+```
+Set every flag EXPLICITLY to `false` (add the line when it is missing): `WRITES_ENABLED`, `STOCKTRIM_WRITES_ENABLED`, `SCHEDULER_ENABLED`, `SCHEDULER_ALLOW_PRODUCTION`; keep `STOCKTRIM_ENVIRONMENT=test` (it becomes `production` only in the go-live order below); `ALERT_WEBHOOK_URL` stays empty for now. Check: `grep -cE '^(WRITES_ENABLED|STOCKTRIM_WRITES_ENABLED|SCHEDULER_ENABLED|SCHEDULER_ALLOW_PRODUCTION)=false$' .env` prints 4 and `grep -c '^ALERT_WEBHOOK_URL=.' .env` prints 0. Then `chmod 600 .env`.
+
+**6. Validate the configuration.** `docker compose config -q` (no output = ok), then the Caddyfile with the pinned image:
+`docker run --rm -e DOMAIN=<domain> -e ACME_EMAIL= -v "$PWD/docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro" caddy:2.10.2 caddy validate --config /etc/caddy/Caddyfile`.
+
+**7. Build ONE image at a time, watching memory** (`free -h` in a second shell; the running stack keeps serving while you build):
+```
+GIT_SHA=$(git rev-parse --short HEAD) docker compose build migrate     # the backend image (app reuses it)
+docker compose build web                                               # the Node build: the memory-hungry one
+```
+If a build is OOM-killed: `docker builder prune -f`, check swap is on (`swapon --show`), and run the failed build again alone.
+
+**8. Cutover.**
+```
+GIT_SHA=$(git rev-parse --short HEAD) docker compose up -d --remove-orphans
+docker compose up -d --force-recreate caddy      # REQUIRED: the Caddyfile is a single-file bind mount and git replaces its inode, so the running Caddy keeps the old file
+```
+
+**9. Verify.**
+```
+docker compose ps -a                              # db healthy, migrate exited 0, app healthy, web healthy, caddy up
+docker compose logs migrate --tail 20             # applied cleanly
+docker compose exec app alembic current           # = 0012 (head)
+docker compose exec db sh /docker-entrypoint-initdb.d/init-app-role.sh    # re-apply the grants (idempotent)
+docker compose logs app caddy web --tail 50       # no tracebacks
+```
+`docker compose exec -T app python -m app.cli GET /qwc | sha256sum` equals the hash from step 0.
+
+**10. First admin** (needs a TTY, so NO `-T`): `docker compose exec app python -m app.cli users add <name>`. Every signed-in user may start a cycle and change the schedule (there are no roles): add only people who may.
+
+**11. Smoke matrix** (from any machine; `D=https://<DOMAIN>`). Run the matrix from Public exposure (every line must match), plus the SPA checks: `$D/` is 200 `text/html` with the SPA CSP, `$D/some/spa/route` is 200 (SPA fallback), `$D/assets/<a hashed file from index.html>` is 200 and immutable. Then a non-mutating SOAP call (no credentials involved):
+```
+curl -s -H 'Content-Type: text/xml; charset=utf-8' -H 'SOAPAction: "http://developer.intuit.com/serverVersion"' \
+  -d '<?xml version="1.0"?><soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><serverVersion xmlns="http://developer.intuit.com/"/></soap:Body></soap:Envelope>' "$D/qbwc"
+```
+Do NOT send a wrong-credential `authenticate`: it records `last_qbwc_auth_refused` and the UI would show a refused login that never happened. Then sign in in a browser (no CSP violations in the console), check Overview, Settings (flags all off, the new `version`) and Operations.
+
+**12. The Web Connector path.** Tell the client's IT to proceed (Update Selected once, then Auto-Run as before). Watch `docker compose logs -f app`: a successful authenticate sets `last_qbwc_contact` (Overview shows it). A refused login (`last_qbwc_auth_refused`, QBWC "authentication failed") means the password in Web Connector differs from `QBWC_PASSWORD`; do not change the server first, compare the two.
+
+**13. Rollback.** Never roll the code back alone: the database is at `0012` and older code does not know its tables. Restore the backup from step 2, then the matching code:
+```
+cd ~/quickbook && set -a && . ./.env && set +a
+docker compose stop app
+docker compose exec -T db pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --clean --if-exists --no-owner < ~/quickbook-backups/pre-ui-<date>.dump
+docker compose exec db sh /docker-entrypoint-initdb.d/init-app-role.sh
+git checkout <the commit from step 1>          # code that matches the restored database
+GIT_SHA=$(git rev-parse --short HEAD) docker compose build migrate && docker compose up -d --remove-orphans && docker compose up -d --force-recreate caddy
+```
+Restore `.env` from the backup copy if you changed it. Caddy-only problem (bad Caddyfile): `git checkout <commit from step 1> -- docker/caddy/Caddyfile && docker compose up -d --force-recreate caddy` (no database restore needed).
+
+### Go-live order and the writes-flag policy
+
+Each flag change: edit `.env`, then `docker compose up -d app` (about 30 s of `/qbwc` downtime: do it outside the client's sync times).
+1. ALL flags stay off (`WRITES_ENABLED`, `STOCKTRIM_WRITES_ENABLED`, `SCHEDULER_ENABLED`, `SCHEDULER_ALLOW_PRODUCTION` = false, `STOCKTRIM_ENVIRONMENT=test`) until the QuickBooks snapshot is complete (all read types `done`) and a UI pre-flight (Operations) against the TEST account is clean.
+2. Set `ALERT_WEBHOOK_URL` and verify an alert really arrives (an aborted cycle, e.g. a read timeout, must post to the webhook; Settings shows `alert_webhook_configured`).
+3. Production target switch: `STOCKTRIM_ENVIRONMENT=production` plus the production `STOCKTRIM_BASE_URL` and credentials. Run the pre-flight until `ok_to_push`; if it says `stocktrim_not_empty`, a person decides deliberately (never overwrite).
+4. First manual, supervised INITIAL run from the CLI of ALL SIX steps (`suppliers`, `products`, `bom`, `customers`, `sales_orders`, `purchase_orders`): a dry-run first (review the plan), then the real run with both fingerprints (see Push engine). This needs `STOCKTRIM_WRITES_ENABLED=true`.
+5. Keep `STOCKTRIM_WRITES_ENABLED=true` and use `SCHEDULER_ALLOW_PRODUCTION=false` as the single gate. Set `SCHEDULER_ENABLED=true` and review 3-5 days of `dry_run_only` cycles (reason `production_not_allowed`) in the UI.
+6. Only then `SCHEDULER_ALLOW_PRODUCTION=true`.
 
 ## Manual test with real QuickBooks
 
@@ -294,7 +375,7 @@ Fields: `ts` (ISO 8601 UTC), `event` (callback name), `direction` (`in` = QBWC -
 - [ ] `ItemSitesQueryRq` iterator accepted (see `fixtures/qbxml/ItemSites_rq.xml` / `_rs.xml`).
 - [ ] qbXML version the log shows matches your QuickBooks.
 
-## Push foundation (Phase 2, stage 8; nothing is pushed yet)
+## Push foundation (Phase 2, stage 8)
 - Tables (migration `0003`; `0004` adds run status `done_with_failures` and `push_item.ref`, the QuickBooks ListID): `bom_edge` (the edge set last pushed, the BOM diff source, since StockTrim cannot list edges), `push_run` (one row per run: status, options, pre-flight fingerprint, counts-only summary) and `push_item` (per-item progress: entity, key, status, attempts, short `error_code`; never names or response bodies). This per-item progress is the plan's `sync_progress`. The `qb_app` role gets DML on them through the default privileges set by `docker/db/init-app-role.sh` (verified by a test: DML yes, DDL no). On an existing volume whose role was created before these tables, re-run that script only if the default privileges are missing.
 - `app/sync/mappers.py`: pure domain -> StockTrim request mappers and `build_push_plan` (ordered `(key, request)` pairs: suppliers, products, BOM edges children-first, customers). Product category = the top-level QuickBooks group of `FullName` (omitted for top-level items); emails with several addresses use the first valid one; address lines equal to the vendor/company/customer name are dropped; `stockOnOrder` is never sent.
 - `NEGATIVE_STOCK_POLICY=as_is|clamp` (default `as_is`): `clamp` sends 0 for negative stock; the mapper reports `stock_adjusted`; the push engine (next stage) owns the fallback when StockTrim rejects negatives.
@@ -366,7 +447,7 @@ One cycle per day pulls fresh QuickBooks data and then syncs it to StockTrim, wi
 - **One cycle:** (a) queue the read jobs through the normal job queue (a type still queued/running from an earlier cycle is waited for, not queued twice); (b) wait, polling every 30 s, until all are done; (c) freshness guard: every pulled entity must have been rewritten since the cycle started; (d) a `sync`-mode dry-run of ALL steps, automatic checks, then the real run with the dry-run's two fingerprints; the cycle waits for the push run and records it. The scheduler never sends `acknowledge_foreign`, `acknowledge_requeue`, `acknowledge_delete` or `stamp_only` (its runs carry `requested_by=scheduler`): a human handles those.
 - **Cycle result** (`sync_cycle` table, `GET /health`): `done`; `dry_run_only` (the checks passed but the real run is not allowed: `writes_disabled` = `STOCKTRIM_WRITES_ENABLED` false, `production_not_allowed` = `STOCKTRIM_ENVIRONMENT=production` without `SCHEDULER_ALLOW_PRODUCTION=true`); `aborted` with a reason: `push_running` (a manual push is running; checked before the dry-run), `empty_entity` (a read type has no rows while its ledger has rows: an empty read looks like a wipe), `mass_vanish` (a step's vanished count above max(25, 5%)), `mass_delete` (engine: BOM DELETEs above max(25, 5% of the stored edges)), `lock_lost` (the advisory-lock connection died before the real run), `read_job_failed` (a read job ended error/unsupported), `read_timeout`, `stale_snapshot`, `no_completed_initial_run` (the first push is a manual initial run), `mass_requeue`, `requeue_requires_step`, `foreign_records`, `preflight_not_ok` (blocking findings), `too_many_calls` (planned calls over the cap), or another engine code (`push_running`, ...); `failed` (`push_done_with_failures`, `push_failed`, or an exception type); `interrupted` (shutdown, restart or `stale`: a `running` row found while holding the lock). Every non-`done` result writes an ERROR log line and, with `ALERT_WEBHOOK_URL`, posts `{text, cycle_status, reason}` (5 s timeout; a failed post is only logged). Reasons, summaries and alerts hold codes and counts only.
 - **One cycle at a time:** a Postgres advisory lock plus a unique index on a `running` cycle; a `running` row left by a crash is marked `interrupted` (at startup and whenever a cycle starts holding the lock). If the process was down at the daily slot, the cycle runs at startup when no cycle started since the slot and it is within `SCHEDULER_READ_TIMEOUT_HOURS` of it. Alerts add `environment`, `cycle_id` and, for a failed push, `push_error`. Shutdown stops the scheduler thread (the cycle ends `interrupted`) before the push run is cancelled (resumable).
-- **Manual trigger** (admin only, 202; 409 `cycle_running` while one runs; 403 when the scheduler is disabled): `docker compose exec app python -m app.cli POST /scheduler/run-now`. A timed-out cycle leaves its read jobs queued: they run when the Web Connector next connects, and the next cycle reuses them.
+- **Manual trigger** (any signed-in UI user, or the CLI; 202; 409 `cycle_running` while one runs; 403 when the scheduler is disabled): `docker compose exec app python -m app.cli POST /scheduler/run-now`. A timed-out cycle leaves its read jobs queued: they run when the Web Connector next connects, and the next cycle reuses them.
 - **Health:** `docker compose exec app python -m app.cli GET /health` (add `?probe=true` for one read-only StockTrim GET): database, scheduler state and next run, `last_qbwc_contact` and its age (written on every SUCCESSFUL Web Connector authenticate, at most once a minute; refused logins go to `last_qbwc_auth_refused`), the last cycle, queued/running QuickBooks jobs, per-entity snapshot `synced_at_max` and record counts, the latest push run (status, item counts), the writes flag and the environment.
 - Simplifications: one cycle every 1, 3 or 7 days (no hourly stock sync yet), an entity that is empty in QuickBooks is not checked by the freshness guard, alerts go to a webhook only (no email).
 
@@ -379,7 +460,7 @@ The schedule is stored in Postgres (`app_state` key `schedule`, no table) so the
 - **Restart safety:** at startup the loop runs one cycle at once if the latest slot is not older than `SCHEDULER_READ_TIMEOUT_HOURS`, no cycle started since it, and the schedule was saved before it.
 - **Two switches:** `SCHEDULER_ENABLED` (env) is the ceiling: false = no automatic cycle at all, whatever is stored (the UI shows "disabled on the server"; `ceiling_enabled` in the API). The stored `enabled=false` only pauses the automatic runs. Manual run-now is unaffected by the stored switch (it needs the ceiling, as before). `SCHEDULER_ALLOW_PRODUCTION` and every safety check are unchanged.
 - **Applies at once:** the loop re-reads the schedule at every wake-up (at most 60 s apart) and a PUT wakes it immediately; no restart.
-- **API** (Bearer, reachable through the proxy; extra fields are rejected): `GET /schedule` returns the effective schedule, `source` (`database`|`env_default`), the next 3 runs (`utc` and `local` ISO), `ceiling_enabled`, `allow_production` and the last cycle (id, status, started_at). `PUT /schedule` takes `{"enabled": true, "every_days": 3, "time": "02:00", "tz": "America/Chicago", "start_date": "2026-11-16"}` (`start_date` optional, at most 365 days from today; `time` strictly `HH:MM`; `tz` an IANA name), stores it with `updated_by` = the signed-in user, writes a `schedule_changed` run event (counts only: `every_days`, `enabled`) and returns the same body as GET. `/health`, `/overview` and `/settings` show the stored schedule (`scheduler.time`, `every_days`, `tz`, `schedule_enabled`, `source`, `next_run_at`; `/settings.schedule`).
+- **API** (Bearer, reachable through the proxy; extra fields are rejected): `GET /schedule` returns the effective schedule (`start_date` is `null` for the env default and for daily schedules: the anchor means nothing there), `source` (`database`|`env_default`), the next 3 runs (`utc` and `local` ISO), `ceiling_enabled`, `allow_production` and the last cycle (id, status, started_at). `PUT /schedule` takes `{"enabled": true, "every_days": 3, "time": "02:00", "tz": "America/Chicago", "start_date": "2026-11-16"}` (`start_date` optional: a past date of any age is fine (it only sets the phase of the `k * every_days` slots), a future one at most 365 days ahead (`422 start_date_out_of_range`); `time` strictly `HH:MM`; `tz` an IANA name), stores it with `updated_by` = the signed-in user, writes a `schedule_changed` run event (counts only: `every_days`, `enabled`) and returns the same body as GET. `/health`, `/overview` and `/settings` show the stored schedule (`scheduler.time`, `every_days`, `tz`, `schedule_enabled`, `source`, `next_run_at`; `/settings.schedule`).
 - **CLI, for emergencies** (inside the container; the PUT is recorded as actor `cli`; not possible through the proxy):
 
 ```
@@ -391,7 +472,7 @@ docker compose exec -T app sh -c "echo '{\"enabled\": false, \"every_days\": 1, 
 
 ## Run log (stage B3)
 
-What happened in a cycle or run, and which records were left out and why, is stored in Postgres (migration 0011); the read endpoints and the UI come in the next stage. Codes, counts and business keys only: never names, payloads, API response bodies or secrets.
+What happened in a cycle or run, and which records were left out and why, is stored in Postgres (migration 0011); the read endpoints are in the Read APIs section and the UI in `frontend/README.md`. Codes, counts and business keys only: never names, payloads, API response bodies or secrets.
 
 - **`run_event`:** phase events of a cycle (`cycle_started`, `reads_queued`, `waiting_for_web_connector` (at most one per 15 minutes), `reads_done`, `snapshot_fresh`, `dry_run_planned`, `check_failed:<reason>`, `real_run_started`, `cycle_finished`) and of a push run (`run_started`, `step_started`/`step_finished` with item counts, `run_finished`), plus the admin actions `preflight_requested`, `run_cancel_requested`, `run_resumed`. `actor` = the signed-in username, `cli` (the loopback admin token) or `scheduler`; the same value is `push_run.requested_by`.
 - **`push_exclusion`:** per run (dry-runs too), one row per record the plan leaves out: `entity`, business `key`, QuickBooks `ref` (ListID/TxnID) and a `code` (quarantined keys, inactive suppliers/customers, a dropped supplier link, skipped BOM lines, and the skipped order lines / purchase orders: `non_product`, `group`, `zero_quantity`, `closed_uninvoiced`, `vendor_not_pushed`, `no_lines`, `lines_non_product`). For a record that failed to parse, and for BOM issues, the ListID stands in for the key. Their counts equal the pre-flight issue counts and the plan's `sales_orders`/`purchase_orders` stats.
@@ -415,27 +496,19 @@ GET only, all under `/api/v1`, all reachable through the proxy with a Bearer tok
 | Route | What |
 |---|---|
 | `GET /cycles?limit<=100&before=<iso\|id>` | cycles newest first (`before` = ISO time or the id of the last row seen) |
-| `GET /cycles/{id}` | the cycle, its read jobs, the linked run's progress, `reason_info` (title / explanation / next step) and `wrote_to_stocktrim` (a real run completed at least one item) |
+| `GET /cycles/{id}` | the cycle, its read jobs, the linked run's progress, `reason_info` (title / explanation / next step) and `wrote_to_stocktrim` (`yes` / `no` / `unknown`, see below) |
 | `GET /events?cycle_id=&run_id=&after_id=&limit<=200` | run events ascending with catalog titles; poll with `after_id=<last_id>` |
 | `GET /push/runs?limit&before&dry_run` | runs newest first: mode, steps, item counts by status, requested_by, target as `<env> @ <host>` |
-| `GET /push/runs/{id}/entries?outcome=&entity=&code=&q=&limit<=200&offset=` | failed / skipped items and excluded records in one list, `total` and per-outcome `counts`, reason text, StockTrim HTTP status and rejected field names. `qb_label` (FullName, Name or RefNumber) is looked up in the QuickBooks snapshot when the page is read (one query per page), never stored; null when the record is gone. `q`: case-insensitive contains on key, ref and label (`%` and `_` are literal). Key/ref search is instant; a name (label) search on a very large run (~33k entries) takes a few seconds because it scans the QuickBooks snapshot (a `pg_trgm` index would fix that if it ever matters) |
+| `GET /push/runs/{id}/entries?outcome=&entity=&code=&q=&key=&limit<=200&offset=` | failed / skipped items and excluded records in one list, `total`, per-outcome `counts` and `entities` (the sorted entity facet: distinct entities under every filter EXCEPT `entity`, so the dropdown never loses options), reason text, StockTrim HTTP status and rejected field names. `qb_label` (FullName, Name or RefNumber) is looked up in the QuickBooks snapshot when the page is read (one query per page), never stored; null when the record is gone. `key`: an exact key match (preferred over `q` when both are sent). `q`: case-insensitive contains on key, ref and label (`%` and `_` are literal). Key/ref search is instant; a name (label) search on a very large run (~33k entries) takes a few seconds because it scans the QuickBooks snapshot (a `pg_trgm` index would fix that if it ever matters) |
 | `GET /push/runs/{id}/entries.csv` | the same filters as a streamed CSV (UTF-8 BOM, cells starting with `= + - @` tab or CR get a leading `'`), at most 200,000 rows (`X-Truncated: true` when more matched) |
 | `GET /settings` | non-secret settings (StockTrim host only, webhook as a boolean), the read job list and the users (no hashes); `version` comes from `APP_VERSION` or `GIT_SHA` when set |
 | `GET /reason-codes` | the whole reason catalog |
 | `GET /overview` | one call for the dashboard: last cycle, next run, running cycle / push with phase and its catalog `phase_title` (null when unknown), last QuickBooks contact and last refused Web Connector login (`last_qbwc_auth_refused`), snapshot freshness, queued/running jobs, latest real push run (built on `/health`) |
+
+`wrote_to_stocktrim` is a string, never a guess toward "no": `yes` when the linked real run completed at least one item; `unknown` when a real run started but its outcome is not certain (a failed item with `unknown_outcome`, `unavailable` or `internal`, the set `WRITE_MAYBE_CODES` in `app/sync/engine.py`; the run is still running; or the run is gone and the summary does not settle it); `no` otherwise (dry-run only, aborted before a real run, or a finished real run whose failures are all certain rejections). The cycle summary stores `push: {run_id, status, items: {done, failed, ...}}` for every real run (and a stub `{run_id, items: {done: 0, failed: 0}}` the moment the run starts), so after the 180-day prune `items.done > 0` still answers `yes`; the cycle also finds its run through `summary.push.run_id` when `push_run_id` could not be written.
 
 `python -m app.cli openapi` prints the OpenAPI JSON of the proxy-reachable routes only (needs neither settings nor the database), so the frontend can generate its types from exactly what is exposed.
 
 ## Next steps
 
 Hourly stock sync, `modified_after` incremental reads.
-
-## Deploying F1 (frontend)
-
-1. Record the current commit (`git rev-parse HEAD`, rollback target `b390850`).
-2. `docker compose config -q` and `docker run --rm -e DOMAIN=<domain> -e ACME_EMAIL= -v "$PWD/docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro" caddy:2.10.2 caddy validate --config /etc/caddy/Caddyfile`.
-3. Once, on the 2 GB droplet, add swap so the Node build cannot be OOM-killed: `sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile && echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab`.
-4. Build the images BEFORE touching running containers: `GIT_SHA=$(git rev-parse --short HEAD) docker compose build migrate web`.
-5. `GIT_SHA=$(git rev-parse --short HEAD) docker compose up -d`, then `docker compose up -d --force-recreate caddy` (single-file bind mount).
-6. Smoke: `/` 200 text/html with the SPA CSP; `/qbwc?wsdl` 200 text/xml with the API CSP; `/api/v1/health` 401; `/docs`, `/openapi.json`, `/api`, `/qbwc/` 404. Sign in in a browser (no CSP violations in the console) and run one Web Connector "Update Selected" cycle.
-7. Rollback. Caddy only: `git checkout b390850 -- docker/caddy/Caddyfile && docker compose up -d --force-recreate caddy`. Full: check out `b390850` and `docker compose up -d --build --remove-orphans`.

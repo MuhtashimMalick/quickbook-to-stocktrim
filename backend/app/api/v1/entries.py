@@ -78,12 +78,14 @@ class EntriesOut(M):
     items: list[EntryOut]
     total: int  # under the outcome filter
     counts: dict[str, int]  # per outcome, under the other filters
+    entities: list[str]  # facet for the entity dropdown: distinct entities under every filter except `entity` itself, sorted
 
 
 class Filters:
     def __init__(self, outcome: list[Literal["failed", "skipped", "excluded"]] = Query([]), entity: Optional[str] = Query(None, max_length=40),
-                 code: Optional[str] = Query(None, max_length=60), q: Optional[str] = Query(None, max_length=100)):
-        self.outcome, self.entity, self.code, self.q = outcome, entity, code, q
+                 code: Optional[str] = Query(None, max_length=60), q: Optional[str] = Query(None, max_length=100),
+                 key: Optional[str] = Query(None, max_length=200)):
+        self.outcome, self.entity, self.code, self.q, self.key = outcome, entity, code, q, key
 
 
 def _union(run_id: UUID) -> Any:
@@ -96,15 +98,17 @@ def _union(run_id: UUID) -> Any:
     return union_all(items, excl).subquery("e")
 
 
-def _where(u: Any, f: Filters, outcome: bool) -> list[Any]:
+def _where(u: Any, f: Filters, outcome: bool, entity: bool = True) -> list[Any]:
     w = []
     if outcome and f.outcome:
         w.append(u.c.outcome.in_(f.outcome))
-    if f.entity:
+    if entity and f.entity:
         w.append(u.c.entity == f.entity)
     if f.code:
         w.append(u.c.code == f.code)
-    if f.q:  # wildcards in the search text are escaped; the label is only searched when key and ref do not match
+    if f.key:  # an exact key lookup wins over the substring search
+        w.append(u.c.key == f.key)
+    elif f.q:  # wildcards in the search text are escaped; the label is only searched when key and ref do not match
         w.append(u.c.key.icontains(f.q, autoescape=True) | u.c.ref.icontains(f.q, autoescape=True)
                  | exists().where(QBRecord.entity.in_(QB_ENTITIES), QBRecord.qb_id == u.c.ref, _LABEL.icontains(f.q, autoescape=True)))
     return w
@@ -139,7 +143,8 @@ def entries(run_id: UUID, f: Filters = Depends(), limit: int = Query(50, ge=1, l
         counts, total = _counts(s, u, f)
         rows = s.execute(_page_query(u, f).limit(limit).offset(offset)).all()
         labels = _labels(s, (r.ref for r in rows))
-    return EntriesOut(items=[_entry(r, run_id, labels.get(r.ref)) for r in rows], total=total, counts=counts)
+        entities = list(s.scalars(select(u.c.entity).where(*_where(u, f, True, entity=False)).distinct().order_by(u.c.entity)))
+    return EntriesOut(items=[_entry(r, run_id, labels.get(r.ref)) for r in rows], total=total, counts=counts, entities=entities)
 
 
 # ---- CSV

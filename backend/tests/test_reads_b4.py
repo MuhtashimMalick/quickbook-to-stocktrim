@@ -100,9 +100,9 @@ def test_cycles_list_cursors_and_detail(api):
     d = get(api, f"/api/v1/cycles/{rows[0]['id']}").json()
     assert d["reason_info"]["title"] == CATALOG["mass_vanish"]["title"] and d["reason_info"]["next_step"]
     assert [(j["job_type"], j["status"]) for j in d["jobs"]] == [("customers", "done")]  # only read jobs created while the cycle ran
-    assert d["push_run"]["run_id"] == str(run) and d["push_run"]["counts"] == {"product": {"done": 1, "failed": 1}} and d["wrote_to_stocktrim"] is True
+    assert d["push_run"]["run_id"] == str(run) and d["push_run"]["counts"] == {"product": {"done": 1, "failed": 1}} and d["wrote_to_stocktrim"] == "yes"
     plain = get(api, f"/api/v1/cycles/{ids[0]}").json()
-    assert plain["reason_info"] is None and plain["push_run"] is None and plain["wrote_to_stocktrim"] is False
+    assert plain["reason_info"] is None and plain["push_run"] is None and plain["wrote_to_stocktrim"] == "no"
     assert get(api, f"/api/v1/cycles/{uuid.uuid4()}").status_code == 404
 
 
@@ -113,7 +113,41 @@ def test_a_dry_run_push_never_counts_as_written(api):
         s.add(PushItem(run_id=run, entity="product", key="K", status="done"))
     assert get(api, "/api/v1/cycles").json()[0]["push_run_id"] == str(run)
     cid = get(api, "/api/v1/cycles").json()[0]["id"]
-    assert get(api, f"/api/v1/cycles/{cid}").json()["wrote_to_stocktrim"] is False
+    assert get(api, f"/api/v1/cycles/{cid}").json()["wrote_to_stocktrim"] == "no"
+
+
+def _wrote(api, **cycle) -> str:
+    cid = uuid.uuid4()
+    with session_scope() as s:
+        s.add(SyncCycle(id=cid, trigger="manual", started_at=at(0), **{"status": "done", **cycle}))
+    return get(api, f"/api/v1/cycles/{cid}").json()["wrote_to_stocktrim"]
+
+
+def test_wrote_to_stocktrim_is_never_a_false_no(api):
+    def real(*items):
+        rid = mk_run(dry=False)
+        with session_scope() as s:
+            s.add_all([PushItem(run_id=rid, entity="product", key=f"K{i}", status=st, error_code=code) for i, (st, code) in enumerate(items)])
+        return rid
+    assert _wrote(api, push_run_id=real(("done", None))) == "yes"
+    assert _wrote(api, status="failed", push_run_id=real(("failed", "unknown_outcome"), ("failed", "unknown_outcome"))) == "unknown"  # only maybe-written failures
+    assert _wrote(api, status="failed", push_run_id=real(("failed", "internal"))) == "unknown"
+    assert _wrote(api, status="failed", push_run_id=real(("failed", "rejected_400"), ("skipped", "aborted"))) == "no"  # certain: nothing was written
+    assert _wrote(api, status="dry_run_only", push_run_id=mk_run(dry=True)) == "no"
+    assert _wrote(api, status="aborted", reason="mass_vanish") == "no"  # aborted before a real run
+    # the run is gone (pruned): the cycle summary decides
+    assert _wrote(api, summary={"push": {"run_id": str(uuid.uuid4()), "status": "done", "items": {"done": 2, "failed": 0}}}) == "yes"
+    assert _wrote(api, status="failed", summary={"push": {"run_id": str(uuid.uuid4()), "status": "done_with_failures", "items": {"done": 0, "failed": 3}}}) == "unknown"
+    assert _wrote(api, status="failed", summary={"push": {"run_id": str(uuid.uuid4()), "items": {"done": 0, "failed": 0}}}) == "unknown"  # started, never finished
+    # no run, no summary, but the real run did start
+    cid = uuid.uuid4()
+    with session_scope() as s:
+        s.add(SyncCycle(id=cid, trigger="schedule", status="failed", started_at=at(0)))
+        s.flush()
+        s.add(RunEvent(cycle_id=cid, code="real_run_started"))
+    assert get(api, f"/api/v1/cycles/{cid}").json()["wrote_to_stocktrim"] == "unknown"
+    # the link is missing but the summary names the run: the run is found
+    assert _wrote(api, summary={"push": {"run_id": str(real(("done", None))), "items": {"done": 0, "failed": 0}}}) == "yes"
 
 
 # ---- events
@@ -170,6 +204,25 @@ def test_entries_union_filters_counts_and_labels(api):
     assert [e["key"] for e in p["items"]] == ["100%_X", "SUPOFF", "P2"] and p["total"] == 7
     assert get(api, base, outcome="bogus").status_code == 422 and get(api, base, limit=201).status_code == 422 and get(api, base, q="x" * 101).status_code == 422
     assert get(api, f"/api/v1/push/runs/{uuid.uuid4()}/entries").status_code == 404
+    assert d["entities"] == ["product", "supplier"]
+
+
+def test_entities_facet_ignores_the_entity_filter_and_key_is_exact(api):
+    rid = seed_entries()
+    with session_scope() as s:
+        s.add(PushExclusion(run_id=rid, entity="customer", key="CUST-ONLY", code="empty_key", ref=None, created_at=at(9)))
+    base = f"/api/v1/push/runs/{rid}/entries"
+    assert get(api, base, outcome="excluded", entity="product").json()["entities"] == ["customer", "product", "supplier"]  # exclusion-only entity appears; the entity filter does not narrow it
+    assert get(api, base, outcome="failed").json()["entities"] == ["product", "supplier"]  # other filters do
+    assert get(api, base, code="duplicate_key", entity="supplier").json()["entities"] == ["product"]
+    assert get(api, base, q="nothing-like-this").json()["entities"] == []
+    # exact key: "P1" is a substring of another key
+    with session_scope() as s:
+        s.add(PushExclusion(run_id=rid, entity="product", key="P1-LONG", code="empty_key", ref=None, created_at=at(9)))
+    assert {e["key"] for e in get(api, base, q="P1").json()["items"]} == {"P1", "P1-LONG"}
+    assert [e["key"] for e in get(api, base, key="P1").json()["items"]] == ["P1"]
+    assert [e["key"] for e in get(api, base, key="P1", q="zzz").json()["items"]] == ["P1"]  # key wins over q
+    assert get(api, base, key="p1").json()["total"] == 0 and get(api, base, key="x" * 201).status_code == 422
 
 
 def test_entries_q_is_case_insensitive_contains_with_escaped_wildcards(api):
@@ -338,6 +391,9 @@ def test_cli_openapi_covers_exactly_the_proxy_reachable_routes(capsys):
     sch = spec["components"]["schemas"]
     assert {"session_expires_at"} <= set(sch["TokenOut"]["properties"])
     assert {"mode", "requested_by", "target", "dry_run", "steps"} <= set(sch["PushRunOut"]["properties"])
+    assert sch["CycleDetail"]["properties"]["wrote_to_stocktrim"]["enum"] == ["yes", "no", "unknown"] and "entities" in sch["EntriesOut"]["properties"]
+    assert {p["name"] for p in spec["paths"]["/api/v1/push/runs/{run_id}/entries"]["get"]["parameters"]} >= {"key", "q", "entity"}
+    assert "null" in str(sch["ScheduleOut"]["properties"]["start_date"])
     assert "last_qbwc_auth_refused" in sch["Overview"]["properties"] and "phase_title" in sch["Running"]["properties"]
 
 

@@ -7,7 +7,7 @@ from urllib.parse import urlparse
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, Request
-from sqlalchemy import select, tuple_
+from sqlalchemy import func, select, tuple_
 
 from ...db import session_scope
 from ...models import AppUser, Job, PushRun, RunEvent, SyncCycle
@@ -57,7 +57,7 @@ class CycleDetail(CycleOut):
     reason_info: Optional[ReasonOut]
     jobs: list[JobBrief]  # the read jobs created while the cycle ran
     push_run: Optional[PushRunOut]
-    wrote_to_stocktrim: bool  # a real (non-dry-run) push of the cycle completed at least one item
+    wrote_to_stocktrim: Literal["yes", "no", "unknown"]  # see wrote_state: "unknown" = a real run started but its outcome is not certain
 
 
 @router.get("/cycles", response_model=list[CycleOut])
@@ -67,23 +67,48 @@ def list_cycles(limit: int = Query(50, ge=1, le=100), before: Optional[str] = Qu
         return [CycleOut.model_validate(r, from_attributes=True) for r in rows]
 
 
-@router.get("/cycles/{cycle_id}", response_model=CycleDetail)
-def get_cycle(request: Request, cycle_id: UUID) -> Any:
+def wrote_state(run: Optional[dict[str, Any]], summary: Optional[dict[str, Any]], real_started: bool) -> str:
+    """Did the cycle write to StockTrim? `run` = the linked run's progress (None once pruned / not linked), `summary` = the cycle summary, `real_started` = a real_run_started event exists."""
+    if run is not None:
+        if run["dry_run"]:
+            return "no"
+        if sum(v.get("done", 0) for v in run["counts"].values()) > 0:
+            return "yes"
+        codes = {c for per in run["error_codes"].values() for c in per}
+        return "unknown" if run["status"] == "running" or codes & engine_mod().WRITE_MAYBE_CODES else "no"
+    if push := (summary or {}).get("push"):  # the run is gone (180-day prune) or was never linked: the cycle summary outlives it
+        items = push.get("items") or {}
+        if items.get("done", 0) > 0:
+            return "yes"
+        return "no" if "status" in push and not items.get("failed", 0) else "unknown"  # no "status" = the cycle ended before the run finished
+    return "unknown" if real_started else "no"
+
+
+def engine_mod() -> Any:
     from ...sync import engine  # noqa: PLC0415 - same lazy import as the push routes
 
+    return engine
+
+
+@router.get("/cycles/{cycle_id}", response_model=CycleDetail)
+def get_cycle(request: Request, cycle_id: UUID) -> Any:
+    engine = engine_mod()
     with session_scope() as s:
         c = s.get(SyncCycle, cycle_id)
         if c is None:
             raise HTTPException(404, "cycle_not_found")
         end = [Job.created_at <= c.finished_at] if c.finished_at else []
         jobs = s.scalars(select(Job).where(Job.created_at >= c.started_at, Job.job_type.in_(READ_JOB_TYPES), *end).order_by(Job.id).limit(100)).all()
-        out = CycleOut.model_validate(c, from_attributes=True).model_dump() | {"reason_info": c.reason and describe(c.reason), "jobs": jobs, "push_run": None, "wrote_to_stocktrim": False}
-    if c.push_run_id:
-        try:
-            run = out["push_run"] = engine.progress(request.app.state.settings, c.push_run_id)
-        except engine.PushError:  # the run was pruned
-            return CycleDetail.model_validate(out, from_attributes=True)
-        out["wrote_to_stocktrim"] = not run["dry_run"] and sum(v.get("done", 0) for v in run["counts"].values()) > 0
+        started = s.scalar(select(func.count()).select_from(RunEvent).where(RunEvent.cycle_id == cycle_id, RunEvent.code == "real_run_started")) > 0
+        out = CycleOut.model_validate(c, from_attributes=True).model_dump() | {"reason_info": c.reason and describe(c.reason), "jobs": jobs, "push_run": None}
+        summary = c.summary
+    run = None
+    try:  # the link may be missing after a crash window: the summary carries the run id too
+        if rid := c.push_run_id or ((summary or {}).get("push") or {}).get("run_id"):
+            run = out["push_run"] = engine.progress(request.app.state.settings, UUID(str(rid)))
+    except engine.PushError:  # the run was pruned
+        pass
+    out["wrote_to_stocktrim"] = wrote_state(run, summary, started)
     return CycleDetail.model_validate(out, from_attributes=True)
 
 

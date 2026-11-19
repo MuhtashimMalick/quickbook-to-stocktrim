@@ -5,7 +5,9 @@ React 19 + TypeScript (strict, no `any`) + Tailwind v4 + GSAP. Nothing needs a l
 ## Commands
 ```
 docker compose --profile test run --rm --build test-web      # lint + typecheck + vitest
-GIT_SHA=$(git rev-parse --short HEAD) docker compose up -d --build web caddy app
+# deploy (one image at a time, 2 GB server; the full runbook is `Deploying the admin UI release` in backend/README.md):
+GIT_SHA=$(git rev-parse --short HEAD) docker compose build migrate && docker compose build web
+GIT_SHA=$(git rev-parse --short HEAD) docker compose up -d --remove-orphans && docker compose up -d --force-recreate caddy
 # dev overlay (https://localhost:8443): add -f docker-compose.yml -f compose.dev.yml
 # ad-hoc npm (node_modules in a named volume):
 docker run --rm -v "$PWD/frontend:/app" -v qb_web_nm:/app/node_modules -w /app node:22.23.5-alpine sh -c "npm ci && npm run gen:api"

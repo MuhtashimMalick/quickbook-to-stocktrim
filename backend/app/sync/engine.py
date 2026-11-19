@@ -55,6 +55,8 @@ READBACK_SAMPLE = 25
 # Closed set of push_item.error_code values. A not-attempted item is status `skipped` + `aborted` (never `pending`, so a resume retries it).
 ERROR_CODES = frozenset({"rejected_400", "rejected_404", "rejected_409", "rejected_other", "auth", "unavailable", "unknown_outcome", "aborted",
                          "negative_stock_rejected", "supplier_link_dropped", "dependency_failed", "cancelled", "internal"})
+# Failure codes after which a StockTrim write may nevertheless have happened (a timeout / 5xx / crash after the request left): the UI shows "unknown", never "no".
+WRITE_MAYBE_CODES = frozenset({"unknown_outcome", "unavailable", "internal"})
 _FATAL = (StockTrimUnavailable, StockTrimConfigError, StockTrimAuthError)
 
 

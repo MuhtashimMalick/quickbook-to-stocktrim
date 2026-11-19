@@ -12,13 +12,13 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 from pydantic import SecretStr
-from sqlalchemy import delete, select, text
+from sqlalchemy import delete, func, select, text
 
 from app import appstate, jobs
 from app import scheduler as sched_mod
 from app.api.v1.preflight import get_stocktrim_client_kw
 from app.db import get_engine, session_scope
-from app.models import PushRun, QBRecord, SyncCycle
+from app.models import PushRun, QBRecord, RunEvent, SyncCycle
 from app.preflight.schema import Finding, Verdict
 from app.scheduler import LOCK_KEY, CycleBusy, Schedule, Scheduler, next_run, recover_cycles, send_alert
 from app.sync import engine
@@ -123,7 +123,7 @@ def test_full_cycle_done_queues_once_and_never_acknowledges(h, calls):
     assert (row.status, row.reason, row.trigger) == ("done", None, "schedule") and row.finished_at and row.push_run_id
     assert n_jobs() - base_jobs == 7 and n_jobs("sites") == 1  # the 7 read types, once each; sites is not scheduled
     assert row.summary["read_jobs"] == {"queued": 7, "reused": 0} and row.summary["planned_calls"] == 2
-    assert row.summary["push"] == {"status": "done", "items": {"done": 2}}
+    assert row.summary["push"] == {"run_id": str(row.push_run_id), "status": "done", "items": {"done": 2, "failed": 0}}
     assert sum(h.fake.posts.values()) - before == 2  # exactly the two changed products were pushed
     with session_scope() as s:
         run = s.get(PushRun, row.push_run_id)
@@ -261,7 +261,7 @@ def test_push_with_failures_fails_the_cycle(clean_db, tmp_path):
     products(h, 1)  # P1 is the first item
     fail["on"] = True
     row = h.cycle()
-    assert (row.status, row.reason) == ("failed", "push_done_with_failures") and row.push_run_id and row.summary["push"]["items"] == {"failed": 1}
+    assert (row.status, row.reason) == ("failed", "push_done_with_failures") and row.push_run_id and row.summary["push"]["items"] == {"done": 0, "failed": 1}
     assert h.alerts[0]["cycle_status"] == "failed" and h.alerts[0]["environment"] == "test" and h.alerts[0]["cycle_id"] == str(row.id)
 
 
@@ -605,6 +605,25 @@ def test_a_failing_bookkeeping_write_still_alerts_and_the_next_cycle_runs(h, mon
     with session_scope() as s:
         old = s.get(SyncCycle, first.id)
     assert (old.status, old.reason) == ("interrupted", "stale")
+
+
+def test_a_failed_push_link_still_records_the_event_and_the_truth(h, monkeypatch):
+    h.baseline()
+    products(h, 1)
+    orig = sched_mod._update_cycle
+
+    def flaky(cid, **v):
+        if "push_run_id" in v:
+            raise RuntimeError("db hiccup")  # the crash window: the real run is already going
+        return orig(cid, **v)
+    monkeypatch.setattr(sched_mod, "_update_cycle", flaky)
+    row = h.cycle()
+    assert row.status == "done" and row.push_run_id is None and row.summary["push"]["items"] == {"done": 1, "failed": 0}
+    with session_scope() as s:
+        assert s.scalar(select(func.count()).select_from(RunEvent).where(RunEvent.cycle_id == row.id, RunEvent.code == "real_run_started")) == 1
+    from app.api.v1.reads import wrote_state  # noqa: PLC0415
+    assert wrote_state(None, row.summary, True) == "yes"
+    assert wrote_state(None, {"push": {"run_id": row.summary["push"]["run_id"], "items": {"done": 0, "failed": 0}}}, True) == "unknown"  # the cycle died right after the start
 
 
 def test_a_start_failure_alerts(h):

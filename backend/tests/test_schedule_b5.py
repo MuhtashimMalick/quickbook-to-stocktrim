@@ -1,7 +1,7 @@
 """Stage B5 (the stored sync schedule), offline: synthetic data, injected clock, no real sleeps."""
 import time
 import uuid
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 import pytest
 from sqlalchemy import delete, select
@@ -69,6 +69,14 @@ def test_anchor_in_the_future_in_the_past_and_a_first_slot_that_already_passed()
 ])
 def test_dst_in_real_zones(tz, start, hhmm, now, expected):
     assert runs(sch(3, start, hhmm, tz), now) == expected
+
+
+@pytest.mark.parametrize("every", [3, 7])
+@pytest.mark.parametrize("tz,now", [("America/Chicago", utc(2026, 3, 6)), ("America/Chicago", utc(2026, 10, 30)), ("Europe/London", utc(2026, 3, 27)), ("Europe/London", utc(2026, 10, 23))])
+def test_an_anchor_years_back_gives_the_same_slots_as_a_recent_one_of_the_same_phase(every, tz, now):
+    old = date(2020, 2, 29)
+    recent = old + timedelta(days=every * ((now.date() - old).days // every - 2))  # same phase, 2 periods before `now`
+    assert runs(sch(every, old.isoformat(), "01:30", tz), now) == runs(sch(every, recent.isoformat(), "01:30", tz), now)
 
 
 # ---- loading ---------------------------------------------------------------------------------------
@@ -220,15 +228,32 @@ def test_direct_cli_put_records_cli_as_the_actor(env):
     {"time": "24:00"}, {"time": "7:5"}, {"time": " 02:00"}, {"time": "02:00 "}, {"time": "02:00\n"}, {"time": "02:60"}, {"time": "٠٢:٠٠"}, {"time": ""},
     {"tz": "Mars/Base"}, {"tz": ""}, {"tz": "../etc/passwd"}, {"tz": "/etc/passwd"}, {"tz": "A" * 65}, {"tz": "utc "},
     {"every_days": 2}, {"every_days": 0}, {"every_days": "3 days"}, {"enabled": "yes"}, {"enabled": 1}, {"enabled": None},
-    {"start_date": "2024-01-01"}, {"start_date": "2028-01-01"}, {"start_date": "tomorrow"}, {"extra": 1}, {"updated_by": "mallory"}, {"source": "database"},
+    {"start_date": "2028-01-01"}, {"start_date": "tomorrow"}, {"extra": 1}, {"updated_by": "mallory"}, {"source": "database"},
 ])
 def test_put_validation_matrix(api, patch):
     assert put(api, {**BODY, **patch}).status_code == 422
     assert appstate.get_state("schedule") is None  # nothing stored
 
 
+@pytest.mark.parametrize("every,expected", [
+    (3, ["2026-11-21T02:00:00Z", "2026-11-24T02:00:00Z", "2026-11-27T02:00:00Z"]),  # 2021-11-17 + 3k
+    (7, ["2026-11-25T02:00:00Z", "2026-12-02T02:00:00Z", "2026-12-09T02:00:00Z"]),  # 2021-11-17 + 7k (today's slot has passed)
+])
+def test_a_five_year_old_anchor_only_sets_the_phase(api, every, expected):
+    b = put(api, {**BODY, "every_days": every, "start_date": "2021-11-17"}).json()
+    assert b["start_date"] == "2021-11-17" and [x["utc"] for x in b["next_runs"]] == expected
+    assert put(api, {**BODY, "start_date": "1999-01-01"}).status_code == 200
+
+
+def test_the_env_default_does_not_leak_its_internal_anchor_and_daily_has_none(env, api):
+    g = api[0].get("/api/v1/schedule", headers=api[1]).json()
+    assert g["source"] == "env_default" and g["start_date"] is None and "2000" not in str(g)
+    assert put(api, {**BODY, "every_days": 1}).json()["start_date"] is None
+    assert put(api, {"enabled": True, "every_days": 3, "time": "02:00", "tz": "UTC"}).json()["start_date"] == "2026-11-18"  # no anchor given: today
+
+
 def test_put_boundaries_and_missing_fields(api):
-    assert put(api, {**BODY, "time": "00:00", "start_date": "2025-11-18"}).status_code == 200  # exactly 365 days back
+    assert put(api, {**BODY, "time": "00:00", "start_date": "2025-11-18"}).status_code == 200  # a year back
     assert put(api, {**BODY, "time": "23:59", "start_date": "2027-11-18"}).status_code == 200  # exactly 365 days ahead
     assert put(api, {**BODY, "start_date": "2027-11-19"}).status_code == 422
     for k in ("enabled", "every_days", "time", "tz"):
