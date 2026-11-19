@@ -1,4 +1,4 @@
-# One domain: /qbwc (Web Connector) and /api/v1/* (admin API for the SPA) go to the app; everything else is 404 for now.
+# One domain: /qbwc (Web Connector) and /api/v1/* (admin API for the SPA) go to the app; everything else is the SPA (web service, static files).
 # Caddy sets X-Forwarded-For, which the app's TunnelGate relies on (never add trusted_proxies). The app gates again (two layers):
 # it also 404s /docs, /redoc, /openapi.json and every route not deliberately proxy-exposed. Never route those here.
 {
@@ -14,10 +14,16 @@
 		X-Content-Type-Options nosniff
 		Referrer-Policy no-referrer
 		X-Frame-Options DENY
-		# API-only policy. Stage F1 (web service) replaces it with the SPA's CSP (scripts/styles/connect 'self').
-		Content-Security-Policy "frame-ancestors 'none'; default-src 'none'"
+		Cross-Origin-Opener-Policy same-origin
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
 		-Server
+		-Via
 	}
+	# CSP: the API/Web Connector keep the strict API-only policy, everything else (the SPA) gets the SPA policy.
+	@api path /qbwc /api/v1/*
+	@spa not path /qbwc /api/v1/*
+	header @api Content-Security-Policy "frame-ancestors 'none'; default-src 'none'"
+	header @spa Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
 	handle /qbwc {
 		request_body {
 			max_size 64MB
@@ -31,8 +37,11 @@
 		}
 		reverse_proxy app:8000
 	}
-	# Stage F1 replaces this with `reverse_proxy web:80` (the frontend).
+	# The SPA: everything that is not /qbwc or /api/v1/*. Strict CSP, no inline scripts/styles (Vite build output only).
 	handle {
-		respond 404
+		# SPA fallback must not turn backend-looking paths into a 200 page: these stay 404 (the app answers 404 too).
+		@reserved path /docs* /redoc* /openapi.json* /health* /qbwc* /api*
+		respond @reserved 404
+		reverse_proxy web:8080
 	}
 }

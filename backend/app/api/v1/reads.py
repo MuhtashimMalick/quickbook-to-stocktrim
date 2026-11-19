@@ -2,7 +2,7 @@
 never secrets, StockTrim credentials, payloads, raw QuickBooks records or error bodies."""
 import os
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any, Literal, Optional
 from urllib.parse import urlparse
 from uuid import UUID
 
@@ -141,7 +141,7 @@ class ScheduleSummary(M):
 
 
 class SettingsOut(M):
-    environment: str
+    environment: Literal["test", "production"]
     stocktrim_writes_enabled: bool
     scheduler_enabled: bool
     scheduler_allow_production: bool

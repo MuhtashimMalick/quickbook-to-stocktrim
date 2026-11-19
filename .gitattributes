@@ -11,3 +11,4 @@ constraints.txt text eol=lf
 .env.example text eol=lf
 *.md text eol=lf
 *.mako text eol=lf
+*.conf text eol=lf

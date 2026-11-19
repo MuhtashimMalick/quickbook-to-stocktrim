@@ -68,7 +68,10 @@ services:
   migrate:
     logging: *logging
     networks: [backend]
-    build: {context: ./backend, target: runtime}
+    build:
+      context: ./backend
+      target: runtime
+      args: {GIT_SHA: "${GIT_SHA:-}"}  # shown in Settings: GIT_SHA=$(git rev-parse --short HEAD) docker compose up -d --build
     image: quickbook-app
     command: ["alembic", "upgrade", "head"]
     environment:
@@ -99,7 +102,7 @@ services:
 
   caddy:
     logging: *logging
-    networks: [edge]
+    networks: [edge, spa]
     image: caddy:2.10.2
     restart: unless-stopped
     environment:
@@ -113,7 +116,30 @@ services:
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
-      app: {condition: service_healthy}
+      app: {condition: service_healthy}  # not web: a broken SPA build must never stop /qbwc
+
+  web:
+    logging: *logging
+    networks: [spa]        # internal network shared with caddy only; no published port
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    build: {context: ./frontend, target: runtime}
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/healthz"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  test-web:
+    logging: *logging
+    network_mode: none
+    profiles: [test]
+    build: {context: ./frontend, target: test}
 
   test:
     logging: *logging
@@ -127,6 +153,8 @@ services:
 
 networks:
   edge:                # caddy <-> app, normal (app keeps outbound internet)
+  spa:
+    internal: true     # caddy <-> web only
   backend:
     internal: true     # db/migrate/test: no route to the internet, caddy is not on it
 

@@ -145,10 +145,10 @@ Password policy: at least 14 characters, not the username, not in a built-in lis
 
 ## Public exposure (stage B2)
 
-One domain: `https://<DOMAIN>/qbwc` -> app (unchanged), `https://<DOMAIN>/api/v1/*` -> app (admin API for the future SPA, Bearer JWT), everything else -> Caddy `respond 404` (stage F1 swaps in the `web` service).
+One domain: `https://<DOMAIN>/qbwc` -> app (unchanged), `https://<DOMAIN>/api/v1/*` -> app (admin API for the future SPA, Bearer JWT), everything else -> the `web` service (SPA, stage F1); Caddy answers 404 itself for `/docs*`, `/redoc*`, `/openapi.json*`, `/health*`, `/qbwc*` (except the exact `/qbwc`) and `/api*` outside `/api/v1/*`, so the SPA fallback never turns them into a 200. Unknown other paths return the SPA `index.html` (200).
 Two layers, both must allow a request:
-1. Caddy (`docker/caddy/Caddyfile`): explicit `handle`s only (`/qbwc` exact, `/api/v1/*` with `request_body max_size 1MB` and `X-Admin-Token` stripped, else 404). `/docs`, `/redoc`, `/openapi.json` are never routed. No `trusted_proxies`, no Caddy rate limit (core Caddy has none; the app limits login/refresh).
-   Headers on every response: `Strict-Transport-Security: max-age=31536000; includeSubDomains`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, `X-Frame-Options: DENY`, `Content-Security-Policy: frame-ancestors 'none'; default-src 'none'` (API-only; F1 replaces it with the SPA policy), `Server` removed.
+1. Caddy (`docker/caddy/Caddyfile`): explicit `handle`s for `/qbwc` (exact) and `/api/v1/*` (`request_body max_size 1MB`, `X-Admin-Token` stripped); everything else goes to the SPA (`web`), except the reserved backend-looking paths, which Caddy answers 404. `/docs`, `/redoc`, `/openapi.json` are never routed. No `trusted_proxies`, no Caddy rate limit (core Caddy has none; the app limits login/refresh).
+   Headers on every response: `Strict-Transport-Security: max-age=31536000; includeSubDomains`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, `X-Frame-Options: DENY`, `Content-Security-Policy: frame-ancestors 'none'; default-src 'none'` (API-only on `/qbwc` and `/api/v1/*`; the SPA paths get the SPA policy), `Server` removed.
 2. App: `TunnelGate` lets a proxied request through only for the decoded `scope["path"]` `== /qbwc` or starting with `/api/v1/` (raw_path ignored, nothing normalised); all else (including `/docs`, `/redoc`, `/openapi.json`, `/health`, `/api/v1`, dot-segment/encoded variants) is 404. Direct loopback calls (the CLI) are unchanged, so `/docs` and `/openapi.json` stay loopback-only.
    Inside `/api/v1` exposure is default-deny: routes on `router` in `api/v1/router.py` carry the route-level dependency `direct_only` (404 unless a direct loopback call, decided on the matched route so encoded or trailing-slash variants cannot bypass it); only routes registered on `public` (and the auth router) are proxy-reachable. `tests/test_exposure.py` freezes both sets, so a new route is CLI-only until someone adds it to `public` and to that test.
 
@@ -429,3 +429,13 @@ GET only, all under `/api/v1`, all reachable through the proxy with a Bearer tok
 ## Next steps
 
 Hourly stock sync, `modified_after` incremental reads.
+
+## Deploying F1 (frontend)
+
+1. Record the current commit (`git rev-parse HEAD`, rollback target `b390850`).
+2. `docker compose config -q` and `docker run --rm -e DOMAIN=<domain> -e ACME_EMAIL= -v "$PWD/docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro" caddy:2.10.2 caddy validate --config /etc/caddy/Caddyfile`.
+3. Once, on the 2 GB droplet, add swap so the Node build cannot be OOM-killed: `sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile && echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab`.
+4. Build the images BEFORE touching running containers: `GIT_SHA=$(git rev-parse --short HEAD) docker compose build migrate web`.
+5. `GIT_SHA=$(git rev-parse --short HEAD) docker compose up -d`, then `docker compose up -d --force-recreate caddy` (single-file bind mount).
+6. Smoke: `/` 200 text/html with the SPA CSP; `/qbwc?wsdl` 200 text/xml with the API CSP; `/api/v1/health` 401; `/docs`, `/openapi.json`, `/api`, `/qbwc/` 404. Sign in in a browser (no CSP violations in the console) and run one Web Connector "Update Selected" cycle.
+7. Rollback. Caddy only: `git checkout b390850 -- docker/caddy/Caddyfile && docker compose up -d --force-recreate caddy`. Full: check out `b390850` and `docker compose up -d --build --remove-orphans`.
