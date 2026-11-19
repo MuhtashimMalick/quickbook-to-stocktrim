@@ -4,6 +4,12 @@
 @layer base {
   html {
     color-scheme: light;
+    scrollbar-gutter: stable;
+  }
+  /* Radix locks scroll with an injected <style>, which the CSP (style-src 'self') blocks: this is the same lock in our own CSS. */
+  body[data-scroll-locked] {
+    overflow: hidden;
+    overscroll-behavior: contain;
   }
   body {
     @apply bg-paper font-sans text-body text-ink antialiased;

@@ -1,5 +1,5 @@
 import { Check, Download } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReasonOut } from "../../api/types";
 import { Button } from "../../components/Button";
 import { Field } from "../../components/Field";
@@ -22,11 +22,15 @@ function SearchBox({ value, onCommit }: { value: string; onCommit: (q: string) =
     setSeen(value);
     setText(value);
   }
+  const commit = useRef(onCommit); // a parent re-render must never restart the debounce
+  useEffect(() => {
+    commit.current = onCommit;
+  });
   useEffect(() => {
     if (text.trim() === value) return;
-    const id = setTimeout(() => onCommit(text.trim()), SEARCH_DEBOUNCE_MS);
+    const id = setTimeout(() => commit.current(text.trim()), SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(id);
-  }, [text, value, onCommit]);
+  }, [text, value]);
   return (
     <div className="min-w-64 flex-1">
       <Field label="Search" type="search" value={text} maxLength={100} placeholder="QuickBooks name, ListID or TxnID" aria-describedby="entries-search-help" onChange={(e) => setText(e.target.value)} />

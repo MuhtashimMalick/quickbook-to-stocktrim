@@ -59,7 +59,7 @@ describe("settings", () => {
     await screen.findByText("Alert webhook configured");
     expect(document.body.textContent).not.toMatch(/https?:\/\//);
     expect(document.body.textContent).not.toContain(SECRET);
-    expect(screen.queryByText(/password|signature|token/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/signature|token/i)).not.toBeInTheDocument();
   });
 
   it("lists the users with active state and last login", async () => {
@@ -73,6 +73,11 @@ describe("settings", () => {
     const rows = within(table).getAllByRole("row");
     expect(rows[1]).toHaveTextContent(/ada\s*Yes\s*18 Nov/);
     expect(rows[2]).toHaveTextContent(/bob\s*No\s*Never/);
+  });
+
+  it("the add-user hint names the exact terminal command (no -T)", async () => {
+    open({ users: [] });
+    expect(await screen.findByText(/docker compose exec app python -m app\.cli users add <username>/)).toBeInTheDocument();
   });
 
   it("has nothing to edit: no form controls on the page", async () => {
@@ -104,6 +109,16 @@ describe("operations page accessibility and motion", () => {
     expect(screen.getAllByRole("status").length).toBeGreaterThanOrEqual(3);
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
     expect(screen.getByRole("heading", { name: "Need to do more?" })).toBeInTheDocument();
+  });
+
+  it("the dry-run and real-push commands list all six steps and say to reuse them", async () => {
+    openOperations();
+    await screen.findByRole("heading", { name: "Need to do more?" });
+    for (const label of ["Plan a push (dry run, sends nothing)", "Run a real push"]) {
+      const text = screen.getByLabelText(label).textContent ?? "";
+      for (const step of ["suppliers", "products", "bom", "customers", "sales_orders", "purchase_orders"]) expect(text).toContain(`"${step}"`);
+    }
+    expect(screen.getByText(/Use the same steps for the real run as for the dry-run/)).toBeInTheDocument();
   });
 
   it("lists the command-line-only actions with copyable commands", async () => {

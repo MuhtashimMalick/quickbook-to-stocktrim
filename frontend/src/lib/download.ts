@@ -6,7 +6,9 @@ export function filenameFrom(response: Response, fallback: string): string {
   return name ? name : fallback;
 }
 
-/** Hand a Blob to the browser as a download through a temporary object URL (revoked straight away). */
+const REVOKE_AFTER_MS = 1000;
+
+/** Hand a Blob to the browser as a download through a temporary object URL (revoked after a second, so slow browsers have started the download). */
 export function saveBlob(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -15,5 +17,5 @@ export function saveBlob(blob: Blob, filename: string): void {
   document.body.append(link);
   link.click();
   link.remove();
-  URL.revokeObjectURL(url);
+  setTimeout(() => URL.revokeObjectURL(url), REVOKE_AFTER_MS);
 }

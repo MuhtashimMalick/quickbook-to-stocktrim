@@ -4,6 +4,7 @@ import { api, unwrap } from "../../api/client";
 import { keys, type EventScope } from "../../api/queryKeys";
 import type { CycleDetail, CycleOut, EventOut, PushRunOut, RunListItem } from "../../api/types";
 import { usePollInterval } from "../../lib/polling";
+import { isUuid } from "../../lib/uuid";
 
 export const PAGE_SIZE = 25;
 const EVENT_PAGE = 200;
@@ -62,6 +63,7 @@ export function useCycle(id: string) {
   return useQuery({
     queryKey: keys.cycle(id),
     queryFn: () => unwrap(api.GET("/api/v1/cycles/{cycle_id}", { params: { path: { cycle_id: id } } })),
+    enabled: isUuid(id),
     refetchInterval,
   });
 }
@@ -70,7 +72,7 @@ export function useCycle(id: string) {
 export const pushRunOptions = (id: string | null | undefined) => ({
   queryKey: keys.run(id ?? ""),
   queryFn: () => unwrap(api.GET("/api/v1/push/runs/{run_id}", { params: { path: { run_id: id ?? "" } } })),
-  enabled: Boolean(id),
+  enabled: isUuid(id),
 });
 
 /** Progress of a push run (counts per entity, ETA). Disabled without an id. */

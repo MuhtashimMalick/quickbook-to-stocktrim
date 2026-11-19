@@ -11,11 +11,12 @@ export const CSV_CAP = 200_000;
  */
 export function useCsvExport(runId: string, f: Pick<EntryParams, "outcomes" | "entity" | "code" | "q">) {
   const [status, setStatus] = useState<"idle" | "busy" | "error">("idle");
-  const [truncated, setTruncated] = useState(false);
+  const view = JSON.stringify([runId, f.outcomes, f.entity, f.code, f.q]);
+  const [cut, setCut] = useState<string | null>(null); // the view whose export was cut: the notice goes away when the view changes
 
   async function run() {
     setStatus("busy");
-    setTruncated(false);
+    setCut(null);
     try {
       const { data, response } = await api.GET("/api/v1/push/runs/{run_id}/entries.csv", {
         params: { path: { run_id: runId }, query: { outcome: [...f.outcomes], entity: f.entity || undefined, code: f.code || undefined, q: f.q || undefined } },
@@ -23,12 +24,12 @@ export function useCsvExport(runId: string, f: Pick<EntryParams, "outcomes" | "e
       });
       if (!response.ok || data === undefined) throw new Error(`HTTP ${response.status}`);
       saveBlob(data, filenameFrom(response, `entries-${runId.slice(0, 8)}.csv`));
-      setTruncated(response.headers.get("X-Truncated") === "true");
+      setCut(response.headers.get("X-Truncated") === "true" ? view : null);
       setStatus("idle");
     } catch {
       setStatus("error");
     }
   }
 
-  return { status, truncated, run };
+  return { status, truncated: cut === view, run };
 }

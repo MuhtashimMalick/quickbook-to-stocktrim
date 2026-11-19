@@ -5,7 +5,7 @@ import type { EntriesOut, EntryOut, PushRunOut, ReasonOut, RunListItem } from ".
 import { entry, pushRun, runItem, RUN_ID } from "../../test/fixtures";
 import { mockMotion } from "../../test/motion";
 import { renderApp } from "../../test/render";
-import { delay, http, HttpResponse, server, signedIn } from "../../test/server";
+import { delay, http, HttpResponse, server, signedIn, token, unauthorized } from "../../test/server";
 import { DEFAULT_OUTCOMES, entryId, parseEntryId, parseParams, serializeParams } from "./params";
 
 const OLDER_REAL = "33333333-3333-4333-8333-333333333333";
@@ -22,6 +22,8 @@ interface Setup {
   catalog?: Record<string, ReasonOut>;
   entriesStatus?: number;
   entriesDelayMs?: number;
+  /** What the API's `entities` facet answers (default: the distinct entities of all entries). */
+  entities?: string[];
 }
 
 const many = (n: number, over: Partial<EntryOut> = {}): EntryOut[] => Array.from({ length: n }, () => entry(over));
@@ -42,15 +44,15 @@ function setup(path: string, o: Setup = {}) {
       calls.push(sp);
       if (o.entriesDelayMs) await delay(o.entriesDelayMs);
       if (o.entriesStatus) return HttpResponse.json({ detail: "run_not_found" }, { status: o.entriesStatus });
-      const [outcomes, entity, code, q] = [sp.getAll("outcome"), sp.get("entity"), sp.get("code"), (sp.get("q") ?? "").toLowerCase()];
+      const [outcomes, entity, code, q, key] = [sp.getAll("outcome"), sp.get("entity"), sp.get("code"), (sp.get("q") ?? "").toLowerCase(), sp.get("key")];
       const base = all.filter(
-        (e) => (!entity || e.entity === entity) && (!code || e.code === code) && (!q || [e.key, e.ref ?? "", e.qb_label ?? ""].some((s) => s.toLowerCase().includes(q))),
+        (e) => (!entity || e.entity === entity) && (!code || e.code === code) && (!key || e.key === key) && (!q || [e.key, e.ref ?? "", e.qb_label ?? ""].some((s) => s.toLowerCase().includes(q))),
       );
       const counts = { failed: 0, skipped: 0, excluded: 0 };
       base.forEach((e) => counts[e.outcome]++);
       const picked = base.filter((e) => outcomes.length === 0 || outcomes.includes(e.outcome));
       const offset = Number(sp.get("offset") ?? 0);
-      const body: EntriesOut = { items: picked.slice(offset, offset + Number(sp.get("limit") ?? 50)), total: picked.length, counts };
+      const body: EntriesOut = { items: picked.slice(offset, offset + Number(sp.get("limit") ?? 50)), total: picked.length, counts, entities: o.entities ?? [...new Set(all.map((e) => e.entity))] };
       return HttpResponse.json(body);
     }),
     http.get("*/api/v1/push/runs/:id", ({ params }) => HttpResponse.json(pushRun({ run_id: String(params.id), ...o.meta }))),
@@ -176,6 +178,17 @@ describe("filters", () => {
     expect(calls.at(-1)?.get("code")).toBe("cancelled");
   });
 
+  it("the entity dropdown comes from the response's entities: an exclusion-only entity is selectable, and the selected one stays", async () => {
+    const user = userEvent.setup();
+    setup(`/entries?run=${RUN_ID}`, { entries: many(2, { entity: "product" }), entities: ["customer", "product"] });
+    await table();
+    const options = () => within(screen.getByLabelText("Entity")).getAllByRole("option").map((o) => o.textContent);
+    expect(options()).toEqual(["All entities", "customer", "product"]);
+    await user.selectOptions(screen.getByLabelText("Entity"), "customer");
+    await waitFor(() => expect(search().get("entity")).toBe("customer"));
+    expect(options()).toContain("customer");
+  });
+
   it("search is debounced to about 300 ms: one URL change and one request per pause, not per keystroke", async () => {
     const { calls } = setup(`/entries?run=${RUN_ID}`, { entries: [entry({ key: "ACME-1", qb_label: "Acme Ltd" })] });
     await table();
@@ -296,7 +309,7 @@ describe("table and catalog", () => {
     const row = within(t).getAllByRole("row")[1];
     expect(row).toBeDefined();
     expect(within(row as HTMLElement).getByText("Failed")).toBeInTheDocument(); // stamp: icon + word
-    expect(within(row as HTMLElement).getByText("SKU-7")).toHaveClass("font-mono");
+    expect(within(row as HTMLElement).getByText("SKU-7").closest("button")).toHaveClass("font-mono");
     expect(within(row as HTMLElement).getByText("Blue widget")).toBeInTheDocument();
     expect(within(row as HTMLElement).getByText("StockTrim rejected the record")).toHaveAttribute("title", "rejected_400"); // catalog wins; code on hover
     expect(within(row as HTMLElement).getByRole("link", { name: RUN_ID.slice(0, 8) })).toHaveAttribute("href", `/runs/push/${RUN_ID}`);
@@ -365,10 +378,29 @@ describe("detail drawer", () => {
     const entries = many(70);
     const far = entries[65];
     expect(far).toBeDefined();
-    setup(`/entries?run=${RUN_ID}&entry=${encodeURIComponent(entryId(far as EntryOut))}`, { entries });
+    const { calls } = setup(`/entries?run=${RUN_ID}&entry=${encodeURIComponent(entryId(far as EntryOut))}`, { entries });
     const dialog = await screen.findByRole("dialog", { name: "StockTrim rejected the record" });
-    expect(await within(dialog).findByText((far as EntryOut).key, { selector: "span" })).toBeInTheDocument();
+    expect(await within(dialog).findByText((far as EntryOut).key, { selector: "bdi" })).toBeInTheDocument();
     expect(within(dialog).queryByRole("button", { name: "Next entry" })).not.toBeInTheDocument(); // not on the page: no previous / next
+    const lookup = calls.find((c) => c.get("key") === (far as EntryOut).key);
+    expect(lookup?.has("q")).toBe(false); // the exact key filter, never the substring search
+  });
+
+  it("a deep link whose entries list failed shows an error, not a loading state forever", async () => {
+    setup(`/entries?run=${RUN_ID}&entry=${encodeURIComponent("item|product|SKU-1|rejected_400")}`, { entries: many(2), entriesStatus: 500 });
+    const dialog = await screen.findByRole("dialog", { name: "The entry could not be loaded" });
+    expect(within(dialog).getByRole("alert")).toBeInTheDocument();
+    expect(within(dialog).queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("closing a drawer opened from a deep link to an entry that is not on this page puts focus on the page heading", async () => {
+    const user = userEvent.setup();
+    const entries = many(70);
+    setup(`/entries?run=${RUN_ID}&page=2&entry=${encodeURIComponent(entryId(entries[3] as EntryOut))}`, { entries });
+    await screen.findByRole("dialog", { name: "StockTrim rejected the record" });
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("heading", { level: 1 })).toHaveFocus());
   });
 
   it("an entry that no longer exists says so instead of showing an empty panel", async () => {
@@ -445,7 +477,7 @@ describe("CSV export", () => {
     expect(csv[0]?.search.getAll("outcome")).toEqual(["failed", "skipped"]);
     expect([csv[0]?.search.get("entity"), csv[0]?.search.get("q")]).toEqual(["product", "widget"]);
     expect(dl.created).toHaveLength(1);
-    expect(dl.revoked).toEqual(["blob:test/1"]);
+    await waitFor(() => expect(dl.revoked).toEqual(["blob:test/1"]), { timeout: 3000 }); // revoked after about a second, not at once
     expect(screen.queryByText(/The export was cut/)).not.toBeInTheDocument();
     expect(await screen.findByRole("button", { name: "Export CSV (3 rows)" })).toBeEnabled();
   });
@@ -465,6 +497,37 @@ describe("CSV export", () => {
     expect(busy).toBeDisabled();
     expect(screen.getAllByText("Preparing export...").some((el) => el.getAttribute("aria-live") === "polite")).toBe(true);
     expect(await screen.findByRole("button", { name: /^Export CSV/ })).toBeEnabled();
+  });
+
+  it("a 401 token_expired on the download refreshes the session and retries it once", async () => {
+    const user = userEvent.setup();
+    const dl = stubDownload();
+    setup(`/entries?run=${RUN_ID}`, { entries: many(2) });
+    const seen: (string | null)[] = [];
+    let refreshes = 0;
+    server.use(
+      http.post("*/api/v1/auth/refresh", () => HttpResponse.json(token(`fresh-${++refreshes}`))),
+      http.get("*/api/v1/push/runs/:id/entries.csv", ({ request }) => {
+        seen.push(request.headers.get("Authorization"));
+        return seen.length === 1 ? unauthorized("token_expired") : new HttpResponse("x", { headers: { "Content-Disposition": 'attachment; filename="r.csv"' } });
+      }),
+    );
+    await user.click(await screen.findByRole("button", { name: /^Export CSV/ }));
+    await waitFor(() => expect(dl.downloads).toEqual(["r.csv"]));
+    expect(seen).toHaveLength(2);
+    expect(seen[1]).toMatch(/^Bearer fresh-/);
+    expect(screen.queryByText("The export failed")).not.toBeInTheDocument();
+  });
+
+  it("the cut notice goes away when the filters change", async () => {
+    const user = userEvent.setup();
+    stubDownload();
+    setup(`/entries?run=${RUN_ID}`, { entries: many(2) });
+    server.use(http.get("*/api/v1/push/runs/:id/entries.csv", () => new HttpResponse("x", { headers: { "Content-Disposition": 'attachment; filename="a.csv"', "X-Truncated": "true" } })));
+    await user.click(await screen.findByRole("button", { name: /^Export CSV/ }));
+    await screen.findByText(/The export was cut/);
+    await user.click(screen.getByRole("button", { name: /^Skipped/ }));
+    await waitFor(() => expect(screen.queryByText(/The export was cut/)).not.toBeInTheDocument());
   });
 
   it("X-Truncated: true shows the cut notice", async () => {
@@ -493,7 +556,7 @@ describe("CSV export", () => {
 
   it("leaves the count out of the label for a very large result", async () => {
     setup(`/entries?run=${RUN_ID}`, { entries: [entry()] });
-    server.use(http.get("*/api/v1/push/runs/:id/entries", () => HttpResponse.json({ items: [entry()], total: 25_000, counts: { failed: 25_000, skipped: 0, excluded: 0 } })));
+    server.use(http.get("*/api/v1/push/runs/:id/entries", () => HttpResponse.json({ items: [entry()], total: 25_000, counts: { failed: 25_000, skipped: 0, excluded: 0 }, entities: [] })));
     await table();
     expect(await screen.findByRole("button", { name: "Export CSV" })).toBeEnabled();
   });

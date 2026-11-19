@@ -30,8 +30,9 @@ describe("run sync now", () => {
     const user = userEvent.setup();
     openOperations({ settings: { stocktrim_writes_enabled: true } });
     const dialog = await openDialog(user);
-    expect(dialog).toHaveTextContent("Writes are ENABLED: this run will send changes to StockTrim.");
-    expect(writesSentence(true, "production", false)).toMatch(/only plan/);
+    expect(dialog).toHaveTextContent("Writes are ENABLED: if every check passes, this run sends changes to the StockTrim test account (api.example.test).");
+    expect(writesSentence(true, "production", false, "api.example.test")).toMatch(/only plan/);
+    expect(writesSentence(true, "production", true, "api.stocktrim.example")).toBe("Writes are ENABLED: if every check passes, this run sends changes to the StockTrim production account (api.stocktrim.example).");
   });
 
   it("says so when the Web Connector has never checked in", async () => {
@@ -54,15 +55,35 @@ describe("run sync now", () => {
     expect(screen.getByTestId("location")).toHaveTextContent(`/runs/${CYCLE_ID}`);
   });
 
-  it("a 409 cycle_running closes the dialog, disables the button and says a sync is running", async () => {
+  it("a 409 cycle_running closes the dialog; once the overview shows the running cycle the button is disabled and links to it", async () => {
     const user = userEvent.setup();
-    server.use(http.post("*/api/v1/scheduler/run-now", () => HttpResponse.json({ detail: "cycle_running" }, { status: 409 })));
-    openOperations();
+    let posted = false;
+    const idle = overview();
+    const busy = overview({ running_cycle: { id: CYCLE_ID, since: new Date().toISOString(), phase: "waiting_for_web_connector" } });
+    server.use(
+      http.post("*/api/v1/scheduler/run-now", () => {
+        posted = true;
+        return HttpResponse.json({ detail: "cycle_running" }, { status: 409 });
+      }),
+    );
+    openOperations({ overviewNow: () => (posted ? busy : idle) });
     const dialog = await openDialog(user);
     await user.click(within(dialog).getByRole("button", { name: "Start the sync" }));
     expect(await screen.findByText("A sync is already running.")).toBeInTheDocument();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(trigger()).toBeDisabled();
+    expect(screen.getByRole("link", { name: "Follow it step by step" })).toHaveAttribute("href", `/runs/${CYCLE_ID}`);
+  });
+
+  it("after a 409 with nothing running any more, the button is enabled again", async () => {
+    const user = userEvent.setup();
+    server.use(http.post("*/api/v1/scheduler/run-now", () => HttpResponse.json({ detail: "cycle_running" }, { status: 409 })));
+    openOperations();
+    const dialog = await openDialog(user);
+    await user.click(within(dialog).getByRole("button", { name: "Start the sync" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(trigger()).toBeEnabled();
+    expect(screen.queryByText(/already running/)).not.toBeInTheDocument();
   });
 
   it("a 403 scheduler_disabled explains why it cannot run; the button stays visible but disabled", async () => {

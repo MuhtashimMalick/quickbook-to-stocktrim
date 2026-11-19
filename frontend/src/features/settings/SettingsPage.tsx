@@ -22,7 +22,7 @@ function scheduleSummary(s: SettingsOut["schedule"]): string {
 }
 
 function Users({ users }: { users: SettingsOut["users"] }) {
-  if (users.length === 0) return <EmptyState title="No users yet." hint="Add one from the command line: python -m app.cli users add <username>." />;
+  if (users.length === 0) return <EmptyState title="No users yet." hint="Add one on the server, in a terminal (it asks for a password): docker compose exec app python -m app.cli users add <username>" />;
   return (
     <DataTable caption="Admin users">
       <thead>

@@ -23,7 +23,14 @@ export type FieldErrors = Partial<Record<"time" | "tz" | "start_date" | "form", 
 /** The same pattern as the backend (HHMM): 24 h, two digits each, 00:00 to 23:59. */
 export const TIME_PATTERN = /^([01][0-9]|2[0-3]):[0-5][0-9]$/;
 
-export const toForm = (s: ScheduleOut): ScheduleForm => ({ enabled: s.enabled, every_days: s.every_days, time: s.time, tz: s.tz, start_date: s.start_date });
+/** The anchor only means something for a stored 3-day / weekly schedule: for a server default or a daily one the field starts empty (sent as null = today). */
+export const toForm = (s: ScheduleOut): ScheduleForm => ({
+  enabled: s.enabled,
+  every_days: s.every_days,
+  time: s.time,
+  tz: s.tz,
+  start_date: s.source === "env_default" || s.every_days === 1 ? "" : (s.start_date ?? ""),
+});
 
 /** The start date means nothing for a daily schedule, so it never makes the form dirty or goes to the server then. */
 const normalize = (f: ScheduleForm): ScheduleForm => (f.every_days === 1 ? { ...f, start_date: "" } : f);

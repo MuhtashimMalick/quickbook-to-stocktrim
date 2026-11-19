@@ -5,6 +5,7 @@ import { Notice } from "../../components/Notice";
 import { useFormatters } from "../../lib/useFormatters";
 
 export const SESSION_WARNING_MS = 5 * 60_000;
+const MAX_TIMER_MS = 2 ** 31 - 1; // a larger delay would fire at once
 
 /** Calm heads-up shortly before the 24 h session ends; at the absolute end the user is signed out like any other expiry. */
 export function SessionEndNotice() {
@@ -15,8 +16,8 @@ export function SessionEndNotice() {
   useEffect(() => {
     if (end === null) return;
     const left = end - Date.now();
-    const warn = setTimeout(() => setWarnFor(end), Math.max(0, left - SESSION_WARNING_MS));
-    const stop = setTimeout(endSession, Math.max(0, left));
+    const warn = setTimeout(() => setWarnFor(end), Math.min(MAX_TIMER_MS, Math.max(0, left - SESSION_WARNING_MS)));
+    const stop = setTimeout(endSession, Math.min(MAX_TIMER_MS, Math.max(0, left)));
     return () => {
       clearTimeout(warn);
       clearTimeout(stop);

@@ -13,6 +13,7 @@ import { Select } from "../../components/Select";
 import { StatusStamp } from "../../components/StatusStamp";
 import { TextLink } from "../../components/TextLink";
 import { ICON_SIZE } from "../../lib/icons";
+import { isUuid } from "../../lib/uuid";
 import { stampFor } from "../../lib/status";
 import { useFormatters } from "../../lib/useFormatters";
 import { useReasonCodes } from "../runs/api";
@@ -82,14 +83,16 @@ function RunEntries({ runId, runs }: { runId: string; runs: RunListItem[] }) {
   const csv = useCsvExport(runId, params);
   const data = entries.data;
   const items = data?.items ?? [];
-  const { entry, loading } = useEntry(runId, params.entry, data?.items);
+  const { entry, loading, failed } = useEntry(runId, params.entry, data?.items, entries.isError);
   const index = items.findIndex((e) => entryId(e) === params.entry);
   const lastOpened = useRef<string | null>(null);
   useEffect(() => {
     if (params.entry) lastOpened.current = params.entry;
   });
   const returnFocus = useCallback(
-    () => Array.from(document.querySelectorAll<HTMLElement>("[data-entry-id]")).find((el) => el.dataset.entryId === lastOpened.current) ?? null,
+    () =>
+      Array.from(document.querySelectorAll<HTMLElement>("[data-entry-id]")).find((el) => el.dataset.entryId === lastOpened.current) ??
+      document.querySelector<HTMLElement>("main h1"), // the entry was not on this page: land on the page heading
     [],
   );
 
@@ -101,7 +104,7 @@ function RunEntries({ runId, runs }: { runId: string; runs: RunListItem[] }) {
 
   if ((entries.isError && isNotFound(entries.error)) || (meta.isError && isNotFound(meta.error))) return <RunNotFound what="Run" />;
 
-  const entities = [...Object.keys(meta.data?.counts ?? {}), ...items.map((e) => e.entity)];
+  const entities = data?.entities ?? [];
   const counts = data?.counts;
   const total = data?.total;
   const from = (params.page - 1) * PAGE_SIZE + 1;
@@ -153,7 +156,7 @@ function RunEntries({ runId, runs }: { runId: string; runs: RunListItem[] }) {
     <Page title={TITLE} purpose={PURPOSE}>
       <RunPicker runId={runId} runs={runs} current={meta.data} onPick={(run) => setFilters({ run, entity: "", code: "", q: "" })} />
       <div>
-        <FilterBar params={params} counts={counts} total={total} entities={entities} reasons={catalog} csv={csv} onChange={(patch) => setFilters(patch)} />
+        <FilterBar params={params} counts={counts} total={total} entities={entities} reasons={catalog} csv={csv} onChange={setFilters} />
         {csv.truncated && (
           <div className="mt-3">
             <Notice tone="warn" icon={Scissors} title={`The export was cut at ${n(CSV_CAP)} rows: narrow the filters`}>
@@ -183,6 +186,7 @@ function RunEntries({ runId, runs }: { runId: string; runs: RunListItem[] }) {
         open={params.entry !== null}
         entry={entry}
         loading={loading}
+        failed={failed}
         catalog={catalog}
         position={index >= 0 ? { index, count: items.length } : null}
         onStep={(delta) => {
@@ -207,6 +211,7 @@ export default function EntriesPage() {
   }, [params.run, fallback, update]);
 
   const runId = params.run ?? fallback;
+  if (params.run && !isUuid(params.run)) return <RunNotFound what="Run" />;
   if (!runId) {
     return (
       <Page title={TITLE} purpose={PURPOSE}>

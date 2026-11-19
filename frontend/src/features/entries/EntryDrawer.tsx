@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import type { EntryOut, ReasonOut } from "../../api/types";
 import { Button } from "../../components/Button";
 import { CopyButton } from "../../components/CopyButton";
+import { ErrorState } from "../../components/ErrorState";
 import { Drawer } from "../../components/Drawer";
 import { Loading } from "../../components/Loading";
 import { Mono } from "../../components/Mono";
@@ -36,7 +37,9 @@ function Detail({ entry, catalog }: { entry: EntryOut; catalog: Record<string, R
       </section>
       <dl className="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-2 border-t border-rule pt-4">
         <Row label="Identifier">
-          <Mono className="break-all">{entry.key}</Mono>
+          <Mono className="break-all">
+            <bdi>{entry.key}</bdi>
+          </Mono>
           <CopyButton value={entry.key} label="Copy identifier" />
         </Row>
         {entry.ref && (
@@ -45,7 +48,7 @@ function Detail({ entry, catalog }: { entry: EntryOut; catalog: Record<string, R
             <CopyButton value={entry.ref} label="Copy QuickBooks ID" />
           </Row>
         )}
-        {entry.ref && <Row label="QuickBooks name">{entry.qb_label ?? <span className="text-ink-muted">Not in the current QuickBooks snapshot</span>}</Row>}
+        {entry.ref && <Row label="QuickBooks name">{entry.qb_label ? <bdi className="break-words">{entry.qb_label}</bdi> : <span className="text-ink-muted">Not in the current QuickBooks snapshot</span>}</Row>}
         <Row label="Entity">
           {entry.entity}
           {entry.action && <span className="text-ink-muted">{entry.action}</span>}
@@ -88,6 +91,8 @@ interface Props {
   open: boolean;
   entry: EntryOut | undefined;
   loading: boolean;
+  /** The list or the lookup of this entry failed (not the same as not found). */
+  failed: boolean;
   catalog: Record<string, ReasonOut> | undefined;
   /** Position inside the loaded page, for previous / next. */
   position: { index: number; count: number } | null;
@@ -97,8 +102,8 @@ interface Props {
 }
 
 /** Right-side detail of one entry, with previous / next through the loaded page. */
-export function EntryDrawer({ open, entry, loading, catalog, position, onStep, onClose, returnFocus }: Props) {
-  const title = entry ? reasonOf(entry, catalog).title : loading ? "Loading the entry" : "Entry not found";
+export function EntryDrawer({ open, entry, loading, failed, catalog, position, onStep, onClose, returnFocus }: Props) {
+  const title = entry ? reasonOf(entry, catalog).title : loading ? "Loading the entry" : failed ? "The entry could not be loaded" : "Entry not found";
   const description = entry ? `${entry.entity}: ${entry.key}` : "A record of the selected run";
   return (
     <Drawer open={open} onClose={onClose} title={title} description={description} returnFocus={returnFocus}>
@@ -123,6 +128,8 @@ export function EntryDrawer({ open, entry, loading, catalog, position, onStep, o
         </>
       ) : loading ? (
         <Loading label="Loading the entry" />
+      ) : failed ? (
+        <ErrorState message="The entry could not be loaded. Close this panel and try again." />
       ) : (
         <p>This entry is not in the run any more, or the link is not valid. Close this panel to go back to the list.</p>
       )}

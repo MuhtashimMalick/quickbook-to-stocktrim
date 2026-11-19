@@ -135,7 +135,7 @@ function ScheduleEditor({ schedule }: { schedule: ScheduleOut }) {
       <div role="status" aria-live="polite" className="space-y-1">
         <p>
           {saved && <span className="font-semibold">Saved. </span>}
-          Next runs: <NextRuns schedule={shown} />
+          Next runs{dirty ? " (saved schedule)" : ""}: <NextRuns schedule={shown} />
         </p>
       </div>
       <p className="border-t border-rule pt-3 text-table text-ink-muted">

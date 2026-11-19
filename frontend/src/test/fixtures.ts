@@ -60,7 +60,7 @@ export const cycleDetail = (over: Partial<CycleDetail> = {}): CycleDetail => ({
   reason_info: null,
   jobs: [],
   push_run: pushRun(),
-  wrote_to_stocktrim: true,
+  wrote_to_stocktrim: "yes",
   ...over,
 });
 

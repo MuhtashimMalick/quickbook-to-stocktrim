@@ -17,10 +17,10 @@ import { useSettings } from "../settings/useSettings";
 import { useRunNow } from "./api";
 
 /** What the run will do with StockTrim, in plain words. Production runs only plan until the server allows them. */
-export function writesSentence(writesEnabled: boolean, environment: string, allowProduction: boolean): string {
+export function writesSentence(writesEnabled: boolean, environment: string, allowProduction: boolean, host?: string | null): string {
   if (!writesEnabled) return "Writes are switched off on the server: this run will plan the changes but send nothing.";
   if (environment === "production" && !allowProduction) return "Production runs only plan until the server allows them: this run will plan the changes but send nothing.";
-  return "Writes are ENABLED: this run will send changes to StockTrim.";
+  return `Writes are ENABLED: if every check passes, this run sends changes to the StockTrim ${environment} account${host ? ` (${host})` : ""}.`;
 }
 
 const contactSentence = (age: number | null) => (age === null ? "It has never checked in." : `It last checked in ${agoText(age)}.`);
@@ -38,7 +38,6 @@ export function RunNowPanel() {
   const navigate = useNavigate();
   const trigger = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
-  const [busy, setBusy] = useState(false);
   const [refused, setRefused] = useState(false);
 
   const o = overview.data;
@@ -51,14 +50,14 @@ export function RunNowPanel() {
       onSuccess: (out) => void navigate(`/runs/${out.cycle_id}`),
       onError: (error) => {
         if (!(error instanceof ApiError)) return; // network error: the dialog shows it with a retry
-        if (error.status === 409) setBusy(true);
+        if (error.status === 409) void overview.refetch();
         if (error.status === 403) setRefused(true);
         if (error.status === 409 || error.status === 403) setOpen(false);
       },
     });
 
   const failed = run.isError && !(run.error instanceof ApiError && [403, 409].includes(run.error.status));
-  const blocked = Boolean(running) || busy || switchedOff || !o || !s;
+  const blocked = Boolean(running) || switchedOff || !o || !s;
 
   return (
     <Panel title="Run a sync now">
@@ -72,9 +71,9 @@ export function RunNowPanel() {
               <p>The scheduler is disabled on the server (SCHEDULER_ENABLED), which also stops manual runs. Ask whoever runs the server to enable it.</p>
             </Notice>
           )}
-          {!switchedOff && (running || busy) && (
-            <Notice tone="info" icon={Hourglass} title={`${running?.what ?? "A sync"} is already running.`}>
-              {running && <TextLink to={running.to}>Follow it step by step</TextLink>}
+          {!switchedOff && running && (
+            <Notice tone="info" icon={Hourglass} title={`${running.what} is already running.`}>
+              <TextLink to={running.to}>Follow it step by step</TextLink>
             </Notice>
           )}
           <Button
@@ -96,7 +95,7 @@ export function RunNowPanel() {
             <p>
               The run waits for the QuickBooks Web Connector to check in. {contactSentence(o.last_qbwc_contact_age_seconds)} That can take minutes to hours, and we cannot hurry it.
             </p>
-            <p className="font-medium">{writesSentence(s.stocktrim_writes_enabled, s.environment, s.scheduler_allow_production)}</p>
+            <p className="font-medium">{writesSentence(s.stocktrim_writes_enabled, s.environment, s.scheduler_allow_production, s.stocktrim_host)}</p>
             <p>It follows every automatic safety check; if one fails, nothing is sent.</p>
           </div>
         )}

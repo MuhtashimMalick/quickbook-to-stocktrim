@@ -31,14 +31,14 @@ export function useRunMeta(runId: string) {
   });
 }
 
-type Filters = Pick<EntryParams, "outcomes" | "entity" | "code" | "q">;
+type Filters = Pick<EntryParams, "outcomes" | "entity" | "code" | "q"> & { key?: string };
 
 const entriesQuery = (runId: string, f: Filters, limit: number, offset: number) => ({
   queryKey: keys.entries(runId, { ...f, limit, offset }),
   queryFn: (): Promise<EntriesOut> =>
     unwrap(
       api.GET("/api/v1/push/runs/{run_id}/entries", {
-        params: { path: { run_id: runId }, query: { outcome: [...f.outcomes], entity: f.entity || undefined, code: f.code || undefined, q: f.q || undefined, limit, offset } },
+        params: { path: { run_id: runId }, query: { outcome: [...f.outcomes], entity: f.entity || undefined, code: f.code || undefined, q: f.q || undefined, key: f.key || undefined, limit, offset } },
       }),
     ),
 });
@@ -56,14 +56,16 @@ export function useEntries(runId: string, p: EntryParams, running: boolean) {
 
 /**
  * The entry a `?entry=` link points at. It is normally on the loaded page; a deep link may point elsewhere in the run,
- * so then it is looked up by its key (every outcome, any page).
+ * so then it is looked up by its exact key (every outcome, any page). `failed` is set when the list or the lookup errored.
  */
-export function useEntry(runId: string, id: string | null, loaded: EntryOut[] | undefined): { entry: EntryOut | undefined; loading: boolean } {
+export function useEntry(runId: string, id: string | null, loaded: EntryOut[] | undefined, listFailed: boolean): { entry: EntryOut | undefined; loading: boolean; failed: boolean } {
   const onPage = loaded?.find((e) => entryId(e) === id);
   const parts = id ? parseEntryId(id) : null;
   const q = useQuery({
-    ...entriesQuery(runId, { outcomes: OUTCOMES, entity: parts?.entity ?? "", code: parts?.code ?? "", q: parts?.key ?? "" }, 200, 0),
+    ...entriesQuery(runId, { outcomes: OUTCOMES, entity: parts?.entity ?? "", code: parts?.code ?? "", q: "", key: parts?.key ?? "" }, 200, 0),
     enabled: Boolean(loaded && id && !onPage && parts),
   });
-  return { entry: onPage ?? q.data?.items.find((e) => entryId(e) === id), loading: !loaded || q.isFetching };
+  const entry = onPage ?? q.data?.items.find((e) => entryId(e) === id);
+  const failed = !entry && ((!loaded && listFailed) || q.isError);
+  return { entry, failed, loading: !entry && !failed && (!loaded || q.isFetching) };
 }

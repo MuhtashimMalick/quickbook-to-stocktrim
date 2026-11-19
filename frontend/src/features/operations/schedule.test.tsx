@@ -199,4 +199,58 @@ describe("schedule form", () => {
     await screen.findByLabelText("Time of day (24 h)");
     expect(screen.queryByText(/will only plan/)).not.toBeInTheDocument();
   });
+
+  it("first use: server default -> weekly -> save sends start_date null and succeeds", async () => {
+    const user = userEvent.setup();
+    const bodies: ScheduleIn[] = [];
+    server.use(putHandler(() => HttpResponse.json(scheduleOut({ every_days: 7, start_date: "2026-11-19" })), bodies));
+    openOperations({ schedule: scheduleOut({ source: "env_default", start_date: null, updated_at: null, updated_by: null }) });
+    await screen.findByLabelText("Time of day (24 h)");
+    await user.click(screen.getByRole("radio", { name: "Every week" }));
+    expect(screen.getByLabelText("Start date (optional)")).toHaveValue("");
+    await user.click(save());
+    await waitFor(() => expect(bodies).toHaveLength(1));
+    expect(bodies[0]).toMatchObject({ every_days: 7, start_date: null });
+    expect(await screen.findByText("Saved.")).toBeInTheDocument();
+  });
+
+  it("a stale anchor on a server default is never copied into the form", () => {
+    expect(toForm(scheduleOut({ source: "env_default", every_days: 3, start_date: "2020-01-01" })).start_date).toBe("");
+    expect(toForm(scheduleOut({ every_days: 1, start_date: "2020-01-01" })).start_date).toBe("");
+    expect(toForm(scheduleOut({ every_days: 3, start_date: null })).start_date).toBe("");
+  });
+
+  it("editing the time of an existing 3-day schedule keeps its anchor", async () => {
+    const user = userEvent.setup();
+    const bodies: ScheduleIn[] = [];
+    server.use(putHandler(() => HttpResponse.json(scheduleOut({ every_days: 3, start_date: "2026-11-01", time: "04:00" })), bodies));
+    openOperations({ schedule: scheduleOut({ every_days: 3, start_date: "2026-11-01" }) });
+    await screen.findByLabelText("Time of day (24 h)");
+    expect(screen.getByLabelText("Start date (optional)")).toHaveValue("2026-11-01");
+    await setTime(user, "04:00");
+    await user.click(save());
+    await waitFor(() => expect(bodies).toHaveLength(1));
+    expect(bodies[0]).toMatchObject({ every_days: 3, time: "04:00", start_date: "2026-11-01" });
+  });
+
+  it("daily hides the start date and sends null", async () => {
+    const user = userEvent.setup();
+    const bodies: ScheduleIn[] = [];
+    server.use(putHandler(() => HttpResponse.json(scheduleOut()), bodies));
+    openOperations({ schedule: scheduleOut({ every_days: 3, start_date: "2026-11-01" }) });
+    await screen.findByLabelText("Time of day (24 h)");
+    await user.click(screen.getByRole("radio", { name: "Every day" }));
+    expect(screen.queryByLabelText("Start date (optional)")).not.toBeInTheDocument();
+    await user.click(save());
+    await waitFor(() => expect(bodies).toHaveLength(1));
+    expect(bodies[0]).toMatchObject({ every_days: 1, start_date: null });
+  });
+
+  it("labels the next runs as those of the saved schedule while the draft differs", async () => {
+    const user = userEvent.setup();
+    openOperations();
+    expect(await screen.findByText(/^Next runs:/)).toBeInTheDocument();
+    await user.click(screen.getByRole("switch", { name: /Automatic sync/ }));
+    expect(screen.getByText(/^Next runs \(saved schedule\):/)).toBeInTheDocument();
+  });
 });

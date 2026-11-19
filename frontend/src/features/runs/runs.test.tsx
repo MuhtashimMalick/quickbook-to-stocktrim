@@ -96,7 +96,7 @@ describe("cycles list", () => {
 describe("cycle detail", () => {
   it("builds the phase ledger in order from events (unknown codes tolerated) and lists every event in the log", async () => {
     const events = [...ABORTED_EVENTS, event({ code: "from_the_future", title: "From the future" })].reverse(); // arrives scrambled
-    openCycle(cycleDetail({ status: "aborted", reason: "read_timeout", wrote_to_stocktrim: false, push_run: null, push_run_id: null }), events.map((e, i) => ({ ...e, id: i + 1 })));
+    openCycle(cycleDetail({ status: "aborted", reason: "read_timeout", wrote_to_stocktrim: "no", push_run: null, push_run_id: null }), events.map((e, i) => ({ ...e, id: i + 1 })));
     const ledger = await screen.findByRole("list", { name: "Phases of this cycle" });
     await waitFor(() => expect(within(ledger).getByText("Waiting for the Web Connector")).toBeInTheDocument());
     const text = within(ledger).getAllByRole("listitem").map((li) => li.textContent ?? "");
@@ -117,7 +117,7 @@ describe("cycle detail", () => {
         status: "aborted",
         reason: "read_timeout",
         reason_info: { title: "QuickBooks did not answer in time", explanation: "The reads did not finish within the limit.", next_step: "Check the Web Connector on the client's PC." },
-        wrote_to_stocktrim: false,
+        wrote_to_stocktrim: "no",
         push_run: null,
         push_run_id: null,
       }),
@@ -136,7 +136,7 @@ describe("cycle detail", () => {
         status: "dry_run_only",
         reason: "writes_disabled",
         reason_info: { title: "Sending is switched off", explanation: "Everything was checked.", next_step: "Enable writes on the server to send." },
-        wrote_to_stocktrim: false,
+        wrote_to_stocktrim: "no",
         push_run: pushRun({ dry_run: true }),
       }),
     );
@@ -148,14 +148,23 @@ describe("cycle detail", () => {
   });
 
   it("failed after sending: says records WERE written, and offers the resume command", async () => {
-    openCycle(cycleDetail({ status: "failed", reason: "push_done_with_failures", wrote_to_stocktrim: true, push_run: pushRun({ status: "done_with_failures" }) }));
-    expect(await screen.findByText(/Records were written to StockTrim/)).toBeInTheDocument();
+    openCycle(cycleDetail({ status: "failed", reason: "push_done_with_failures", wrote_to_stocktrim: "yes", push_run: pushRun({ status: "done_with_failures" }) }));
+    expect(await screen.findByText(/Changes were sent to StockTrim/)).toBeInTheDocument();
     expect(screen.queryByText("Nothing was written to StockTrim.")).not.toBeInTheDocument();
     expect(screen.getByLabelText("Command to resume the push run")).toHaveTextContent(`/push/runs/${RUN_ID}/resume`);
   });
 
+  it("unknown outcome: says it is not certain (never 'nothing was written') and links to the failed entries of the run", async () => {
+    openCycle(cycleDetail({ status: "failed", reason: "push_done_with_failures", wrote_to_stocktrim: "unknown", push_run: pushRun({ status: "done_with_failures" }) }));
+    const line = (await screen.findByText(/not certain whether StockTrim applied some records/)).closest("p") as HTMLElement;
+    expect(line).toHaveTextContent("their calls ended without a clear answer");
+    expect(within(line).getByRole("link", { name: "Entries" })).toHaveAttribute("href", `/entries?run=${RUN_ID}&outcome=failed`);
+    expect(screen.queryByText("Nothing was written to StockTrim.")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Changes were sent/)).not.toBeInTheDocument();
+  });
+
   it("interrupted: an explanation and the exact CLI command, no resume button", async () => {
-    openCycle(cycleDetail({ status: "interrupted", reason: "restart", wrote_to_stocktrim: true, push_run: pushRun({ status: "interrupted" }) }));
+    openCycle(cycleDetail({ status: "interrupted", reason: "restart", wrote_to_stocktrim: "yes", push_run: pushRun({ status: "interrupted" }) }));
     expect(await screen.findByText("This cycle was interrupted")).toBeInTheDocument();
     expect(screen.getByLabelText("Command to resume the push run")).toHaveTextContent("docker compose exec -T app python -m app.cli POST /push/runs/");
     expect(screen.queryByRole("button", { name: /resume/i })).not.toBeInTheDocument();
@@ -166,7 +175,7 @@ describe("cycle detail", () => {
     openCycle(cycleDetail());
     const link = await screen.findByRole("link", { name: "View entries" });
     expect(link).toHaveAttribute("href", `/entries?run=${RUN_ID}`);
-    expect(screen.getByText(/Records were written to StockTrim/).closest("p")).toHaveTextContent("Records were written to StockTrim: 8 sent.");
+    expect(screen.getByText(/Changes were sent to StockTrim/).closest("p")).toHaveTextContent("Changes were sent to StockTrim (8 records).");
   });
 
   it("running: no outcome panel yet, per-entity progress, and live updates keep the page in its final state with reduced motion", async () => {
@@ -185,7 +194,7 @@ describe("cycle detail", () => {
   });
 
   it("filters the event log by level", async () => {
-    openCycle(cycleDetail({ status: "aborted", reason: "read_timeout", push_run: null, push_run_id: null, wrote_to_stocktrim: false }), ABORTED_EVENTS.map((e, i) => ({ ...e, id: i + 1 })));
+    openCycle(cycleDetail({ status: "aborted", reason: "read_timeout", push_run: null, push_run_id: null, wrote_to_stocktrim: "no" }), ABORTED_EVENTS.map((e, i) => ({ ...e, id: i + 1 })));
     const user = userEvent.setup();
     const log = await screen.findByRole("table", { name: "Run events, newest first" });
     expect(within(log).getAllByRole("row")).toHaveLength(5);

@@ -8,6 +8,9 @@ const RULES: [string, RegExp][] = [
   ["rgb()/hsl() colour", /\b(?:rgba?|hsla?)\(/],
   ["arbitrary px/rem/em size", /\[-?[\d.]+(?:px|rem|em)\]/],
   ["inline style", /\bstyle=\{\{/],
+  ["inline style from a variable", /\bstyle=\{[^{]/],
+  ["unquoted arbitrary colour", /-\[#[0-9a-fA-F]{3,8}\]/],
+  ["arbitrary percentage or calc() value", /\[-?[\d.]+%\]|\[calc\(|-\[[^\]]*calc\(/],
 ];
 
 describe("design tokens", () => {

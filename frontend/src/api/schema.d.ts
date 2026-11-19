@@ -443,8 +443,11 @@ export interface components {
             } | null;
             /** Trigger */
             trigger: string;
-            /** Wrote To Stocktrim */
-            wrote_to_stocktrim: boolean;
+            /**
+             * Wrote To Stocktrim
+             * @enum {string}
+             */
+            wrote_to_stocktrim: "yes" | "no" | "unknown";
         };
         /** CycleOut */
         CycleOut: {
@@ -510,6 +513,8 @@ export interface components {
             counts: {
                 [key: string]: number;
             };
+            /** Entities */
+            entities: string[];
             /** Items */
             items: components["schemas"]["EntryOut"][];
             /** Total */
@@ -1093,7 +1098,7 @@ export interface components {
              */
             source: "database" | "env_default";
             /** Start Date */
-            start_date: string;
+            start_date: string | null;
             /** Time */
             time: string;
             /** Tz */
@@ -1710,6 +1715,7 @@ export interface operations {
                 entity?: string | null;
                 code?: string | null;
                 q?: string | null;
+                key?: string | null;
             };
             header?: never;
             path: {
@@ -1746,6 +1752,7 @@ export interface operations {
                 entity?: string | null;
                 code?: string | null;
                 q?: string | null;
+                key?: string | null;
             };
             header?: never;
             path: {

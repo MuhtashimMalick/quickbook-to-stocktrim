@@ -4,14 +4,18 @@ import { Panel } from "../../components/Panel";
 import { ICON_SIZE } from "../../lib/icons";
 import { cancelCommand, resumeCommand } from "../runs/cli";
 
+/** Every step the push engine knows, in its order (backend `engine.STEPS`). */
+export const STEPS = ["suppliers", "products", "bom", "customers", "sales_orders", "purchase_orders"] as const;
+const STEP_LIST = STEPS.map((x) => `"${x}"`).join(", ");
+
 const push = (body: string) => `echo '${body}' | docker compose exec -T app python -m app.cli POST /push --json`;
 
 /** Commands from backend/README.md ("Push engine"). Placeholders in angle brackets come from a dry-run or the run itself. */
 export const COMMANDS = [
-  { label: "Plan a push (dry run, sends nothing)", command: push('{"steps": ["suppliers", "products", "bom", "customers"]}') },
+  { label: "Plan a push (dry run, sends nothing)", command: push(`{"steps": [${STEP_LIST}]}`) },
   {
     label: "Run a real push",
-    command: push('{"steps": ["suppliers", "products", "bom", "customers"], "dry_run": false, "preflight_fingerprint": "<from the dry-run>", "plan_fingerprint": "<from the dry-run>"}'),
+    command: push(`{"steps": [${STEP_LIST}], "dry_run": false, "preflight_fingerprint": "<from the dry-run>", "plan_fingerprint": "<from the dry-run>"}`),
   },
   { label: "Resume a push run", command: resumeCommand("<run_id>") },
   { label: "Cancel a push run", command: cancelCommand("<run_id>") },
@@ -39,6 +43,7 @@ export function MoreCommands() {
                 <CopyCommand command={c.command} label={c.label} />
               </div>
             ))}
+            <p className="text-table text-ink-muted">Use the same steps for the real run as for the dry-run: the fingerprints only match when they are identical.</p>
             <p className="text-table text-ink-muted">
               Run them from the repository root. Details and every option are in <span className="font-mono">backend/README.md</span>, section &quot;Push engine&quot;.
             </p>

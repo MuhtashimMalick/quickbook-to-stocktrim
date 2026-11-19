@@ -13,6 +13,7 @@ import { Mono } from "../../components/Mono";
 import { ICON_SIZE } from "../../lib/icons";
 import { useConsecutiveFailures, useNow } from "../../lib/live";
 import { stampFor } from "../../lib/status";
+import { isUuid } from "../../lib/uuid";
 import { durationBetween } from "../../lib/time";
 import { useCycle, useEvents, useReasonTitle } from "./api";
 import { cycleLedger, phaseTitle } from "./ledger";
@@ -39,7 +40,7 @@ export default function CycleDetailPage() {
   const phase = running ? phaseTitle(newest?.code) : null;
   const announcement = useRunAnnouncement(phase, "The cycle has finished");
 
-  if (q.isError && isNotFound(q.error)) return <RunNotFound what="Sync cycle" />;
+  if (!isUuid(cycleId) || (q.isError && isNotFound(q.error))) return <RunNotFound what="Sync cycle" />;
   return (
     <Page title="Sync cycle" purpose="What this cycle did, step by step, and how it ended.">
       <TextLink to="/runs">All runs</TextLink>

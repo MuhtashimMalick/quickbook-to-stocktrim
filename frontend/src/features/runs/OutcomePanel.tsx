@@ -1,9 +1,10 @@
-import { CircleCheck, CirclePause, FlaskConical, PencilLine, TriangleAlert } from "lucide-react";
+import { CircleCheck, CircleHelp, CirclePause, FlaskConical, PencilLine, TriangleAlert } from "lucide-react";
 import type { CycleDetail } from "../../api/types";
 import { CopyCommand } from "../../components/CopyCommand";
 import { Mono } from "../../components/Mono";
 import { Notice } from "../../components/Notice";
 import { Panel } from "../../components/Panel";
+import { TextLink } from "../../components/TextLink";
 import { ICON_SIZE } from "../../lib/icons";
 import { RESUMABLE } from "../../lib/status";
 import { resumeCommand } from "./cli";
@@ -14,15 +15,26 @@ export function sentCount(run: CycleDetail["push_run"]): number {
   return Object.values(run.counts).reduce((n, c) => n + (c.done ?? 0), 0);
 }
 
-/** The one line that always answers "did this change anything in StockTrim?". */
+/** The one line that answers "did this change anything in StockTrim?": yes, no, or not certain (calls that ended without a clear answer). */
 export function WrittenLine({ cycle }: { cycle: CycleDetail }) {
   const sent = sentCount(cycle.push_run);
-  if (cycle.wrote_to_stocktrim) {
+  if (cycle.wrote_to_stocktrim === "yes") {
     return (
       <p className="flex items-start gap-2 font-semibold">
         <PencilLine size={ICON_SIZE} aria-hidden="true" className="mt-1 shrink-0" />
         <span>
-          Records were written to StockTrim: <Mono>{sent.toLocaleString("en-GB")}</Mono> sent.
+          Changes were sent to StockTrim (<Mono>{sent.toLocaleString("en-GB")}</Mono> {sent === 1 ? "record" : "records"}).
+        </span>
+      </p>
+    );
+  }
+  if (cycle.wrote_to_stocktrim === "unknown") {
+    return (
+      <p className="flex items-start gap-2 font-semibold">
+        <CircleHelp size={ICON_SIZE} aria-hidden="true" className="mt-1 shrink-0" />
+        <span>
+          It is not certain whether StockTrim applied some records: their calls ended without a clear answer. See{" "}
+          {cycle.push_run_id ? <TextLink to={`/entries?run=${cycle.push_run_id}&outcome=failed`}>Entries</TextLink> : "Entries"} (reason: unknown outcome).
         </span>
       </p>
     );

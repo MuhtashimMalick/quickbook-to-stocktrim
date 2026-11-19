@@ -271,8 +271,13 @@
       "type": "string"
      },
      "wrote_to_stocktrim": {
+      "enum": [
+       "yes",
+       "no",
+       "unknown"
+      ],
       "title": "Wrote To Stocktrim",
-      "type": "boolean"
+      "type": "string"
      }
     },
     "required": [
@@ -468,6 +473,13 @@
       "title": "Counts",
       "type": "object"
      },
+     "entities": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Entities",
+      "type": "array"
+     },
      "items": {
       "items": {
        "$ref": "#/components/schemas/EntryOut"
@@ -483,7 +495,8 @@
     "required": [
      "items",
      "total",
-     "counts"
+     "counts",
+     "entities"
     ],
     "title": "EntriesOut",
     "type": "object"
@@ -2230,8 +2243,15 @@
       "type": "string"
      },
      "start_date": {
-      "title": "Start Date",
-      "type": "string"
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Start Date"
      },
      "time": {
       "title": "Time",
@@ -3722,6 +3742,23 @@
        ],
        "title": "Q"
       }
+     },
+     {
+      "in": "query",
+      "name": "key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "maxLength": 200,
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Key"
+      }
      }
     ],
     "responses": {
@@ -3838,6 +3875,23 @@
         }
        ],
        "title": "Q"
+      }
+     },
+     {
+      "in": "query",
+      "name": "key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "maxLength": 200,
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Key"
       }
      }
     ],

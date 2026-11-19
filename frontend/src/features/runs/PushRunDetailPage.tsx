@@ -22,6 +22,7 @@ import { EventLog } from "./EventLog";
 import { EventsStatus } from "./EventsStatus";
 import { phaseTitle, runLedger } from "./ledger";
 import { PhaseLedger } from "./PhaseLedger";
+import { isUuid } from "../../lib/uuid";
 import { RunNotFound, isNotFound } from "./RunNotFound";
 import { RunProgress } from "./RunProgress";
 
@@ -39,7 +40,7 @@ export default function PushRunDetailPage() {
   const phase = running ? phaseTitle(events.at(-1)?.code) : null;
   const announcement = useRunAnnouncement(phase, "The run has finished");
 
-  if (q.isError && isNotFound(q.error)) return <RunNotFound what="Push run" />;
+  if (!isUuid(runId) || (q.isError && isNotFound(q.error))) return <RunNotFound what="Push run" />;
   const resumable = run && !run.dry_run && RESUMABLE.includes(run.status);
   return (
     <Page title="Push run" purpose="One push to StockTrim: its steps, how far each got, and how it ended.">

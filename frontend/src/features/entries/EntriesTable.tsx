@@ -53,9 +53,11 @@ export function EntriesTable({ items, catalog, onOpen }: Props) {
                   aria-haspopup="dialog"
                   className="cursor-pointer break-all text-left font-mono font-medium tabular-nums text-accent underline underline-offset-2 hover:text-ink"
                 >
-                  {e.key}
+                  <bdi>{e.key}</bdi>
                 </button>
-                {e.qb_label && <div className="font-normal text-ink-muted">{e.qb_label}</div>}
+                {e.qb_label && <div className="break-words font-normal text-ink-muted">
+                    <bdi>{e.qb_label}</bdi>
+                  </div>}
               </RowTh>
               <Td>
                 <span title={e.code ?? undefined}>{reasonOf(e, catalog).title}</span>
