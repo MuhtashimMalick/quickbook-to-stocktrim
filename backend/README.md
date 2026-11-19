@@ -68,7 +68,7 @@ All containers use json-file log rotation (10 MB x 5).
 
 1. `git clone <repo> && cd quickbook && cp .env.example .env && chmod 600 .env`
 2. Edit `.env`: set `DOMAIN`, `APP_URL=https://<DOMAIN>/qbwc`, optionally `ACME_EMAIL`, and generate every secret
-   (`POSTGRES_PASSWORD`, `APP_DB_PASSWORD`, `QBWC_PASSWORD`, `ADMIN_TOKEN`) with `openssl rand -hex 24`. Keep `WRITES_ENABLED=false`.
+   (`POSTGRES_PASSWORD`, `APP_DB_PASSWORD`, `QBWC_PASSWORD`, `ADMIN_TOKEN`) with `openssl rand -hex 24`, and `JWT_SECRET` with `openssl rand -hex 32` (required, min 32 chars: the app refuses to start without it). Keep `WRITES_ENABLED=false`.
 3. `docker compose up -d --build`, then `docker compose ps` (db healthy, migrate exited 0, app healthy, caddy up) and `docker compose logs app caddy`.
 4. Check `https://<DOMAIN>/qbwc?wsdl` returns the WSDL.
 5. Admin API: it is deliberately unreachable from outside (TunnelGate accepts only direct loopback calls, and the app port is not published), so call it from inside the app container with
@@ -116,10 +116,32 @@ Two servers must never answer QBWC at once.
 - Secret rotation (edit `.env` first, then):
   - `POSTGRES_PASSWORD` is read only when the volume is first created: `docker compose exec db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "ALTER ROLE <POSTGRES_USER> PASSWORD '<new>'"`, then `docker compose up -d --force-recreate migrate` (the `test` service also uses it).
   - `APP_DB_PASSWORD`: `docker compose up -d db` (picks up the new env), `docker compose exec db sh /docker-entrypoint-initdb.d/init-app-role.sh`, `docker compose up -d --force-recreate app`.
+  - `JWT_SECRET`: `docker compose up -d app`; every issued access token becomes invalid (users log in again; refresh cookies keep working).
   - `QBWC_PASSWORD` / `ADMIN_TOKEN`: `docker compose up -d app`; for `QBWC_PASSWORD` then tell the client the new password (Web Connector asks for it again).
 - Least-privilege DB role: `docker/db/init-app-role.sh` creates `qb_app` (no superuser/createdb/createrole, DML only, no DDL, read-only `alembic_version`, no access to other databases) on a FRESH volume only.
   On an existing volume run once (idempotent, also re-run after a restore): `docker compose exec db sh /docker-entrypoint-initdb.d/init-app-role.sh`.
 - Never use `compose.dev.yml` on the server (it publishes the db on 127.0.0.1:5432 and Caddy on 8080/8443).
+
+## Admin-UI authentication (stage B1: backend only, not exposed publicly yet)
+
+Users live in `app_user` (username lowercase `[a-z0-9._-]{3,40}`, argon2id hash); there are no roles, no signup and no password reset. Manage them from inside the container (direct DB access, no HTTP; the password is prompted twice and never an argument):
+```
+docker compose exec app python -m app.cli users add <username>      # also: passwd (revokes that user's sessions) | disable | enable
+docker compose exec app python -m app.cli users list               # username, active, last login (no hashes)
+```
+Password policy: at least 14 characters, not the username, not in a built-in list of common passwords.
+
+- `POST /api/v1/auth/login` `{username, password}` -> `{access_token, token_type: "bearer", expires_in}` plus the cookie `qb_refresh` (opaque 32 random bytes, only its sha256 is stored; HttpOnly, Secure, SameSite=Strict, Path=/api/v1/auth, lifetime `REFRESH_TOKEN_HOURS`, default 24 from LOGIN: a refresh does not extend the session, the rotated cookie inherits the original expiry and Max-Age is the remaining time, so the user logs in again after 24 h). JSON body only.
+- `POST /api/v1/auth/refresh` (cookie only) -> new access token and a rotated cookie. Presenting an already rotated/revoked refresh token revokes ALL of that user's refresh tokens (401 `invalid_refresh`), except a token rotated less than `REFRESH_REUSE_GRACE_SECONDS` (default 10) ago: that is a benign concurrent refresh (only if it comes from the same IP and User-Agent as the rotation; logged at INFO), answered 401 `invalid_refresh` without revoking anything or clearing the cookie (the browser retries with the cookie the first response set). Replaying a token revoked by logout/passwd always revokes all.
+- `POST /api/v1/auth/logout` (cookie) -> 204, revokes it and clears the cookie. `GET /api/v1/auth/me` (Bearer) -> `{username, last_login_at}`.
+- Access token: HS256 JWT signed with `JWT_SECRET`, lifetime `ACCESS_TOKEN_MINUTES` (default 15), claims `sub` (user id), `username`, `iat`, `exp`, `jti`; the algorithm is pinned and the user (must be active) is looked up on every request. 401 `{"detail": "token_expired"}` or `"invalid_token"`.
+- Every other admin route accepts `Authorization: Bearer <access token>`, or `X-Admin-Token` on a direct loopback call only (the CLI above; unchanged). On a proxied request (any `X-Forwarded-*`/`Forwarded` header or a non-loopback peer) `X-Admin-Token` is ignored. Login, refresh and logout are the only public routes.
+- Login protection: unknown user, wrong password, disabled user and a locked account all answer 401 `invalid_credentials` (an argon2 verify runs in every case, outside any DB transaction, with at most 4 verifies at once; more waiting than 2 s gets 429 `rate_limited`). 5 consecutive failures within 15 minutes lock the account for 15 minutes (the lock is logged as a WARNING with user id and IP; `users list` shows `locked=yes|no`); a success, `users passwd` or `users enable` resets it. Login and refresh are limited to 10 attempts per minute per client IP (429 `rate_limited`, in-memory LRU sliding window, IPv6 keyed by its /64: fine for the single uvicorn worker). The client IP is the last `X-Forwarded-For` entry (set by Caddy), else the socket peer. Login failures never set a cookie.
+- CSRF: login, refresh and logout reject (403 `cross_site_request`) a `Sec-Fetch-Site` other than same-origin/none or an `Origin` that is not the request `Host` or is not https (or the request's own scheme).
+- Access tokens are not revocable: after logout they stay valid for up to `ACCESS_TOKEN_MINUTES` (15, accepted). `users passwd` and `users disable` reject all older access tokens at once (`tokens_valid_after`).
+- Frontend contract: keep the access token in memory only (never localStorage); refresh is single-flight (one request at a time); on a 401 `invalid_refresh` that did NOT clear the cookie (no `Set-Cookie`, a benign race) retry once with the cookie the first response set, otherwise go to the login page.
+- Passwords, hashes, tokens and the cookie are never logged; failed logins log only the outcome and the username length.
+- Migrations `0008`-`0010` add `app_user` and `refresh_token` (plus rotation and lockout bookkeeping) (DML for `qb_app` via the default privileges, no DDL). Exposing `/api/v1` through Caddy/TunnelGate is the next stage; today TunnelGate still answers 404 to anything proxied.
 
 ## Manual test with real QuickBooks
 

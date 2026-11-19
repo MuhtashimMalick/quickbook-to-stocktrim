@@ -17,6 +17,7 @@ from app.config import DatabaseSettings, Settings
 from app.db import Base
 from app.main import build_app
 
+os.environ.setdefault("JWT_SECRET", "test-only-jwt-secret-" + "x" * 24)  # Settings requires it; not a real secret
 USER, PASSWORD, TOKEN = "qb", "s3cr3t-pw-xyz", "admin-tok"
 HEADERS = {"X-Admin-Token": TOKEN}
 ADMIN_ROUTES = [("get", "/api/v1/qwc"), ("post", "/api/v1/jobs/customers"), ("post", "/api/v1/jobs/all-reads"), ("get", "/api/v1/jobs"),
@@ -176,8 +177,10 @@ def env(make_env) -> Env:
 
 @pytest.fixture(autouse=True)
 def _fresh_shared_limiters():
+    from app import auth  # noqa: PLC0415
     from app.stocktrim.limiter import reset_shared_limiters  # noqa: PLC0415
     from app.sync import engine  # noqa: PLC0415
 
+    auth._hits.clear()
     engine._SHUTTING_DOWN.clear()  # a lifespan shutdown in an earlier test must not block this test's real runs
     reset_shared_limiters()

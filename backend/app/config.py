@@ -4,7 +4,7 @@ from typing import Literal, Optional
 from urllib.parse import urlparse
 from uuid import UUID
 
-from pydantic import Field, SecretStr, field_validator
+from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from .domain.models import NegativeStockPolicy, ProductKeyField
@@ -31,6 +31,10 @@ class Settings(DatabaseSettings):
     qbwc_username: str
     qbwc_password: SecretStr
     admin_token: SecretStr
+    jwt_secret: SecretStr = Field(min_length=32)  # HS256 key for the admin-UI access tokens; required, no default (openssl rand -hex 32)
+    access_token_minutes: int = Field(15, ge=1, le=60)
+    refresh_token_hours: int = Field(24, ge=1, le=720)
+    refresh_reuse_grace_seconds: int = Field(10, ge=0, le=60)  # a token rotated less than this ago and replayed = benign race, no revocation
     qwc_owner_id: UUID
     qwc_file_id: UUID
     qwc_app_name: str = "Specialty Archery StockTrim"
@@ -71,6 +75,14 @@ class Settings(DatabaseSettings):
     scheduler_allow_production: bool = False  # production: the cycle's real run needs this, else it ends dry_run_only
     sync_max_planned_calls: int = Field(2000, ge=1)  # ~3x a normal daily volume; raise it only for a supervised run
     alert_webhook_url: Optional[SecretStr] = None  # Slack-compatible incoming webhook (the URL is a secret)
+
+    @model_validator(mode="after")
+    def _check_secrets_differ(self) -> "Settings":
+        if self.jwt_secret.get_secret_value() in (self.admin_token.get_secret_value(), self.qbwc_password.get_secret_value()):
+            raise ValueError("jwt_secret must differ from admin_token and qbwc_password")
+        if self.admin_token.get_secret_value() == "change-me-admin":
+            raise ValueError("admin_token is still the example placeholder; generate one with openssl rand -hex 24")
+        return self
 
     @field_validator("scheduler_tz")
     @classmethod

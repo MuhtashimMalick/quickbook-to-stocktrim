@@ -1,13 +1,69 @@
 """Admin API call from inside the container (the only place TunnelGate accepts it): python -m app.cli GET /jobs
-POST with a body: echo '{"quantity": 5}' | python -m app.cli POST /jobs/create_test_po --json"""
+POST with a body: echo '{"quantity": 5}' | python -m app.cli POST /jobs/create_test_po --json
+Admin-UI users (direct DB access, no HTTP; the password is prompted, never an argument): python -m app.cli users add|passwd|disable|enable <username> / users list"""
 import argparse
+import getpass
 import os
 import sys
 import urllib.error
 import urllib.request
 
 
+def users(argv):
+    from sqlalchemy import select  # noqa: PLC0415 - the HTTP commands need neither the DB nor JWT_SECRET
+
+    from . import auth  # noqa: PLC0415
+    from .config import DatabaseSettings  # noqa: PLC0415
+    from .db import init_engine, session_scope  # noqa: PLC0415
+    from .models import AppUser  # noqa: PLC0415
+
+    ap = argparse.ArgumentParser(prog="python -m app.cli users")
+    ap.add_argument("action", choices=["add", "passwd", "disable", "enable", "list"])
+    ap.add_argument("username", nargs="?")
+    a = ap.parse_args(argv)
+    if (a.action == "list") == bool(a.username):
+        ap.error("list takes no username; every other action needs one")
+    init_engine(DatabaseSettings().database_url)
+    name = auth.norm_username(a.username or "")
+    with session_scope() as s:
+        if a.action == "list":
+            for u in s.scalars(select(AppUser).order_by(AppUser.username)):
+                locked = "yes" if u.locked_until and u.locked_until > auth.now() else "no"
+                print(f"{u.username}	active={u.is_active}	locked={locked}	last_login={u.last_login_at.isoformat() if u.last_login_at else '-'}")
+            return
+        user = s.scalar(select(AppUser).where(AppUser.username == name))
+        if a.action == "add":
+            if user or not auth.USERNAME_RE.match(name):
+                sys.exit("user exists" if user else "username must be 3-40 chars of a-z 0-9 . _ -")
+        elif user is None:
+            sys.exit("no such user")
+        if a.action in ("add", "passwd"):
+            pw = getpass.getpass("Password: ")
+            if pw != getpass.getpass("Repeat: "):
+                sys.exit("passwords differ")
+            try:
+                auth.check_password(name, pw)
+            except ValueError as e:
+                sys.exit(str(e))
+            if a.action == "add":
+                s.add(AppUser(username=name, password_hash=auth.hash_password(pw)))
+            else:
+                user.password_hash, user.failed_logins, user.locked_until, user.tokens_valid_after = auth.hash_password(pw), 0, None, auth.now()
+                auth.revoke_all_refresh(s, user.id)
+        else:
+            user.is_active = a.action == "enable"
+            if a.action == "disable":
+                user.tokens_valid_after = auth.now()
+                auth.revoke_all_refresh(s, user.id)
+            else:
+                user.failed_logins, user.locked_until, user.last_failed_at = 0, None, None
+    print(f"{a.action} {name}: ok")
+
+
 def main(argv=None):
+    argv = sys.argv[1:] if argv is None else argv
+    if argv[:1] == ["users"]:
+        return users(argv[1:])
     ap = argparse.ArgumentParser(prog="python -m app.cli", description="Call /api/v1<path> with the ADMIN_TOKEN from the environment.")
     ap.add_argument("method", choices=["GET", "POST"])
     ap.add_argument("path", help="starts with /, e.g. /jobs")

@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from qbwc_kit.server import create_app
 
 from . import jobs
+from .api.v1.auth import router as auth_router
 from .api.v1.router import router
 from .config import Settings, get_settings
 from .db import init_engine
@@ -41,6 +42,7 @@ def build_app(settings: Optional[Settings] = None) -> FastAPI:
     app.state.qbwc_service = service
     create_app(service, endpoint_url=settings.app_url, path=QBWC_PATH, app=app)
     app.add_middleware(TunnelGate)
+    app.include_router(auth_router, prefix="/api/v1")
     app.include_router(router, prefix="/api/v1")
     return app
 

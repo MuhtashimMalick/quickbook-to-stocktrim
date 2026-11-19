@@ -30,14 +30,20 @@ def test_old_unprefixed_paths_404(env, method, path):
     assert getattr(env.client, method)(path, headers=HEADERS).status_code == 404
 
 
-def test_every_admin_route_requires_token(env):
+PUBLIC_AUTH = {"/api/v1/auth/login", "/api/v1/auth/refresh", "/api/v1/auth/logout"}  # the only routes without auth (see test_auth.py)
+
+
+def test_every_admin_route_requires_auth(env):
     paths = env.client.get("/openapi.json").json()["paths"]
     for path, ops in paths.items():
         if path == "/qbwc":
             continue
         assert path.startswith("/api/v1/"), path
         for method, op in ops.items():
-            assert op["security"] == [{"APIKeyHeader": []}], (method, path)
+            if path in PUBLIC_AUTH:
+                assert "security" not in op, (method, path)
+            else:
+                assert op["security"] in ([{"APIKeyHeader": []}, {"HTTPBearer": []}], [{"HTTPBearer": []}]), (method, path)
 
 
 def test_local_still_works(env):

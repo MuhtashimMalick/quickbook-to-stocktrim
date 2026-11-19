@@ -18,14 +18,19 @@ def _loopback(host: str) -> bool:
         return False
 
 
+def is_direct(scope) -> bool:
+    """A direct loopback call (the CLI inside the container): loopback client and no proxy headers."""
+    host = (scope.get("client") or ("",))[0]
+    return _loopback(host) and not any(k in _PROXY_HEADERS for k, _ in scope["headers"])
+
+
 class TunnelGate:
     def __init__(self, app) -> None:
         self.app = app
 
     async def __call__(self, scope, receive, send) -> None:
         if scope["type"] in ("http", "websocket") and scope["path"] != QBWC_PATH:
-            host = (scope.get("client") or ("",))[0]
-            if not _loopback(host) or any(k in _PROXY_HEADERS for k, _ in scope["headers"]):
+            if not is_direct(scope):
                 if scope["type"] == "http":
                     return await JSONResponse({"detail": "Not Found"}, 404)(scope, receive, send)
                 return await send({"type": "websocket.close"})

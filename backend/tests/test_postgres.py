@@ -22,7 +22,7 @@ from app.quickbooks.tasks.base import QuerySpec
 
 from .conftest import QB, admin_engine, alembic_cfg, create_database, make_records, rs_error
 
-TABLES = {"jobs", "sync_log", "qb_records", "po_link", "bom_edge", "push_run", "push_item", "pushed_item", "sync_cycle", "app_state"}
+TABLES = {"jobs", "sync_log", "qb_records", "po_link", "bom_edge", "push_run", "push_item", "pushed_item", "sync_cycle", "app_state", "app_user", "refresh_token"}
 
 
 def keys(env, entity):
@@ -58,6 +58,25 @@ def test_migration_upgrade_downgrade_on_scratch_db(db_url):
             c.execute(text(f'DROP DATABASE "{name}" WITH (FORCE)'))
 
 
+def test_migration_0008_downgrade_drops_only_the_auth_tables(db_url):
+    name = f"qb_scratch_{uuid.uuid4().hex[:8]}"
+    create_database(db_url, name)
+    url = create_engine(db_url).url.set(database=name).render_as_string(hide_password=False)
+    engine = create_engine(url)
+    try:
+        command.upgrade(alembic_cfg(url), "head")
+        command.downgrade(alembic_cfg(url), "-1")  # 0010 -> 0009 and back
+        command.upgrade(alembic_cfg(url), "head")
+        command.downgrade(alembic_cfg(url), "0007")
+        assert set(inspect(engine).get_table_names()) == TABLES - {"app_user", "refresh_token"} | {"alembic_version"}
+        command.upgrade(alembic_cfg(url), "head")
+        assert {"app_user", "refresh_token"} <= set(inspect(engine).get_table_names())
+    finally:
+        engine.dispose()
+        with admin_engine(db_url).connect() as c:
+            c.execute(text(f'DROP DATABASE "{name}" WITH (FORCE)'))
+
+
 def test_migration_0003_downgrade_one_step_keeps_older_tables(db_url):
     name = f"qb_scratch_{uuid.uuid4().hex[:8]}"
     create_database(db_url, name)
@@ -66,7 +85,7 @@ def test_migration_0003_downgrade_one_step_keeps_older_tables(db_url):
     try:
         command.upgrade(alembic_cfg(url), "head")
         command.downgrade(alembic_cfg(url), "0002")
-        assert set(inspect(engine).get_table_names()) == TABLES - {"bom_edge", "push_run", "push_item", "pushed_item", "sync_cycle", "app_state"} | {"alembic_version"}
+        assert set(inspect(engine).get_table_names()) == TABLES - {"bom_edge", "push_run", "push_item", "pushed_item", "sync_cycle", "app_state", "app_user", "refresh_token"} | {"alembic_version"}
         command.upgrade(alembic_cfg(url), "head")
         assert {"bom_edge", "push_run", "push_item"} <= set(inspect(engine).get_table_names())
     finally:
@@ -151,8 +170,14 @@ def test_least_privilege_role_covers_new_tables(db_url):
             c.execute(text("UPDATE push_item SET status = 'done'"))
             assert c.scalar(text("SELECT count(*) FROM push_item WHERE status = 'done'")) == 1
             c.execute(text("DELETE FROM bom_edge"))
+            c.execute(text("INSERT INTO app_user (username, password_hash) VALUES ('alice', 'h')"))
+            c.execute(text("INSERT INTO refresh_token (user_id, token_sha256, expires_at) SELECT id, 'x', now() FROM app_user"))
+            c.execute(text("UPDATE app_user SET failed_logins = 1"))
+            c.execute(text("UPDATE refresh_token SET revoked_at = now()"))
+            c.execute(text("DELETE FROM app_user"))  # cascades to refresh_token
+            assert c.scalar(text("SELECT count(*) FROM refresh_token")) == 0
             for ddl in ("CREATE TABLE evil (x int)", "ALTER TABLE push_item ADD COLUMN x int", "DROP TABLE bom_edge", "TRUNCATE push_item",
-                        "CREATE INDEX evil_ix ON push_item (key)", "DROP TABLE sync_cycle", "TRUNCATE app_state"):
+                        "CREATE INDEX evil_ix ON push_item (key)", "DROP TABLE sync_cycle", "TRUNCATE app_state", "ALTER TABLE app_user ADD COLUMN x int", "DROP TABLE refresh_token", "TRUNCATE app_user"):
                 with pytest.raises(DBAPIError):
                     c.execute(text(ddl))
         app.dispose()

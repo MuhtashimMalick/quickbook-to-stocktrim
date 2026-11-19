@@ -17,7 +17,7 @@ def init_engine(url: str) -> None:
     global _sessionmaker
     if _sessionmaker is not None:
         _sessionmaker.kw["bind"].dispose()
-    engine = create_engine(url, pool_pre_ping=True)
+    engine = create_engine(url, pool_pre_ping=True, hide_parameters=True)  # failed statements must not echo bound values (hashes, tokens)
     _sessionmaker = sessionmaker(engine, expire_on_commit=False)
 
 

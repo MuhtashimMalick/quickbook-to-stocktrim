@@ -193,3 +193,38 @@ class AppState(Base):
     key: Mapped[str] = mapped_column(Text, primary_key=True)
     value: Mapped[Any] = mapped_column(JSONB)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, server_default=text("now()"))
+
+
+class AppUser(Base):
+    """Admin-UI login. username is stored lowercase (CHECK); password_hash is argon2id."""
+
+    __tablename__ = "app_user"
+    __table_args__ = (CheckConstraint("username ~ '^[a-z0-9._-]{3,40}$'", name="ck_app_user_username"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    username: Mapped[str] = mapped_column(String(40), unique=True)
+    password_hash: Mapped[str] = mapped_column(Text)
+    is_active: Mapped[bool] = mapped_column(default=True, server_default=text("true"))
+    failed_logins: Mapped[int] = mapped_column(Integer, default=0, server_default=text("0"))
+    locked_until: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    last_failed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    tokens_valid_after: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))  # access tokens issued before this are rejected (passwd/disable)
+    last_login_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, server_default=text("now()"))
+
+
+class RefreshToken(Base):
+    """Only the sha256 of the cookie value is stored. Rotated on every use; presenting a revoked row revokes all of the user's tokens."""
+
+    __tablename__ = "refresh_token"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("app_user.id", ondelete="CASCADE"), index=True)
+    token_sha256: Mapped[str] = mapped_column(String(64), unique=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, server_default=text("now()"))
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    revoked_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    rotated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))  # set only when a refresh rotated it (logout/passwd revoke without it)
+    replaced_by_id: Mapped[Optional[int]] = mapped_column(ForeignKey("refresh_token.id", ondelete="SET NULL"))
+    ip: Mapped[Optional[str]] = mapped_column(Text)
+    user_agent: Mapped[Optional[str]] = mapped_column(Text)

@@ -1,13 +1,11 @@
-"""Admin API. Every route requires X-Admin-Token."""
-import secrets
+"""Admin API. Every route requires a Bearer access token, or X-Admin-Token on a direct loopback call (the CLI). Public: only /auth/login|refresh|logout (api/v1/auth.py)."""
 from datetime import datetime
 from decimal import Decimal
 from hashlib import sha256
 from typing import Any, Optional
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, Security
-from fastapi.security import APIKeyHeader
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from pydantic import BaseModel, ConfigDict, Field
 
 from ... import jobs
@@ -15,18 +13,10 @@ from ...config import Settings
 from ...qbwc.qwc import render_qwc
 from ...quickbooks import snapshot
 from ...quickbooks.tasks import ENTITY_ALIASES, JOB_TYPES, READ_JOB_TYPES
+from .auth import require_admin
 from .ops import router as ops_router
 from .preflight import router as preflight_router
 from .push import router as push_router
-
-_token_header = APIKeyHeader(name="X-Admin-Token", auto_error=False)
-
-
-def require_admin(request: Request, token: Optional[str] = Security(_token_header)) -> None:
-    expected = request.app.state.settings.admin_token.get_secret_value()
-    if not token or not secrets.compare_digest(token.encode("utf-8"), expected.encode("utf-8")):
-        raise HTTPException(401, "invalid or missing X-Admin-Token")
-
 
 router = APIRouter(dependencies=[Depends(require_admin)])
 router.include_router(ops_router)
