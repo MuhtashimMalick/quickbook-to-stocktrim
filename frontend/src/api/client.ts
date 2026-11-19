@@ -9,7 +9,11 @@ const NO_RETRY = ["/api/v1/auth/login", REFRESH_PATH, "/api/v1/auth/logout"];
 const RACE_RETRY_DELAY_MS = 300;
 
 export class ApiError extends Error {
-  constructor(readonly status: number) {
+  /** `detail` is the server's error body detail: a code string, or a list of field errors on a 422. */
+  constructor(
+    readonly status: number,
+    readonly detail?: unknown,
+  ) {
     super(`HTTP ${status}`);
   }
 }
@@ -123,8 +127,8 @@ export const api = createClient<paths>({
 });
 
 /** Throws ApiError unless the call returned data. */
-export async function unwrap<T>(call: Promise<{ data?: T; response: Response }>): Promise<T> {
-  const { data, response } = await call;
-  if (data === undefined) throw new ApiError(response.status);
+export async function unwrap<T>(call: Promise<{ data?: T; error?: unknown; response: Response }>): Promise<T> {
+  const { data, error, response } = await call;
+  if (data === undefined) throw new ApiError(response.status, typeof error === "object" && error !== null && "detail" in error ? error.detail : undefined);
   return data;
 }

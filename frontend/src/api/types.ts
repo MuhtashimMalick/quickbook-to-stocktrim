@@ -13,3 +13,7 @@ export type ReasonOut = S["ReasonOut"];
 export type EntryOut = S["EntryOut"];
 export type EntriesOut = S["EntriesOut"];
 export type SettingsOut = S["SettingsOut"];
+export type ScheduleOut = S["ScheduleOut"];
+export type ScheduleIn = S["ScheduleIn"];
+export type PreflightReport = S["PreflightReport"];
+export type Finding = S["Finding"];

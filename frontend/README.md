@@ -1,4 +1,4 @@
-# QuickBook admin UI (stages F1 to F4: shell, overview, runs, entries)
+# QuickBook admin UI (stages F1 to F5: shell, overview, runs, entries, operations, settings)
 
 React 19 + TypeScript (strict, no `any`) + Tailwind v4 + GSAP. Nothing needs a local Node install; everything runs through Docker.
 
@@ -29,3 +29,6 @@ Login and refresh return `session_expires_at` (the absolute end of the 24 h sess
 
 ## Screens (F2 to F4)
 `/` overview (one `GET /overview` plus the last 5 cycles and, while a push runs, its progress), `/runs` (cycles, `?view=push` for push runs, `Load more` uses the `before` cursor), `/runs/:cycleId` (phase ledger, outcome, progress, event log), `/runs/push/:runId` (a push run without a cycle). `/entries` (F4) lists the failed / skipped / excluded records of one push run. All state is in the URL query: `run` (default: the latest real run), repeatable `outcome` (default failed + skipped), `entity`, `code`, `q` (debounced 300 ms), `page` (50 rows), `entry` (the detail drawer). The API has no entry id, so an entry is `source|entity|key|code` (`features/entries/params.ts`). CSV export fetches through the authenticated client and saves a Blob. Read-only: cancel and resume are CLI-only, so the pages show the command to copy. Run one test file: `docker compose -f docker-compose.yml -f compose.dev.yml --profile test run --rm test-web npx vitest run src/features/runs`.
+
+## Operations and Settings (F5)
+`/operations`: schedule (`GET/PUT /schedule`; one `ScheduleForm` draft, Save only when dirty and valid, errors mapped from the 422 body by `features/operations/scheduleForm.ts`), "Run sync now" (`POST /scheduler/run-now`, confirm `Dialog`, 202 goes to `/runs/<cycle_id>`, 409 `cycle_running` and 403 `scheduler_disabled` shown calmly), pre-flight (`POST /preflight` with the default options, read-only, report from codes and counts only) and a note with the CLI-only commands from `backend/README.md`. `/settings` is a read-only view of `GET /settings`. `ApiError.detail` carries the server's error detail (a code, or the 422 field list). Writes and the scheduler are server flags: the pages explain them, never change them.

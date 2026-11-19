@@ -1,4 +1,4 @@
-import type { CycleDetail, CycleOut, EntryOut, EventOut, Overview, PushRunOut, RunListItem } from "../api/types";
+import type { CycleDetail, CycleOut, EntryOut, EventOut, Overview, PreflightReport, PushRunOut, RunListItem, ScheduleOut } from "../api/types";
 
 /** Typed builders for API payloads (derived from schema.d.ts, so a contract change breaks the tests at compile time). */
 export const CYCLE_ID = "11111111-1111-4111-8111-111111111111";
@@ -115,3 +115,45 @@ export const entry = (over: Partial<EntryOut> = {}): EntryOut => {
     ...over,
   };
 };
+
+const slot = (utcHour: number, day: number) => {
+  const utc = `2026-11-${day}T${String(utcHour).padStart(2, "0")}:00:00Z`;
+  return { utc, local: utc };
+};
+
+/** GET/PUT /schedule: a stored daily 02:00 UTC schedule with its three next runs. */
+export const scheduleOut = (over: Partial<ScheduleOut> = {}): ScheduleOut => ({
+  enabled: true,
+  every_days: 1,
+  time: "02:00",
+  tz: "UTC",
+  start_date: "2026-11-01",
+  updated_at: "2026-11-10T09:30:00Z",
+  updated_by: "ada",
+  source: "database",
+  next_runs: [slot(2, 20), slot(2, 21), slot(2, 22)],
+  ceiling_enabled: true,
+  allow_production: true,
+  last_cycle: null,
+  ...over,
+});
+
+const counts = (parsed: number) => ({ parsed, ok: parsed - 2, quarantined: 1, parse_errors: 1, warnings: 0 });
+
+/** POST /preflight: an OK report with no findings. */
+export const preflightReport = (verdict: Partial<PreflightReport["verdict"]> = {}): PreflightReport => ({
+  quickbooks: {
+    entities: { products: counts(300), suppliers: counts(40), customers: counts(120) },
+    issues: {},
+    bom: {
+      assemblies: 0, assemblies_with_edges: 0, edges: 0, summed_duplicates: 0, assemblies_with_summed_duplicates: 0, excluded_lines: 0, dropped_edges: 0,
+      quarantined_parents: 0, cycle_ancestors: 0, max_depth: 0, depth_histogram: {}, assemblies_without_lines: 0, assemblies_all_lines_excluded: 0, subassemblies_without_bom: 0,
+    },
+    negative_stock_count: 0,
+  },
+  stocktrim: { status: "ok" },
+  verdict: { ok_to_push: true, blocking: [], warnings: [], ...verdict },
+  snapshot: { synced_at_max: {} },
+  plan: { planned_calls: { product: 298 }, total_calls: 460, rps: 5, eta_seconds: 92 },
+  fingerprint: "f".repeat(64),
+});

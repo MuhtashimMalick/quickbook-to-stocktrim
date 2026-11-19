@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes } from "react";
+import type { ButtonHTMLAttributes, Ref } from "react";
 
 const VARIANTS = {
   primary: "bg-accent text-accent-ink hover:bg-ink border-accent hover:border-ink",
@@ -7,6 +7,7 @@ const VARIANTS = {
 
 interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: keyof typeof VARIANTS;
+  ref?: Ref<HTMLButtonElement>;
 }
 
 export function Button({ variant = "primary", className = "", type = "button", ...rest }: Props) {

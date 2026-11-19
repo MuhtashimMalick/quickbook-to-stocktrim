@@ -6,6 +6,7 @@ export interface EventScope {
 
 export const keys = {
   settings: ["settings"] as const,
+  schedule: ["schedule"] as const,
   reasons: ["reason-codes"] as const,
   overview: ["overview"] as const,
   recentCycles: (limit: number) => ["cycles", "recent", limit] as const,
