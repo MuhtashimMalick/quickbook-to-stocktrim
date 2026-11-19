@@ -77,6 +77,11 @@ class Settings(DatabaseSettings):
     sync_max_planned_calls: int = Field(2000, ge=1)  # ~3x a normal daily volume; raise it only for a supervised run
     alert_webhook_url: Optional[SecretStr] = None  # Slack-compatible incoming webhook (the URL is a secret)
 
+    @property
+    def alert_webhook(self) -> Optional[str]:
+        """The webhook URL, or None when unset, empty or whitespace: the one place that decides whether alerts can be sent."""
+        return (self.alert_webhook_url.get_secret_value().strip() if self.alert_webhook_url else "") or None
+
     @model_validator(mode="after")
     def _check_secrets_differ(self) -> "Settings":
         if self.jwt_secret.get_secret_value() in (self.admin_token.get_secret_value(), self.qbwc_password.get_secret_value()):

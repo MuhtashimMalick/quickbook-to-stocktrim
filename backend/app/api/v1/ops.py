@@ -46,6 +46,7 @@ class CycleOut(M):
     started_at: datetime
     finished_at: Optional[datetime]
     push_run_id: Optional[UUID]
+    summary: Optional[dict[str, Any]] = None  # counts and short codes only
 
 
 class Freshness(M):

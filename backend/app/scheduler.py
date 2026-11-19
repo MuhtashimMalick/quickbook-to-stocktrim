@@ -58,13 +58,13 @@ def next_run(now: datetime, hhmm: str, tz: "timezone | ZoneInfo") -> datetime:
 def send_alert(settings: Settings, status: str, reason: str, cycle_id: Optional[UUID] = None, push_error: Optional[str] = None, **http_kw: Any) -> None:
     """ERROR log line always; a Slack-compatible webhook POST when ALERT_WEBHOOK_URL is set. Never raises, never carries record contents."""
     log.error("sync cycle %s: %s", status, reason)
-    if not settings.alert_webhook_url:
+    if not (url := settings.alert_webhook):
         return
     body = {"text": f"QuickBook sync cycle {status}: {reason}", "cycle_status": status, "reason": reason, "environment": settings.stocktrim_environment,
             "cycle_id": str(cycle_id) if cycle_id else None, **({"push_error": push_error} if push_error else {})}
     try:
         with httpx.Client(timeout=5, **http_kw) as c:
-            c.post(settings.alert_webhook_url.get_secret_value(), json=body).raise_for_status()
+            c.post(url, json=body).raise_for_status()
     except Exception as e:  # noqa: BLE001 - an alert that cannot be sent is logged (type only: the URL is a secret)
         log.error("alert webhook failed: %s", type(e).__name__)
 

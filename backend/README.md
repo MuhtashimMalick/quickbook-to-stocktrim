@@ -389,6 +389,24 @@ What happened in a cycle or run, and which records were left out and why, is sto
 
   Never deleted by age: a resumable run (`interrupted`/`failed` with pending items), the latest run per target, and the latest completed real run per target (the sync baseline). Exclusions of an older run that is kept are removed; its run row, items and events stay.
 
+## Read APIs for the admin UI (stage B4)
+
+GET only, all under `/api/v1`, all reachable through the proxy with a Bearer token (frozen in `tests/test_exposure.py`), typed responses. Counts, codes, timestamps and short labels only: never secrets, StockTrim credentials, payloads, raw QuickBooks records or error bodies.
+
+| Route | What |
+|---|---|
+| `GET /cycles?limit<=100&before=<iso\|id>` | cycles newest first (`before` = ISO time or the id of the last row seen) |
+| `GET /cycles/{id}` | the cycle, its read jobs, the linked run's progress, `reason_info` (title / explanation / next step) and `wrote_to_stocktrim` (a real run completed at least one item) |
+| `GET /events?cycle_id=&run_id=&after_id=&limit<=200` | run events ascending with catalog titles; poll with `after_id=<last_id>` |
+| `GET /push/runs?limit&before&dry_run` | runs newest first: mode, steps, item counts by status, requested_by, target as `<env> @ <host>` |
+| `GET /push/runs/{id}/entries?outcome=&entity=&code=&q=&limit<=200&offset=` | failed / skipped items and excluded records in one list, `total` and per-outcome `counts`, reason text, StockTrim HTTP status and rejected field names. `qb_label` (FullName, Name or RefNumber) is looked up in the QuickBooks snapshot when the page is read (one query per page), never stored; null when the record is gone. `q`: case-insensitive contains on key, ref and label (`%` and `_` are literal). Key/ref search is instant; a name (label) search on a very large run (~33k entries) takes a few seconds because it scans the QuickBooks snapshot (a `pg_trgm` index would fix that if it ever matters) |
+| `GET /push/runs/{id}/entries.csv` | the same filters as a streamed CSV (UTF-8 BOM, cells starting with `= + - @` tab or CR get a leading `'`), at most 200,000 rows (`X-Truncated: true` when more matched) |
+| `GET /settings` | non-secret settings (StockTrim host only, webhook as a boolean), the read job list and the users (no hashes); `version` comes from `APP_VERSION` or `GIT_SHA` when set |
+| `GET /reason-codes` | the whole reason catalog |
+| `GET /overview` | one call for the dashboard: last cycle, next run, running cycle / push with phase, last QuickBooks contact, snapshot freshness, queued/running jobs, latest real push run (built on `/health`) |
+
+`python -m app.cli openapi` prints the OpenAPI JSON of the proxy-reachable routes only (needs neither settings nor the database), so the frontend can generate its types from exactly what is exposed.
+
 ## Next steps
 
 Hourly stock sync, `modified_after` incremental reads.

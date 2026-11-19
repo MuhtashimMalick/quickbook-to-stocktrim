@@ -1,6 +1,7 @@
 """Admin API call from inside the container (the only place TunnelGate accepts it): python -m app.cli GET /jobs
 POST with a body: echo '{"quantity": 5}' | python -m app.cli POST /jobs/create_test_po --json
-Admin-UI users (direct DB access, no HTTP; the password is prompted, never an argument): python -m app.cli users add|passwd|disable|enable <username> / users list"""
+Admin-UI users (direct DB access, no HTTP; the password is prompted, never an argument): python -m app.cli users add|passwd|disable|enable <username> / users list
+OpenAPI of the proxy-reachable routes: python -m app.cli openapi"""
 import argparse
 import getpass
 import os
@@ -71,8 +72,25 @@ def prune(argv):
     print(run_prune(settings))
 
 
+def openapi(argv):
+    import json  # noqa: PLC0415
+
+    from fastapi import FastAPI  # noqa: PLC0415
+
+    from .api.v1.auth import router as auth_router  # noqa: PLC0415
+    from .api.v1.router import public  # noqa: PLC0415
+
+    argparse.ArgumentParser(prog="python -m app.cli openapi", description="Print the OpenAPI JSON of the proxy-reachable routes only (no settings or database needed).").parse_args(argv)
+    app = FastAPI(title="QuickBook admin API", redirect_slashes=False)
+    app.include_router(auth_router, prefix="/api/v1")
+    app.include_router(public, prefix="/api/v1")
+    print(json.dumps(app.openapi(), indent=1, sort_keys=True))
+
+
 def main(argv=None):
     argv = sys.argv[1:] if argv is None else argv
+    if argv[:1] == ["openapi"]:
+        return openapi(argv[1:])
     if argv[:1] == ["prune"]:
         return prune(argv[1:])
     if argv[:1] == ["users"]:

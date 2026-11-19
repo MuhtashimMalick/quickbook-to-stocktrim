@@ -16,10 +16,12 @@ from ...qbwc.qwc import render_qwc
 from ...quickbooks import snapshot
 from ...quickbooks.tasks import ENTITY_ALIASES, JOB_TYPES, READ_JOB_TYPES
 from .auth import require_admin
+from .entries import router as entries_router
 from .ops import router as ops_router
 from .preflight import router as preflight_router
 from .push import router as push_router
 from .push import runs_router
+from .reads import router as reads_router
 
 router = APIRouter(dependencies=[Depends(direct_only), Depends(require_admin)])  # CLI only
 router.include_router(push_router)
@@ -27,6 +29,8 @@ public = APIRouter(dependencies=[Depends(require_admin)])  # reachable through t
 public.include_router(ops_router)
 public.include_router(preflight_router)
 public.include_router(runs_router)
+public.include_router(entries_router)
+public.include_router(reads_router)
 
 
 class _Out(BaseModel):
