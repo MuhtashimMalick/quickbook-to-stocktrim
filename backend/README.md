@@ -52,7 +52,7 @@ Migrations need only `DATABASE_URL` (`alembic -c backend/alembic.ini ...` also w
 ## Deployment (client's Linux server, Docker Compose)
 
 Services: `db` (postgres 17.12, not published), `migrate` (one-shot `alembic upgrade head` as the DB owner), `app` (non-root, one uvicorn worker, not published),
-`caddy` (80/443, automatic Let's Encrypt; proxies only `/qbwc*`, request bodies capped at 64 MB, everything else 404). Volumes: `pgdata`, `appdata` (`/data`: `logs/` and `fixtures/`), `caddy_data`.
+`caddy` (80/443, automatic Let's Encrypt; proxies `/qbwc` (exact; bodies capped at 64 MB) and `/api/v1/*` (1 MB) to the app, everything else 404 until the web service arrives; see Public exposure). Volumes: `pgdata`, `appdata` (`/data`: `logs/` and `fixtures/`), `caddy_data`.
 Networks: `edge` (caddy + app; normal, so the app keeps outbound internet for the later StockTrim client) and `backend` (`internal: true`: db, migrate, app, test). Caddy has no route to the db.
 All containers use json-file log rotation (10 MB x 5).
 
@@ -71,7 +71,7 @@ All containers use json-file log rotation (10 MB x 5).
    (`POSTGRES_PASSWORD`, `APP_DB_PASSWORD`, `QBWC_PASSWORD`, `ADMIN_TOKEN`) with `openssl rand -hex 24`, and `JWT_SECRET` with `openssl rand -hex 32` (required, min 32 chars: the app refuses to start without it). Keep `WRITES_ENABLED=false`.
 3. `docker compose up -d --build`, then `docker compose ps` (db healthy, migrate exited 0, app healthy, caddy up) and `docker compose logs app caddy`.
 4. Check `https://<DOMAIN>/qbwc?wsdl` returns the WSDL.
-5. Admin API: it is deliberately unreachable from outside (TunnelGate accepts only direct loopback calls, and the app port is not published), so call it from inside the app container with
+5. Admin API (CLI): the CLI-only routes (see Public exposure) are unreachable from outside, and the app port is not published, so call it from inside the app container with
    `python -m app.cli METHOD /path` (METHOD is GET or POST; adds `X-Admin-Token` from the container environment; paths are under `/api/v1`; `--json` sends stdin as the JSON body; on Git Bash for Windows prefix the command with `MSYS_NO_PATHCONV=1`, otherwise `/jobs` is rewritten to a Windows path):
    ```
    docker compose exec -T app python -m app.cli GET /jobs
@@ -122,7 +122,7 @@ Two servers must never answer QBWC at once.
   On an existing volume run once (idempotent, also re-run after a restore): `docker compose exec db sh /docker-entrypoint-initdb.d/init-app-role.sh`.
 - Never use `compose.dev.yml` on the server (it publishes the db on 127.0.0.1:5432 and Caddy on 8080/8443).
 
-## Admin-UI authentication (stage B1: backend only, not exposed publicly yet)
+## Admin-UI authentication (stage B1)
 
 Users live in `app_user` (username lowercase `[a-z0-9._-]{3,40}`, argon2id hash); there are no roles, no signup and no password reset. Manage them from inside the container (direct DB access, no HTTP; the password is prompted twice and never an argument):
 ```
@@ -141,7 +141,59 @@ Password policy: at least 14 characters, not the username, not in a built-in lis
 - Access tokens are not revocable: after logout they stay valid for up to `ACCESS_TOKEN_MINUTES` (15, accepted). `users passwd` and `users disable` reject all older access tokens at once (`tokens_valid_after`).
 - Frontend contract: keep the access token in memory only (never localStorage); refresh is single-flight (one request at a time); on a 401 `invalid_refresh` that did NOT clear the cookie (no `Set-Cookie`, a benign race) retry once with the cookie the first response set, otherwise go to the login page.
 - Passwords, hashes, tokens and the cookie are never logged; failed logins log only the outcome and the username length.
-- Migrations `0008`-`0010` add `app_user` and `refresh_token` (plus rotation and lockout bookkeeping) (DML for `qb_app` via the default privileges, no DDL). Exposing `/api/v1` through Caddy/TunnelGate is the next stage; today TunnelGate still answers 404 to anything proxied.
+- Migrations `0008`-`0010` add `app_user` and `refresh_token` (plus rotation and lockout bookkeeping) (DML for `qb_app` via the default privileges, no DDL).
+
+## Public exposure (stage B2)
+
+One domain: `https://<DOMAIN>/qbwc` -> app (unchanged), `https://<DOMAIN>/api/v1/*` -> app (admin API for the future SPA, Bearer JWT), everything else -> Caddy `respond 404` (stage F1 swaps in the `web` service).
+Two layers, both must allow a request:
+1. Caddy (`docker/caddy/Caddyfile`): explicit `handle`s only (`/qbwc` exact, `/api/v1/*` with `request_body max_size 1MB` and `X-Admin-Token` stripped, else 404). `/docs`, `/redoc`, `/openapi.json` are never routed. No `trusted_proxies`, no Caddy rate limit (core Caddy has none; the app limits login/refresh).
+   Headers on every response: `Strict-Transport-Security: max-age=31536000; includeSubDomains`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, `X-Frame-Options: DENY`, `Content-Security-Policy: frame-ancestors 'none'; default-src 'none'` (API-only; F1 replaces it with the SPA policy), `Server` removed.
+2. App: `TunnelGate` lets a proxied request through only for the decoded `scope["path"]` `== /qbwc` or starting with `/api/v1/` (raw_path ignored, nothing normalised); all else (including `/docs`, `/redoc`, `/openapi.json`, `/health`, `/api/v1`, dot-segment/encoded variants) is 404. Direct loopback calls (the CLI) are unchanged, so `/docs` and `/openapi.json` stay loopback-only.
+   Inside `/api/v1` exposure is default-deny: routes on `router` in `api/v1/router.py` carry the route-level dependency `direct_only` (404 unless a direct loopback call, decided on the matched route so encoded or trailing-slash variants cannot bypass it); only routes registered on `public` (and the auth router) are proxy-reachable. `tests/test_exposure.py` freezes both sets, so a new route is CLI-only until someone adds it to `public` and to that test.
+
+| Reachable through the proxy (Bearer; X-Admin-Token is ignored) | CLI only (loopback + X-Admin-Token; 404 when proxied, even with a valid Bearer) |
+|---|---|
+| `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout` (no auth), `GET /auth/me`, `GET /health`, `POST /scheduler/run-now`, `POST /preflight` (read-only), `GET /jobs`, `GET /jobs/{id}`, `GET /push/runs/{id}` | `GET /qwc`, `GET /records/{entity}` (raw QuickBooks records), `GET /log`, `POST /jobs/all-reads`, `POST /jobs/{job_type}` (incl. `create_test_po`), `POST /push`, `POST /push/runs/{id}/cancel`, `POST /push/runs/{id}/resume` |
+
+Hidden existence: `redirect_slashes` is off, and a proxied wrong-method (405) or bad-body (422) call to a CLI-only route is also answered 404 (`hide_cli_only` in `qbwc/gate.py`).
+
+Login flood protection: a busy argon2 slot answers 429 after 0.1 s (`VERIFY_WAIT`), login/refresh share a global 60/minute bucket on top of the per-IP 10/minute (429 with `Retry-After: 60`), and the CSRF/rate-limit dependencies are `async` so a rejected request never takes a worker thread (the pool is shared with `/qbwc`). `GET /health?probe=true` allows one StockTrim probe at a time (a concurrent one reports `error: busy`).
+
+Leak rules: `GET /jobs` `status_message` may contain QuickBooks error text and is visible only to authenticated admins. Dev: never run `caddy trust` (HSTS would stick to `localhost`); use `curl -k`.
+
+The refresh cookie is `Path=/api/v1/auth`, so a browser never sends it to `/qbwc` or any other route. Login success, lock, refresh reuse and benign replay are logged (never secrets). Access-token and CSRF rules are in the section above.
+
+Post-deploy smoke matrix (run from any machine against the real domain; expected status codes; `D=https://<DOMAIN>`):
+```
+curl -s -o /dev/null -w '%{http_code}
+' "$D/qbwc?wsdl"                       # 200
+for p in /docs /redoc /openapi.json / /health /qbwc/x /qbwcfoo /QBWC /api/v1/qwc /api/v1/records/customers /api/v1/jobs/create_test_po /api/v1/q%77c /api/v1/../openapi.json; do
+  curl -s --path-as-is -o /dev/null -w "$p %{http_code}
+" "$D$p"; done          # all 404
+curl -s -o /dev/null -w '%{http_code}
+' "$D/api/v1/health"                    # 401 (no token)
+curl -s -o /dev/null -w '%{http_code}
+' -H "X-Admin-Token: dummy-not-the-real-token" "$D/api/v1/health"   # 401 (never send the real ADMIN_TOKEN over the internet; Caddy strips the header anyway)
+curl -s -H 'Content-Type: application/json' -d '{"username":"nobody","password":"wrong-password-1"}' "$D/api/v1/auth/login"   # 401 {"detail":"invalid_credentials"}
+curl -s -D - -o /dev/null "$D/api/v1/health" | grep -iE 'strict-transport|x-content-type|referrer-policy|x-frame|content-security|^server'   # 5 headers, no Server
+```
+Then log in as a real user (`users add`) and check `GET /api/v1/health` with the Bearer is 200 and `GET /api/v1/qwc` with the same Bearer is 404.
+
+## Deploying B1+B2 to the server
+
+1. Record the current commit: `git rev-parse HEAD` (rollback target).
+2. Backup: `set -a && . ./.env && set +a && docker compose exec -T db pg_dump -Fc -U "$POSTGRES_USER" "$POSTGRES_DB" > ~/quickbook-backups/pre-b2-$(date +%F).dump`.
+3. `git fetch && git checkout <branch/commit>` (or `git pull`).
+4. Add `JWT_SECRET` to `.env` without printing it: `printf 'JWT_SECRET=%s
+' "$(openssl rand -hex 32)" >> .env`, then check `grep '^JWT_SECRET=' .env | cut -d= -f2- | tr -d '
+' | wc -c` is 64 and that `WRITES_ENABLED`, `STOCKTRIM_WRITES_ENABLED`, `SCHEDULER_ENABLED` are all `false`.
+5. `docker compose config -q` (no output = ok) and `docker run --rm -e DOMAIN=<domain> -e ACME_EMAIL= -v "$PWD/docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro" caddy:2.10.2 caddy validate --config /etc/caddy/Caddyfile`.
+6. `docker compose up -d --build`, then `docker compose up -d --force-recreate caddy`: REQUIRED, the Caddyfile is a single-file bind mount and git replaces the file's inode, so the running Caddy would keep the old one.
+7. Checks: `docker compose ps` (migrate exited 0, app healthy), `docker compose exec app alembic current` shows `0010`, `docker compose logs caddy app --tail 50`.
+8. First admin (needs a TTY, so no `-T`): `docker compose exec app python -m app.cli users add <name>`.
+9. Run the smoke matrix from Public exposure against `https://<DOMAIN>`, then log in with that user and `GET /api/v1/health` with the Bearer (200), `GET /api/v1/qwc` with the same Bearer (404).
+10. Rollback: Caddy only: `git checkout 4ade59e -- docker/caddy/Caddyfile && docker compose up -d --force-recreate caddy`. Full rollback: check out `4ade59e` and rebuild, never further back than `4ade59e` (the DB stays at revision 0010, older code does not know the auth tables).
 
 ## Manual test with real QuickBooks
 
@@ -210,7 +262,7 @@ Job statuses: `queued` -> `running` -> `done` | `error` | `unsupported`. Write j
 - **Sites**: needs Advanced Inventory. If QB rejects the request the job is `unsupported` with QB's message.
 - **create_test_po** (idempotent): at POST time a job is created with a unique idempotency key and `RefNumber = "ST-" + first 8 hex of sha256(key)` (11 chars, QB's limit). When it runs: (1) `PurchaseOrderQueryRq` by RefNumber (results also re-filtered client-side by exact RefNumber); if found, store its TxnID/EditSequence and finish `done` ("already existed; not re-created"); (2) otherwise `PurchaseOrderAddRq` with Memo `Created by integration - Review Required`. If the Add response is lost the job is `error`; POSTing the same key re-queues it and step 1 finds the PO instead of creating a second one.
 - **PO state**: the QB SDK `PurchaseOrderAdd` has no draft / pending-approval field, so the expected result is a normal **Open** PO (not received, not closed) carrying the Memo. **Verified against QuickBooks Enterprise (trial) on 2026-10-22:** the add response had `IsManuallyClosed=false` / `IsFullyReceived=false`, and the PO (`ST-6B01C344`, Memo as above) shows in QuickBooks. A forced retry of the same idempotency key found it via `PurchaseOrderQueryRq` and did not create a second one.
-- **Security**: tunnel gate (`app/qbwc/gate.py`): only `/qbwc` is reachable through a proxy/tunnel; every other path (admin API, `/docs`, `/openapi.json`) returns 404 unless the call is direct loopback with no `X-Forwarded-*`/`Forwarded` headers. Admin API additionally protected by `X-Admin-Token`; QBWC credentials compared in constant time; no CORS (no browser client); passwords are never logged.
+- **Security**: tunnel gate (`app/qbwc/gate.py`): through a proxy only `/qbwc` and `/api/v1/*` are reachable (and within `/api/v1` only the `public` routes, see Public exposure); every other path (`/docs`, `/openapi.json`, CLI-only routes) returns 404 unless the call is direct loopback with no `X-Forwarded-*`/`Forwarded` headers. Admin API additionally protected by `X-Admin-Token`; QBWC credentials compared in constant time; no CORS (no browser client); passwords are never logged.
 
 ## QBWC callback log
 

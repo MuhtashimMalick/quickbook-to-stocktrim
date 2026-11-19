@@ -182,5 +182,6 @@ def _fresh_shared_limiters():
     from app.sync import engine  # noqa: PLC0415
 
     auth._hits.clear()
+    auth._global.clear()
     engine._SHUTTING_DOWN.clear()  # a lifespan shutdown in an earlier test must not block this test's real runs
     reset_shared_limiters()

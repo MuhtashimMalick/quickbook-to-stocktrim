@@ -22,6 +22,8 @@ from app.models import AppUser, RefreshToken
 
 from .conftest import ADMIN_ROUTES, HEADERS, TOKEN, Env
 
+CLI_ONLY = {("get", "/api/v1/qwc"), ("get", "/api/v1/records/customers"), ("get", "/api/v1/log"), ("post", "/api/v1/jobs/customers"), ("post", "/api/v1/jobs/all-reads")}
+
 PW = "correct horse battery"  # synthetic
 A = "/api/v1/auth"
 HTTPS = "https://testserver"
@@ -59,7 +61,7 @@ def c(env: Env, clock) -> TestClient:
 
 @pytest.fixture
 def open_gate(monkeypatch):
-    """TunnelGate 404s non-loopback traffic until the next stage exposes /api/v1; open it here to test the dependency's own proxied-vs-direct check."""
+    """Open the gate entirely to test the dependencies' own proxied-vs-direct checks (tests/test_exposure.py uses the real gate)."""
     class Open:
         def __init__(self, app):
             self.app = app
@@ -429,18 +431,20 @@ def test_admin_token_ignored_on_proxied_requests_but_bearer_works(open_gate, mak
     remote = TestClient(env.app, base_url=HTTPS, client=("203.0.113.9", 1))
     xff = {"X-Forwarded-For": "203.0.113.9"}
     call = getattr(proxied, method)
-    assert call(path, headers={**HEADERS, **xff}).status_code == 401
-    assert call(path, headers={**HEADERS, "Forwarded": "for=203.0.113.9"}).status_code == 401
-    assert getattr(remote, method)(path, headers=HEADERS).status_code == 401
+    denied = 404 if (method, path) in CLI_ONLY else 401  # CLI-only routes are hidden (404) before auth is looked at
+    assert call(path, headers={**HEADERS, **xff}).status_code == denied
+    assert call(path, headers={**HEADERS, "Forwarded": "for=203.0.113.9"}).status_code == denied
+    assert getattr(remote, method)(path, headers=HEADERS).status_code == denied
     assert getattr(proxied, method)(path, headers=HEADERS).status_code != 401  # direct loopback still works
     tok = token_of(login(proxied, headers=xff))
-    assert call(path, headers={**bearer(tok), **xff}).status_code != 401
+    r = call(path, headers={**bearer(tok), **xff})
+    assert (r.status_code == 404) if (method, path) in CLI_ONLY else (r.status_code != 401)  # CLI-only routes are hidden even from a valid Bearer
 
 
-def test_gate_still_hides_api_from_proxied_requests(env):
+def test_gate_passes_api_but_still_hides_docs_from_proxied_requests(env):
     xff = {"X-Forwarded-For": "203.0.113.9"}
-    assert env.client.get("/api/v1/auth/me", headers=xff).status_code == 404
-    assert env.client.post("/api/v1/auth/login", json={}, headers=xff).status_code == 404
+    assert env.client.get("/api/v1/auth/me", headers=xff).status_code == 401
+    assert env.client.post("/api/v1/auth/login", json={}, headers=xff).status_code == 422
     assert env.client.get("/docs", headers=xff).status_code == 404
 
 
@@ -625,7 +629,9 @@ def test_ipv6_is_limited_per_slash_64(clock):
     auth.rate_limit("2001:db8:1:3::1")  # the neighbouring /64 is another bucket
 
 
-def test_flood_of_distinct_ips_does_not_reset_an_existing_bucket(clock):
+def test_flood_of_distinct_ips_does_not_reset_an_existing_bucket(clock, monkeypatch):
+    monkeypatch.setattr(auth, "GLOBAL_PER_MINUTE", 10**6)  # the global bucket has its own test (test_exposure.py)
+    auth._global.clear()
     for _ in range(10):
         auth.rate_limit("203.0.113.1")
     for i in range(10_000):
@@ -640,7 +646,7 @@ def test_flood_of_distinct_ips_does_not_reset_an_existing_bucket(clock):
 def test_forged_loopback_xff_from_a_remote_peer_is_not_direct(env, open_gate_app):
     xff = {"X-Forwarded-For": "127.0.0.1", **HEADERS}
     behind = TestClient(ProxyHeadersMiddleware(env.app, trusted_hosts="*"), client=("203.0.113.9", 1))  # uvicorn rewrites the peer to 127.0.0.1
-    assert behind.get("/api/v1/jobs", headers=xff).status_code == 404  # the real gate
+    assert behind.get("/api/v1/jobs", headers=xff).status_code == 401  # the real gate: X-Admin-Token is ignored once proxied
     assert TestClient(ProxyHeadersMiddleware(open_gate_app.app, trusted_hosts="*"), client=("203.0.113.9", 1)).get("/api/v1/jobs", headers=xff).status_code == 401
 
 
@@ -661,7 +667,7 @@ def test_every_api_route_rejects_unauthenticated_and_proxied_admin_token(open_ga
         call = getattr(proxied, method)
         assert call(path).status_code == 401, (method, path)
         assert call(path, headers=bearer("garbage")).status_code == 401, (method, path)
-        assert call(path, headers={**HEADERS, "X-Forwarded-For": "203.0.113.9"}).status_code == 401, (method, path)
+        assert call(path, headers={**HEADERS, "X-Forwarded-For": "203.0.113.9"}).status_code in (401, 404), (method, path)  # 404: CLI-only (test_exposure.py)
 
 
 def test_login_is_csrf_checked_and_origin_must_be_https(c):

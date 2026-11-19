@@ -41,7 +41,7 @@ def client_ip(request: Request) -> str:
     return xff.split(",")[-1].strip() if xff else (request.client.host if request.client else "")
 
 
-def same_origin(request: Request) -> None:
+async def same_origin(request: Request) -> None:  # async: no I/O, so a rejected request never takes a worker thread
     """CSRF guard for the cookie routes: browsers send Sec-Fetch-Site/Origin; non-browser clients send neither."""
     site, origin = request.headers.get("sec-fetch-site"), request.headers.get("origin")
     o = urlparse(origin) if origin is not None else None
@@ -49,7 +49,7 @@ def same_origin(request: Request) -> None:
         raise HTTPException(403, "cross_site_request")
 
 
-def rate_limited(request: Request) -> None:
+async def rate_limited(request: Request) -> None:
     auth.rate_limit(client_ip(request))
 
 

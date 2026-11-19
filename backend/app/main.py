@@ -7,12 +7,12 @@ from qbwc_kit.server import create_app
 
 from . import jobs
 from .api.v1.auth import router as auth_router
-from .api.v1.router import router
+from .api.v1.router import public, router
 from .config import Settings, get_settings
 from .db import init_engine
 from .logging_config import setup_logging
 from .qbwc.auth import DbAuthenticator, end_session
-from .qbwc.gate import QBWC_PATH, TunnelGate
+from .qbwc.gate import QBWC_PATH, TunnelGate, hide_cli_only
 from .qbwc.service import LoggingQBWCService, setup_file_log
 from .quickbooks.tasks import WRITE_JOB_TYPES
 from .scheduler import Scheduler, recover_cycles
@@ -35,7 +35,7 @@ def build_app(settings: Optional[Settings] = None) -> FastAPI:
     settings = settings or get_settings()
     init_engine(settings.database_url)
     setup_file_log(settings.log_dir, settings.log_retention_days)
-    app = FastAPI(lifespan=lifespan, title="QuickBooks <-> StockTrim POC (QuickBooks side)")
+    app = FastAPI(lifespan=lifespan, redirect_slashes=False, title="QuickBooks <-> StockTrim POC (QuickBooks side)")
     app.state.settings = settings
     app.state.scheduler = Scheduler(settings)
     service = LoggingQBWCService(DbAuthenticator(settings), on_session_end=end_session)
@@ -44,6 +44,8 @@ def build_app(settings: Optional[Settings] = None) -> FastAPI:
     app.add_middleware(TunnelGate)
     app.include_router(auth_router, prefix="/api/v1")
     app.include_router(router, prefix="/api/v1")
+    app.include_router(public, prefix="/api/v1")
+    hide_cli_only(app)
     return app
 
 

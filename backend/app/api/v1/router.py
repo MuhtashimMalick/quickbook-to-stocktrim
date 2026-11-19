@@ -1,4 +1,5 @@
-"""Admin API. Every route requires a Bearer access token, or X-Admin-Token on a direct loopback call (the CLI). Public: only /auth/login|refresh|logout (api/v1/auth.py)."""
+"""Admin API. Every route requires a Bearer access token, or X-Admin-Token on a direct loopback call (the CLI). Unauthenticated: only /auth/login|refresh|logout (api/v1/auth.py).
+Proxy exposure is default-deny: `router` (CLI only, `direct_only` => 404 when proxied) is where a new route goes; the few routes the web UI uses are on `public` (frozen by tests/test_exposure.py)."""
 from datetime import datetime
 from decimal import Decimal
 from hashlib import sha256
@@ -10,6 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from ... import jobs
 from ...config import Settings
+from ...qbwc.gate import direct_only
 from ...qbwc.qwc import render_qwc
 from ...quickbooks import snapshot
 from ...quickbooks.tasks import ENTITY_ALIASES, JOB_TYPES, READ_JOB_TYPES
@@ -17,11 +19,14 @@ from .auth import require_admin
 from .ops import router as ops_router
 from .preflight import router as preflight_router
 from .push import router as push_router
+from .push import runs_router
 
-router = APIRouter(dependencies=[Depends(require_admin)])
-router.include_router(ops_router)
-router.include_router(preflight_router)
+router = APIRouter(dependencies=[Depends(direct_only), Depends(require_admin)])  # CLI only
 router.include_router(push_router)
+public = APIRouter(dependencies=[Depends(require_admin)])  # reachable through the proxy with a Bearer token
+public.include_router(ops_router)
+public.include_router(preflight_router)
+public.include_router(runs_router)
 
 
 class _Out(BaseModel):
@@ -114,12 +119,12 @@ def queue_job(job_type: str, request: Request, body: Optional[CreateTestPO] = No
     return jobs.create_job(job_type)
 
 
-@router.get("/jobs", response_model=list[JobOut])
+@public.get("/jobs", response_model=list[JobOut])
 def list_jobs(status: Optional[str] = None, limit: int = Query(50, ge=1, le=500)) -> Any:
     return jobs.list_jobs(status, limit)
 
 
-@router.get("/jobs/{job_id}", response_model=JobOut)
+@public.get("/jobs/{job_id}", response_model=JobOut)
 def get_job(job_id: int) -> Any:
     job = jobs.get_job(job_id)
     if job is None:

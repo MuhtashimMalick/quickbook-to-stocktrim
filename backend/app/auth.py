@@ -28,7 +28,8 @@ ALG = "HS256"
 MAX_FAILS, LOCK_MINUTES = 5, 15
 RATE_PER_MINUTE = 10
 MAX_RATE_KEYS = 50_000
-VERIFY_WAIT = 2.0  # seconds a login waits for one of the argon2 slots
+VERIFY_WAIT = 0.1  # a busy argon2 slot answers 429 almost at once: a login flood must not hold the shared worker threads (/qbwc needs them)
+GLOBAL_PER_MINUTE = 60  # all IPs together (login + refresh)
 _VERIFY_SLOTS = threading.BoundedSemaphore(4)  # argon2 uses ~64 MB each: cap concurrent verifies
 USERNAME_RE = re.compile(r"^[a-z0-9._-]{3,40}$")
 COMMON_PASSWORDS = frozenset("""password123456 passwordpassword password1234567 passwordpassword1 p@ssw0rdp@ssw0rd p@ssword123456 12345678901234
@@ -84,6 +85,7 @@ def _sha(raw: str) -> str:
 
 _hits: "OrderedDict[str, deque]" = OrderedDict()  # least recently used first
 _hits_lock = threading.Lock()
+_global: deque = deque()
 
 
 def _ip_key(ip: str) -> str:
@@ -97,6 +99,10 @@ def _ip_key(ip: str) -> str:
 def rate_limit(ip: str) -> None:
     t, key = now().timestamp(), _ip_key(ip)
     with _hits_lock:
+        while _global and _global[0] <= t - 60:
+            _global.popleft()
+        if len(_global) >= GLOBAL_PER_MINUTE:
+            raise HTTPException(429, "rate_limited", headers={"Retry-After": "60"})
         while _hits and next(iter(_hits.values()))[-1] <= t - 60:  # drop keys whose last hit is out of the window
             _hits.popitem(last=False)
         q = _hits.setdefault(key, deque())
@@ -106,6 +112,7 @@ def rate_limit(ip: str) -> None:
         if len(q) >= RATE_PER_MINUTE:
             raise HTTPException(429, "rate_limited", headers={"Retry-After": "60"})
         q.append(t)
+        _global.append(t)
         while len(_hits) > MAX_RATE_KEYS:  # flood of distinct IPs: evict the least recently used, never reset everyone
             _hits.popitem(last=False)
 

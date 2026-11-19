@@ -1,4 +1,6 @@
-# Only the QBWC SOAP endpoint is exposed. Caddy sets X-Forwarded-For, which the app's TunnelGate relies on.
+# One domain: /qbwc (Web Connector) and /api/v1/* (admin API for the SPA) go to the app; everything else is 404 for now.
+# Caddy sets X-Forwarded-For, which the app's TunnelGate relies on (never add trusted_proxies). The app gates again (two layers):
+# it also 404s /docs, /redoc, /openapi.json and every route not deliberately proxy-exposed. Never route those here.
 {
 	email "{$ACME_EMAIL}"
 	servers {
@@ -7,12 +9,29 @@
 }
 
 {$DOMAIN} {
-	handle /qbwc* {
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+		X-Frame-Options DENY
+		# API-only policy. Stage F1 (web service) replaces it with the SPA's CSP (scripts/styles/connect 'self').
+		Content-Security-Policy "frame-ancestors 'none'; default-src 'none'"
+		-Server
+	}
+	handle /qbwc {
 		request_body {
 			max_size 64MB
 		}
 		reverse_proxy app:8000
 	}
+	handle /api/v1/* {
+		request_header -X-Admin-Token  # the CLI credential never travels through the proxy (the app ignores it anyway)
+		request_body {
+			max_size 1MB
+		}
+		reverse_proxy app:8000
+	}
+	# Stage F1 replaces this with `reverse_proxy web:80` (the frontend).
 	handle {
 		respond 404
 	}

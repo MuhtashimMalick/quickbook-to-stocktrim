@@ -1,4 +1,5 @@
 """Scheduler trigger and the health endpoint. Counts, codes and timestamps only: never record contents."""
+import threading
 from contextlib import closing
 from datetime import datetime
 from typing import Any, Optional
@@ -17,6 +18,7 @@ from ...stocktrim.api import StockTrimApi
 from ...stocktrim.errors import StockTrimConfigError, StockTrimError
 
 router = APIRouter()
+_PROBING = threading.Lock()  # ponytail: one StockTrim probe per process; a second concurrent ?probe=true answers "busy" instead of piling up threads
 
 
 class M(BaseModel):
@@ -94,6 +96,8 @@ def run_now(request: Request) -> Any:
 
 def _probe(request: Request) -> Reachability:
     """One GET (a supplier lookup) through the read-only client, a single attempt."""
+    if not _PROBING.acquire(blocking=False):
+        return Reachability(reachable=False, error="busy")
     try:
         with closing(preflight_client(request.app.state.settings, request.app.state.scheduler.kw, max_attempts=1)) as c:
             StockTrimApi(c).get_supplier("health-probe")
@@ -102,6 +106,8 @@ def _probe(request: Request) -> Reachability:
         return Reachability(reachable=False, error="not_configured")
     except StockTrimError as e:
         return Reachability(reachable=False, error=type(e).__name__)
+    finally:
+        _PROBING.release()
 
 
 @router.get("/health", response_model=Health)

@@ -9,7 +9,8 @@ from ...preflight.schema import Verdict
 from ...sync import engine
 from .preflight import get_stocktrim_client_kw
 
-router = APIRouter(prefix="/push")
+router = APIRouter(prefix="/push")  # CLI only (starts/cancels/resumes pushes)
+runs_router = APIRouter(prefix="/push")  # read-only progress, proxy-reachable
 
 
 class M(BaseModel):
@@ -99,7 +100,7 @@ def push(request: Request, body: PushRequest, kw: dict[str, Any] = Depends(get_s
     return _call(engine.start, request.app.state.settings, body.steps, body.dry_run, body.preflight_fingerprint, body.plan_fingerprint, kw, body.mode, body.acknowledge_foreign, body.stamp_only, body.acknowledge_requeue, body.acknowledge_delete)
 
 
-@router.get("/runs/{run_id}", response_model=PushRunOut)
+@runs_router.get("/runs/{run_id}", response_model=PushRunOut)
 def run_progress(request: Request, run_id: UUID) -> Any:
     return _call(engine.progress, request.app.state.settings, run_id)
 

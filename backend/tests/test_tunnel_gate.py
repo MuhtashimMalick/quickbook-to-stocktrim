@@ -8,16 +8,17 @@ from qbwc_kit.testing import FakeWebConnector
 
 from app.config import Settings
 
-from .conftest import ADMIN_ROUTES, HEADERS, PASSWORD, QB, TOKEN, USER, Env, make_records
+from .conftest import HEADERS, PASSWORD, QB, TOKEN, USER, Env, make_records
 
-PATHS = [*ADMIN_ROUTES, ("get", "/docs"), ("get", "/openapi.json"), ("get", "/redoc"), ("get", "/nope")]
+CLI_ONLY = [("get", "/api/v1/qwc"), ("post", "/api/v1/jobs/customers"), ("post", "/api/v1/jobs/all-reads"), ("get", "/api/v1/records/customers"), ("get", "/api/v1/log")]
+PATHS = [*CLI_ONLY, ("get", "/docs"), ("get", "/openapi.json"), ("get", "/redoc"), ("get", "/nope")]
 OLD_PATHS = [("get", "/qwc"), ("get", "/jobs"), ("post", "/jobs/all-reads"), ("get", "/jobs/1"), ("get", "/records/customers"), ("get", "/log")]
 PROXY = [{"X-Forwarded-For": "203.0.113.5"}, {"X-Forwarded-Host": "x.ngrok-free.dev"}, {"Forwarded": "for=203.0.113.5"},
          {"X-Forwarded-Proto": "https"}]
 
 
 @pytest.mark.parametrize("method,path", PATHS)
-def test_proxied_requests_are_404(env, method, path):
+def test_proxied_requests_are_404(env, method, path):  # gate (non-API paths) and direct_only (CLI-only API routes), even with the admin token
     for extra in PROXY:
         r = getattr(env.client, method)(path, headers={**HEADERS, **extra})
         assert r.status_code == 404 and r.json() == {"detail": "Not Found"}
