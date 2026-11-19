@@ -9,6 +9,7 @@ import pytest
 from sqlalchemy import event
 
 from app.api.v1 import entries as entries_mod
+from app.appstate import set_state
 from app.cli import main as cli_main
 from app.config import Settings
 from app.db import get_engine, session_scope
@@ -273,7 +274,7 @@ def test_settings_has_no_secrets(make_env, tmp_path, clean_db):
 def test_overview_shape_and_running_state(env, api):
     env.app.state.scheduler.clock = lambda: T0
     o = get(api, "/api/v1/overview").json()
-    assert set(o) == {"database", "scheduler", "last_cycle", "last_qbwc_contact", "last_qbwc_contact_age_seconds", "jobs", "snapshot", "running_cycle", "running_push", "last_real_push_run"}
+    assert set(o) == {"database", "scheduler", "last_cycle", "last_qbwc_contact", "last_qbwc_contact_age_seconds", "last_qbwc_auth_refused", "jobs", "snapshot", "running_cycle", "running_push", "last_real_push_run"}
     assert o["database"] is True and o["running_cycle"] is None and o["running_push"] is None and o["last_real_push_run"] is None and o["last_cycle"] is None
     cid, run, real = uuid.uuid4(), mk_run(dry=True, n=1, status="running"), mk_run(dry=False, n=0)
     with session_scope() as s:
@@ -284,9 +285,33 @@ def test_overview_shape_and_running_state(env, api):
         s.add_all([RunEvent(cycle_id=cid, code="cycle_started"), RunEvent(cycle_id=cid, code="reads_queued"), RunEvent(run_id=run, code="run_started")])
     o = get(api, "/api/v1/overview").json()
     assert o["running_cycle"]["id"] == str(cid) and o["running_cycle"]["phase"] == "reads_queued" and o["running_push"]["id"] == str(run) and o["running_push"]["phase"] == "run_started"
+    assert o["running_cycle"]["phase_title"] == CATALOG["reads_queued"]["title"] and o["running_push"]["phase_title"] == CATALOG["run_started"]["title"]
+    assert o["last_qbwc_auth_refused"] is None
     assert o["jobs"] == {"queued": 1, "running": 1} and o["snapshot"]["Vendor"]["records"] == 1 and o["last_cycle"]["status"] == "running"
     assert o["last_real_push_run"]["run_id"] == str(real) and o["last_real_push_run"]["counts"] == {"done": 1}
     assert o["scheduler"]["next_run_at"] is None  # scheduler disabled in tests
+
+
+def test_overview_auth_refused_and_unknown_phase_title(env, api, monkeypatch):
+    set_state("last_qbwc_auth_refused", {"at": at(3).isoformat()})
+    run = mk_run(status="running")
+    with session_scope() as s:
+        s.add(RunEvent(run_id=run, code="run_started"))
+    monkeypatch.delitem(CATALOG, "run_started")  # the DB only stores catalogued codes, so "unknown" is simulated
+    o = get(api, "/api/v1/overview").json()
+    assert datetime.fromisoformat(o["last_qbwc_auth_refused"].replace("Z", "+00:00")) == at(3)
+    assert o["running_push"]["phase"] == "run_started" and o["running_push"]["phase_title"] is None
+
+
+def test_run_detail_matches_the_list_item_and_hides_credentials(env, api):
+    rid = mk_run()
+    detail, item = get(api, f"/api/v1/push/runs/{rid}"), get(api, "/api/v1/push/runs").json()[0]
+    d = detail.json()
+    assert {k: d[k] for k in ("mode", "dry_run", "requested_by", "steps", "target", "status")} == {k: item[k] for k in ("mode", "dry_run", "requested_by", "steps", "target", "status")}
+    assert d["target"] == "test @ api.stocktrim.com" and d["requested_by"] == "alice" and d["mode"] == "initial"
+    st = env.app.state.settings
+    for secret in ("abcdef123456", *(v.get_secret_value() for v in (st.stocktrim_auth_id, st.stocktrim_auth_signature) if v)):
+        assert secret not in detail.text
 
 
 def test_sentinel_names_leave_only_through_the_entries_label(env, api):
@@ -310,6 +335,10 @@ def test_cli_openapi_covers_exactly_the_proxy_reachable_routes(capsys):
     spec = json.loads(capsys.readouterr().out)
     got = {(m.upper(), p) for p, ops in spec["paths"].items() for m in ops}
     assert got == PROXY_REACHABLE
+    sch = spec["components"]["schemas"]
+    assert {"session_expires_at"} <= set(sch["TokenOut"]["properties"])
+    assert {"mode", "requested_by", "target", "dry_run", "steps"} <= set(sch["PushRunOut"]["properties"])
+    assert "last_qbwc_auth_refused" in sch["Overview"]["properties"] and "phase_title" in sch["Running"]["properties"]
 
 
 def test_new_routes_have_typed_response_models(env):

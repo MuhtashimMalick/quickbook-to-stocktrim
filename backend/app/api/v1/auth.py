@@ -67,6 +67,7 @@ class TokenOut(_M):
     access_token: str
     token_type: Literal["bearer"] = "bearer"
     expires_in: int
+    session_expires_at: datetime  # absolute end of the session (the refresh token's expiry); a refresh never moves it
 
 
 class MeOut(_M):
@@ -82,7 +83,7 @@ def _token_response(request: Request, response: Response, user: AppUser, refresh
     max_age = max(0, int((expires_at - auth.now()).total_seconds()))  # remaining session time: a refresh never extends it
     response.set_cookie(COOKIE, refresh, max_age=max_age, httponly=True, secure=True, samesite="strict", path=COOKIE_PATH)
     response.headers["Cache-Control"] = "no-store"
-    return TokenOut(access_token=auth.make_access_token(user, st.jwt_secret.get_secret_value(), st.access_token_minutes), expires_in=st.access_token_minutes * 60)
+    return TokenOut(access_token=auth.make_access_token(user, st.jwt_secret.get_secret_value(), st.access_token_minutes), expires_in=st.access_token_minutes * 60, session_expires_at=expires_at)
 
 
 @router.post("/login", response_model=TokenOut, dependencies=[Depends(same_origin), Depends(rate_limited)])

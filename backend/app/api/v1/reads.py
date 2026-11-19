@@ -177,6 +177,7 @@ class Running(M):
     id: UUID
     since: datetime
     phase: Optional[str]  # code of the newest run event
+    phase_title: Optional[str] = None  # its catalog title
 
 
 class Overview(M):
@@ -185,6 +186,7 @@ class Overview(M):
     last_cycle: Optional[CycleOut]
     last_qbwc_contact: Optional[datetime]
     last_qbwc_contact_age_seconds: Optional[int]
+    last_qbwc_auth_refused: Optional[datetime]
     jobs: dict[str, int]
     snapshot: dict[str, Freshness]
     running_cycle: Optional[Running]
@@ -196,7 +198,9 @@ def _running(s: Any, model: Any, event_col: Any) -> Optional[Running]:
     row = s.scalars(select(model).where(model.status == "running").limit(1)).first()
     if row is None:
         return None
-    return Running(id=row.id, since=row.started_at, phase=s.scalar(select(RunEvent.code).where(event_col == row.id).order_by(RunEvent.id.desc()).limit(1)))
+    phase = s.scalar(select(RunEvent.code).where(event_col == row.id).order_by(RunEvent.id.desc()).limit(1))
+    known = phase is not None and phase.removeprefix("check_failed:") in CATALOG
+    return Running(id=row.id, since=row.started_at, phase=phase, phase_title=describe(phase)["title"] if known else None)
 
 
 @router.get("/overview", response_model=Overview)

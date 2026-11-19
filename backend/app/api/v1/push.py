@@ -76,6 +76,9 @@ class PushRunOut(M):
     run_id: UUID
     status: str
     dry_run: bool
+    mode: Optional[str]
+    requested_by: Optional[str]
+    target: Optional[str]  # "<environment> @ <host>": no credentials
     steps: list[str]
     started_at: datetime
     updated_at: datetime

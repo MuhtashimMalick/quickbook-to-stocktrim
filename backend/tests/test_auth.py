@@ -113,10 +113,12 @@ def test_login_ok_and_cookie_attributes(c):
     r = login(c)
     assert r.status_code == 200
     body = r.json()
-    assert set(body) == {"access_token", "token_type", "expires_in"} and body["token_type"] == "bearer" and body["expires_in"] == 900
+    assert set(body) == {"access_token", "token_type", "expires_in", "session_expires_at"} and body["token_type"] == "bearer" and body["expires_in"] == 900
     cookie = r.headers["set-cookie"].lower()
     for attr in ("qb_refresh=", "httponly", "secure", "samesite=strict", "path=/api/v1/auth", "max-age=86400"):
         assert attr in cookie, attr
+    with session_scope() as s:
+        assert datetime.fromisoformat(body["session_expires_at"].replace("Z", "+00:00")) == s.scalar(select(RefreshToken.expires_at))
     assert user_row().last_login_at == auth.now()
     me = c.get(f"{A}/me", headers=bearer(body["access_token"]))
     assert me.status_code == 200 and set(me.json()) == {"username", "last_login_at"} and me.json()["username"] == "alice"
@@ -283,6 +285,9 @@ def test_refresh_rotates_and_stores_only_hashes(c):
     old = c.cookies.get("qb_refresh")
     r = c.post(f"{A}/refresh")
     assert r.status_code == 200 and r.json()["token_type"] == "bearer"
+    with session_scope() as s:  # the session end is absolute: rotation does not move it
+        ends = {x.expires_at for x in s.scalars(select(RefreshToken))}
+    assert len(ends) == 1 and datetime.fromisoformat(r.json()["session_expires_at"].replace("Z", "+00:00")) == ends.pop()
     new = c.cookies.get("qb_refresh")
     assert new and new != old
     cookie = r.headers["set-cookie"].lower()
@@ -321,7 +326,7 @@ def test_concurrent_refresh_with_the_same_cookie_is_benign(c, clock):
     successor = c.cookies.get("qb_refresh")
     clock.advance(seconds=9)
     r = refresh_with(c, old)  # the second request of a race: rotated < 10 s ago
-    assert r.status_code == 401 and r.json() == {"detail": "invalid_refresh"}
+    assert r.status_code == 401 and r.json() == {"detail": "refresh_race"}
     assert "set-cookie" not in r.headers  # nothing cleared: the browser already holds the successor
     assert live_tokens() == 1  # the successor was not revoked
     assert refresh_with(c, successor).status_code == 200  # and it still works
@@ -334,7 +339,7 @@ def test_replay_after_the_grace_window_revokes_everything(c, clock):
     assert c.post(f"{A}/refresh").status_code == 200
     successor = c.cookies.get("qb_refresh")
     clock.advance(seconds=11)
-    assert refresh_with(c, old).status_code == 401
+    assert refresh_with(c, old).json() == {"detail": "invalid_refresh"}
     assert live_tokens() == 0
     assert refresh_with(c, successor).status_code == 401
 
@@ -347,7 +352,7 @@ def test_logout_then_immediate_refresh_is_not_a_benign_race(c):
     raw = c.cookies.get("qb_refresh")
     assert c.post(f"{A}/logout").status_code == 204
     assert live_tokens() == 1  # the other session is still alive
-    assert refresh_with(c, raw).status_code == 401  # replay of a logout-revoked token (no rotated_at): reuse
+    assert refresh_with(c, raw).json() == {"detail": "invalid_refresh"}  # replay of a logout-revoked token (no rotated_at): reuse
     assert live_tokens() == 0
     assert refresh_with(c, other).status_code == 401
 
@@ -358,7 +363,7 @@ def test_refresh_missing_unknown_and_expired(c, clock):
     assert refresh_with(c, "nope").status_code == 401
     login(c)
     clock.advance(hours=25)
-    assert c.post(f"{A}/refresh").status_code == 401
+    assert c.post(f"{A}/refresh").json() == {"detail": "invalid_refresh"}
 
 
 def test_refresh_fails_for_disabled_user(c):

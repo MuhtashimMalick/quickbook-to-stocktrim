@@ -4,7 +4,6 @@ import csv
 import io
 from datetime import datetime
 from typing import Any, Literal, Optional
-from urllib.parse import urlparse
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
@@ -42,12 +41,6 @@ class RunListItem(M):
     target: Optional[str]  # "<environment> @ <host>": no credentials
 
 
-def _target_label(target: str) -> Optional[str]:
-    env, _, rest = target.partition("|")
-    host = urlparse(rest.split("|")[0]).hostname
-    return f"{env} @ {host}" if host else env or None
-
-
 @router.get("/runs", response_model=list[RunListItem])
 def list_runs(limit: int = Query(50, ge=1, le=100), before: Optional[str] = Query(None, max_length=64), dry_run: Optional[bool] = None) -> Any:
     with session_scope() as s:
@@ -59,7 +52,7 @@ def list_runs(limit: int = Query(50, ge=1, le=100), before: Optional[str] = Quer
         for rid, st, n in s.execute(select(PushItem.run_id, PushItem.status, func.count()).where(PushItem.run_id.in_([r.id for r in rows])).group_by(PushItem.run_id, PushItem.status)):
             by.setdefault(rid, {})[st] = n
     return [RunListItem(id=r.id, mode=r.options.get("mode"), dry_run=bool(r.options.get("dry_run")), status=r.status, steps=r.options.get("steps", []), counts=by.get(r.id, {}),
-                        started_at=r.started_at, finished_at=r.finished_at, requested_by=r.requested_by, target=_target_label(r.target)) for r in rows]
+                        started_at=r.started_at, finished_at=r.finished_at, requested_by=r.requested_by, target=engine.target_label(r.target)) for r in rows]
 
 
 # ---- entries

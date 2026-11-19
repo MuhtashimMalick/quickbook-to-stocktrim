@@ -385,7 +385,7 @@ def test_progress_and_logs_leak_nothing_and_codes_are_a_closed_set(clean_db, tmp
     assert "SENTINEL" not in everything and "co-a" not in everything
     assert {s["ref"] for s in out["samples"]} <= {"V1", "V2", "V3", "I1", "I2", "I3", "I4", "I5", "I6"} and len(out["samples"]) <= engine.SAMPLE_LIMIT
     assert {i.error_code for i in items() if i.error_code} <= engine.ERROR_CODES and {i.error_code for i in items() if i.error_code}
-    assert set(out) == {"run_id", "status", "dry_run", "steps", "started_at", "updated_at", "finished_at", "counts", "error_codes", "eta_seconds", "summary", "samples"}
+    assert set(out) == {"run_id", "status", "dry_run", "mode", "requested_by", "target", "steps", "started_at", "updated_at", "finished_at", "counts", "error_codes", "eta_seconds", "summary", "samples"}
 
 
 def test_endpoints_require_the_admin_token(env):

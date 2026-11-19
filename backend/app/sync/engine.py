@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any, Callable, Optional
+from urllib.parse import urlparse
 from uuid import UUID
 
 from sqlalchemy import bindparam, case, delete, func, insert, null, select, update
@@ -977,6 +978,13 @@ def counts(run_id: UUID) -> dict[str, dict[str, int]]:
     return out
 
 
+def target_label(target: str) -> Optional[str]:
+    """"<environment> @ <host>" of a run's stored target: no credentials. Shared by the run list and the run detail."""
+    env, _, rest = target.partition("|")
+    host = urlparse(rest.split("|")[0]).hostname
+    return f"{env} @ {host}" if host else env or None
+
+
 def progress(settings: Settings, run_id: UUID) -> dict[str, Any]:
     row = _run_row(run_id)
     c = counts(run_id)
@@ -989,6 +997,6 @@ def progress(settings: Settings, run_id: UUID) -> dict[str, Any]:
             .order_by(case((PushItem.status == "failed", 0), else_=1), PushItem.id).limit(SAMPLE_LIMIT))]
     pending = {e: v.get("pending", 0) for e, v in c.items()}
     calls = math.ceil((pending.get("supplier", 0) + pending.get("sales_order_line", 0)) / CHUNK) + sum(pending.get(e, 0) for e in ("product", "bom_edge", "customer", "purchase_order"))
-    return {"run_id": run_id, "status": row.status, "dry_run": bool(row.options.get("dry_run")), "steps": row.options.get("steps", []), "started_at": row.started_at,
+    return {"run_id": run_id, "status": row.status, "dry_run": bool(row.options.get("dry_run")), "mode": row.options.get("mode"), "requested_by": row.requested_by, "target": target_label(row.target), "steps": row.options.get("steps", []), "started_at": row.started_at,
             "updated_at": row.updated_at, "finished_at": row.finished_at, "counts": c, "error_codes": codes, "eta_seconds": math.ceil(calls / settings.stocktrim_max_rps) if row.status == "running" else None,
             "summary": row.summary, "samples": samples}

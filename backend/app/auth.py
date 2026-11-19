@@ -41,7 +41,7 @@ monkeymonkeymonkey footballfootball baseballbaseball sunshinesunshine superman12
 specialtyarchery1""".split())
 
 class BenignReplay(HTTPException):
-    """Same 401 invalid_refresh, but the route must not clear the cookie (it already holds the successor)."""
+    """401 refresh_race (the only refresh failure with a different detail), and the route must not clear the cookie (it already holds the successor)."""
 
 
 _ph = PasswordHasher()
@@ -216,7 +216,7 @@ def rotate_refresh(raw: Optional[str], grace: int, ip: str, ua: str) -> tuple[Ap
                     row.replaced_by_id = new.id
                     out = (user, new_raw, row.expires_at)
     if out is None:
-        raise (BenignReplay if benign else HTTPException)(401, "invalid_refresh")
+        raise BenignReplay(401, "refresh_race") if benign else HTTPException(401, "invalid_refresh")
     return out
 
 
