@@ -60,6 +60,12 @@ export default function PushRunDetailPage() {
                 <dd>
                   <Mono>{run.run_id}</Mono>
                 </dd>
+                <dt className="text-ink-muted">Mode</dt>
+                <dd>{run.mode ?? <span className="text-ink-muted">not recorded</span>}</dd>
+                <dt className="text-ink-muted">Requested by</dt>
+                <dd>{run.requested_by ?? <span className="text-ink-muted">not recorded</span>}</dd>
+                <dt className="text-ink-muted">Target</dt>
+                <dd>{run.target ? <Mono>{run.target}</Mono> : <span className="text-ink-muted">not recorded</span>}</dd>
                 <dt className="text-ink-muted">Steps</dt>
                 <dd>{run.steps.length ? run.steps.join(", ") : "none"}</dd>
                 <dt className="text-ink-muted">Started</dt>

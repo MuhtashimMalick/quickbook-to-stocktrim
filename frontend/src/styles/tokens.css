@@ -48,6 +48,7 @@
   /* layout */
   --container-page: 1200px;
   --container-login: 880px;
+  --container-drawer: 520px;
   --focus-ring-width: 2px;
   --stripe-size: 8px;
 }

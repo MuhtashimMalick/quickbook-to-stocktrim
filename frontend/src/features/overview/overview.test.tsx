@@ -54,6 +54,25 @@ describe("overview states", () => {
     expect(live).toHaveAttribute("aria-live", "polite");
   });
 
+  it("uses the API's phase_title for the running phase, and falls back to the local title when it is absent", async () => {
+    server.use(http.get("*/api/v1/push/runs/:id", () => HttpResponse.json(pushRun({ status: "running", finished_at: null }))));
+    const running = { id: RUN_ID, since: new Date().toISOString(), phase: "step_started" };
+    const first = setup(overview({ running_push: { ...running, phase_title: "Sending suppliers (server title)" } }));
+    expect(await screen.findByText("A push run is running: Sending suppliers (server title).")).toBeInTheDocument();
+    first.unmount();
+    setup(overview({ running_push: running }));
+    expect(await screen.findByText("A push run is running: Sending a step.")).toBeInTheDocument();
+  });
+
+  it("shows the last refused Web Connector login when there is one, and nothing when there is not", async () => {
+    const first = setup(overview({ last_qbwc_auth_refused: "2026-11-19T06:30:00Z" }));
+    expect(await screen.findByText(/login was refused/)).toBeInTheDocument();
+    first.unmount();
+    setup();
+    await screen.findByText("Web Connector");
+    expect(screen.queryByText(/login was refused/)).not.toBeInTheDocument();
+  });
+
   it("stale snapshot: a table older than the schedule is flagged, a current one is not", async () => {
     setup(
       overview({

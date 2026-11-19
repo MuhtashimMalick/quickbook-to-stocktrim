@@ -1,6 +1,6 @@
 import createClient from "openapi-fetch";
 import type { components, paths } from "./schema";
-import { endSession, getGeneration, getToken, setToken } from "./session";
+import { endSession, getGeneration, getToken, setSessionEnd, setToken } from "./session";
 
 type TokenOut = components["schemas"]["TokenOut"];
 
@@ -37,24 +37,26 @@ async function refreshOnce(): Promise<RefreshResult | "race"> {
     return "network";
   }
   if (res.ok) {
-    const token = await res.json().then(
-      (b: TokenOut) => b.access_token,
+    const body = await res.json().then(
+      (b: TokenOut) => b,
       () => null,
     );
-    if (token === null) return "rejected";
-    return storeToken(token) ? "ok" : "rejected";
+    if (body === null) return "rejected";
+    return storeToken(body) ? "ok" : "rejected";
   }
-  return res.status === 401 && (await detailOf(res)) === "invalid_refresh" ? "race" : "rejected";
+  // only `refresh_race` is benign (another tab or request rotated the cookie first); every other 401 means the session is over
+  return res.status === 401 && (await detailOf(res)) === "refresh_race" ? "race" : "rejected";
 }
 
 let startedAt = 0;
-function storeToken(token: string): boolean {
+function storeToken(body: TokenOut): boolean {
   if (getGeneration() !== startedAt) return false; // the session was cleared (logout) while we were refreshing
-  setToken(token);
+  setToken(body.access_token);
+  setSessionEnd(body.session_expires_at);
   return true;
 }
 
-/** A 401 `invalid_refresh` may be a benign race: retry ONCE (after a short wait) with the cookie the browser holds now. */
+/** A 401 `refresh_race` is a benign race: retry ONCE (after a short wait) with the cookie the browser holds now. */
 async function requestRefresh(): Promise<RefreshResult> {
   startedAt = getGeneration();
   for (let attempt = 0; attempt < 2; attempt++) {

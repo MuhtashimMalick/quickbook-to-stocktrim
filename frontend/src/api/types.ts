@@ -10,4 +10,6 @@ export type RunListItem = S["RunListItem"];
 export type PushRunOut = S["PushRunOut"];
 export type PushRunHealth = S["PushRunHealth"];
 export type ReasonOut = S["ReasonOut"];
+export type EntryOut = S["EntryOut"];
+export type EntriesOut = S["EntriesOut"];
 export type SettingsOut = S["SettingsOut"];

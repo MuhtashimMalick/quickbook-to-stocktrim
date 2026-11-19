@@ -12,6 +12,8 @@ export const keys = {
   cycleList: ["cycles", "list"] as const,
   cycle: (id: string) => ["cycles", "detail", id] as const,
   runList: ["push-runs", "list"] as const,
+  recentRuns: (limit: number) => ["push-runs", "recent", limit] as const,
+  entries: (runId: string, filters: unknown) => ["entries", runId, filters] as const,
   run: (id: string) => ["push-runs", "detail", id] as const,
   events: (scope: EventScope) => ["events", scope.cycle_id ?? null, scope.run_id ?? null] as const,
 };

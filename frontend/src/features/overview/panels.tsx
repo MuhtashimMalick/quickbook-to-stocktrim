@@ -1,4 +1,4 @@
-import { Activity, CircleSlash, Hourglass, PencilLine } from "lucide-react";
+import { Activity, CircleSlash, Hourglass, KeyRound, PencilLine } from "lucide-react";
 import type { Overview, SettingsOut } from "../../api/types";
 import { EmptyState } from "../../components/EmptyState";
 import { ErrorState } from "../../components/ErrorState";
@@ -14,8 +14,7 @@ import { stampFor } from "../../lib/status";
 import { usePushRun } from "../runs/api";
 import { Counts } from "../runs/Counts";
 import { EntityProgress } from "../runs/RunProgress";
-import { phaseTitle } from "../runs/ledger";
-import { agoText, classifyContact, isSnapshotStale } from "./status";
+import { agoText, classifyContact, isSnapshotStale, runningPhaseTitle } from "./status";
 
 export function CurrentActivity({ overview }: { overview: Overview }) {
   const running = overview.running_cycle ?? overview.running_push;
@@ -39,7 +38,7 @@ export function CurrentActivity({ overview }: { overview: Overview }) {
           <StatusStamp status="running" label={waiting ? "Waiting" : "Running"} />
           <span className="flex items-center gap-2 font-medium">
             <Icon size={ICON_SIZE} aria-hidden="true" />
-            {running.phase ? phaseTitle(running.phase) : "Starting"}
+            {runningPhaseTitle(running) || "Starting"}
           </span>
           <span className="text-ink-muted">
             since <Relative at={running.since} />
@@ -83,6 +82,14 @@ export function WebConnectorPanel({ overview }: { overview: Overview }) {
         {overview.last_qbwc_contact && age !== null && (
           <p className="text-ink-muted">
             Last contact <Time at={overview.last_qbwc_contact} /> ({agoText(age)})
+          </p>
+        )}
+        {overview.last_qbwc_auth_refused && (
+          <p className="flex items-start gap-2 text-aborted">
+            <KeyRound size={ICON_SIZE} aria-hidden="true" className="mt-1 shrink-0" />
+            <span>
+              The Web Connector&apos;s login was refused <Time at={overview.last_qbwc_auth_refused} />. Its saved username or password does not match the server.
+            </span>
           </p>
         )}
       </div>

@@ -1,11 +1,11 @@
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
-import { useRef, type RefObject } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 
 gsap.registerPlugin(useGSAP);
 
 /** Motion tokens (seconds / px / scale): see DESIGN.md. */
-export const MOTION = { enter: 0.25, stagger: 0.05, rise: 8, ease: "power2.out", progress: 0.4, press: 0.2, pressFrom: 1.15 } as const;
+export const MOTION = { enter: 0.25, stagger: 0.05, rise: 8, ease: "power2.out", progress: 0.4, press: 0.2, pressFrom: 1.15, drawerIn: 0.22, drawerOut: 0.15 } as const;
 
 const NO_PREFERENCE = "(prefers-reduced-motion: no-preference)";
 const REDUCE = "(prefers-reduced-motion: reduce)";
@@ -72,5 +72,37 @@ export function useStampPress(ref: RefObject<HTMLElement | null>, status: string
       return () => mm.revert();
     },
     { dependencies: [status] },
+  );
+}
+
+/**
+ * Side drawer: slides in from the right (0.22 s) and out (0.15 s, then `onClosed`). With reduced motion it appears at once and
+ * `onClosed` fires immediately when `closing` turns true.
+ */
+export function useDrawerMotion(panel: RefObject<HTMLElement | null>, overlay: RefObject<HTMLElement | null>, closing: boolean, onClosed: () => void): void {
+  const done = useRef(onClosed);
+  useEffect(() => {
+    done.current = onClosed;
+  });
+  useGSAP(() => {
+    const mm = gsap.matchMedia();
+    mm.add(NO_PREFERENCE, () => {
+      gsap.from(panel.current, { xPercent: 100, duration: MOTION.drawerIn, ease: MOTION.ease, clearProps: "transform" });
+      gsap.from(overlay.current, { autoAlpha: 0, duration: MOTION.drawerIn, clearProps: "opacity,visibility" });
+    });
+    return () => mm.revert();
+  }, []);
+  useGSAP(
+    () => {
+      if (!closing) return;
+      const mm = gsap.matchMedia();
+      mm.add(NO_PREFERENCE, () => {
+        gsap.to(panel.current, { xPercent: 100, duration: MOTION.drawerOut, ease: "power2.in", onComplete: () => done.current() });
+        gsap.to(overlay.current, { autoAlpha: 0, duration: MOTION.drawerOut });
+      });
+      mm.add(REDUCE, () => done.current());
+      return () => mm.revert();
+    },
+    { dependencies: [closing] },
   );
 }

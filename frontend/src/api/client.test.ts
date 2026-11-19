@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { api, awaitRefresh, refreshSession } from "./client";
-import { getToken, onSessionLost, setToken } from "./session";
+import { getSessionEnd, getToken, onSessionLost, setToken } from "./session";
 import { delay, http, HttpResponse, server, settings, token, unauthorized } from "../test/server";
 
 const settingsFor = (good: string) =>
@@ -84,16 +84,32 @@ describe("api client", () => {
     expect(refreshes.n).toBe(1);
   });
 
-  it("retries a benign-race invalid_refresh once, then succeeds", async () => {
-    const refreshes = countRefreshes((n) => (n === 1 ? unauthorized("invalid_refresh") : HttpResponse.json(token("t2"))));
+  it("retries a refresh_race once, after a short wait, then succeeds", async () => {
+    const refreshes = countRefreshes((n) => (n === 1 ? unauthorized("refresh_race") : HttpResponse.json(token("t2"))));
+    const started = Date.now();
     expect(await refreshSession()).toBe("ok");
     expect(refreshes.n).toBe(2);
+    expect(Date.now() - started).toBeGreaterThanOrEqual(250); // waited before the single retry
   });
 
   it("gives up after the single retry", async () => {
-    const refreshes = countRefreshes(() => unauthorized("invalid_refresh"));
+    const refreshes = countRefreshes(() => unauthorized("refresh_race"));
     expect(await refreshSession()).toBe("rejected");
     expect(refreshes.n).toBe(2);
+  });
+
+  it.each(["invalid_refresh", "token_expired", "invalid_token"])("a 401 %s ends the session at once, with no retry", async (detail) => {
+    const refreshes = countRefreshes(() => unauthorized(detail));
+    expect(await refreshSession()).toBe("rejected");
+    expect(refreshes.n).toBe(1);
+  });
+
+  it("stores session_expires_at from the refresh response and clears it with the token", async () => {
+    countRefreshes(() => HttpResponse.json(token("t", "2026-11-20T10:00:00Z")));
+    expect(await refreshSession()).toBe("ok");
+    expect(getSessionEnd()).toBe(Date.parse("2026-11-20T10:00:00Z"));
+    setToken(null);
+    expect(getSessionEnd()).toBeNull();
   });
 
   it("does not retry other refresh failures", async () => {

@@ -12,11 +12,10 @@ import { useConsecutiveFailures } from "../../lib/live";
 import { useFormatters } from "../../lib/useFormatters";
 import { useRecentCycles } from "../runs/api";
 import { CycleTable } from "../runs/CycleTable";
-import { phaseTitle } from "../runs/ledger";
 import { useSettings } from "../settings/useSettings";
 import { isLive, useOverview } from "./api";
 import { CurrentActivity, FactsPanel, LastPushPanel, SnapshotTable, WebConnectorPanel } from "./panels";
-import { statusSentence } from "./status";
+import { runningPhaseTitle, statusSentence } from "./status";
 
 export default function OverviewPage() {
   const q = useOverview();
@@ -26,7 +25,7 @@ export default function OverviewPage() {
   const failures = useConsecutiveFailures(q);
   const f = useFormatters();
   const running = o?.running_cycle ?? o?.running_push;
-  const announcement = useRunAnnouncement(running ? phaseTitle(running.phase) || "starting" : null, "The sync has finished");
+  const announcement = useRunAnnouncement(running ? runningPhaseTitle(running) || "starting" : null, "The sync has finished");
 
   return (
     <Page title="Overview" purpose="What the sync is doing right now, and whether anything needs attention.">

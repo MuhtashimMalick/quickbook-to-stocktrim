@@ -1226,6 +1226,18 @@
        }
       ]
      },
+     "last_qbwc_auth_refused": {
+      "anyOf": [
+       {
+        "format": "date-time",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last Qbwc Auth Refused"
+     },
      "last_qbwc_contact": {
       "anyOf": [
        {
@@ -1296,6 +1308,7 @@
      "last_cycle",
      "last_qbwc_contact",
      "last_qbwc_contact_age_seconds",
+     "last_qbwc_auth_refused",
      "jobs",
      "snapshot",
      "running_cycle",
@@ -1778,6 +1791,28 @@
       ],
       "title": "Finished At"
      },
+     "mode": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Mode"
+     },
+     "requested_by": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Requested By"
+     },
      "run_id": {
       "format": "uuid",
       "title": "Run Id",
@@ -1818,6 +1853,17 @@
       ],
       "title": "Summary"
      },
+     "target": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Target"
+     },
      "updated_at": {
       "format": "date-time",
       "title": "Updated At",
@@ -1828,6 +1874,9 @@
      "run_id",
      "status",
      "dry_run",
+     "mode",
+     "requested_by",
+     "target",
      "steps",
      "started_at",
      "updated_at",
@@ -2055,6 +2104,17 @@
        }
       ],
       "title": "Phase"
+     },
+     "phase_title": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Phase Title"
      },
      "since": {
       "format": "date-time",
@@ -2659,6 +2719,11 @@
       "title": "Expires In",
       "type": "integer"
      },
+     "session_expires_at": {
+      "format": "date-time",
+      "title": "Session Expires At",
+      "type": "string"
+     },
      "token_type": {
       "const": "bearer",
       "default": "bearer",
@@ -2668,7 +2733,8 @@
     },
     "required": [
      "access_token",
-     "expires_in"
+     "expires_in",
+     "session_expires_at"
     ],
     "title": "TokenOut",
     "type": "object"

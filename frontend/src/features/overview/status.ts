@@ -2,6 +2,9 @@ import type { CycleOut, Overview } from "../../api/types";
 import { formatRelativeSeconds } from "../../lib/time";
 import { phaseTitle } from "../runs/ledger";
 
+/** The API's catalog title for a running phase; the local map only covers a server that does not send one. */
+export const runningPhaseTitle = (r: { phase: string | null; phase_title?: string | null }): string => r.phase_title ?? phaseTitle(r.phase);
+
 /** Web Connector contact age: recent under 15 minutes, late under 2 hours, silent after that. */
 export const CONTACT_RECENT_SECONDS = 15 * 60;
 export const CONTACT_SILENT_SECONDS = 2 * 60 * 60;
@@ -63,7 +66,8 @@ export function statusSentence(o: Overview, fmt: Fmt): string {
       return `Waiting for the Web Connector. ${ago === null ? "It has never checked in" : `It last checked in ${agoText(ago)}`}; we can't hurry it.`;
     }
     const what = o.running_cycle ? "A sync" : "A push run";
-    return running.phase ? `${what} is running: ${phaseTitle(running.phase)}.` : `${what} is running.`;
+    const title = runningPhaseTitle(running);
+    return title ? `${what} is running: ${title}.` : `${what} is running.`;
   }
   const next = nextRunSentence(o, fmt);
   if (!o.last_cycle) return ["No sync has run yet.", next].filter(Boolean).join(" ");

@@ -1,4 +1,4 @@
-import type { CycleDetail, CycleOut, EventOut, Overview, PushRunOut, RunListItem } from "../api/types";
+import type { CycleDetail, CycleOut, EntryOut, EventOut, Overview, PushRunOut, RunListItem } from "../api/types";
 
 /** Typed builders for API payloads (derived from schema.d.ts, so a contract change breaks the tests at compile time). */
 export const CYCLE_ID = "11111111-1111-4111-8111-111111111111";
@@ -24,6 +24,7 @@ export const overview = (over: Partial<Overview> = {}): Overview => ({
   last_cycle: cycle(),
   last_qbwc_contact: new Date(Date.now() - 120_000).toISOString(),
   last_qbwc_contact_age_seconds: 120,
+  last_qbwc_auth_refused: null,
   jobs: {},
   snapshot: {
     items: { synced_at_max: new Date().toISOString(), records: 2346 },
@@ -39,6 +40,9 @@ export const pushRun = (over: Partial<PushRunOut> = {}): PushRunOut => ({
   run_id: RUN_ID,
   status: "done",
   dry_run: false,
+  mode: "sync",
+  requested_by: "scheduler",
+  target: "test @ api.example.test",
   steps: ["suppliers", "products"],
   started_at: T0,
   updated_at: T1,
@@ -88,3 +92,26 @@ export const event = (over: Partial<EventOut> = {}): EventOut => ({
   actor: "scheduler",
   ...over,
 });
+
+let nextEntry = 1;
+export const entry = (over: Partial<EntryOut> = {}): EntryOut => {
+  const n = nextEntry++;
+  return {
+    source: "item",
+    outcome: "failed",
+    entity: "product",
+    action: "create",
+    key: `SKU-${String(n).padStart(4, "0")}`,
+    ref: `80000${String(n).padStart(3, "0")}-1700000000`,
+    qb_label: `Widget ${n}`,
+    code: "rejected_400",
+    reason: { title: "StockTrim rejected the record", explanation: "StockTrim refused the data we sent.", next_step: "Fix the field in QuickBooks, then push again." },
+    http_status: 400,
+    fields: ["name"],
+    attempts: 2,
+    created_at: T0,
+    updated_at: T1,
+    run_id: RUN_ID,
+    ...over,
+  };
+};

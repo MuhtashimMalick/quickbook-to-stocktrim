@@ -217,6 +217,16 @@ describe("push run detail", () => {
     expect(await screen.findByText("Nothing was written to StockTrim")).toBeInTheDocument();
   });
 
+  it("the header shows mode, who requested the run and its target", async () => {
+    server.use(http.get("*/api/v1/push/runs/:id", () => HttpResponse.json(pushRun({ mode: "sync", requested_by: "scheduler", target: "test @ api.example.test" }))), eventsHandler(() => []), ...signedIn());
+    renderApp(`/runs/push/${RUN_ID}`);
+    const header = (await screen.findByText("Requested by")).closest("dl");
+    expect(header).not.toBeNull();
+    expect(within(header as HTMLElement).getByText("scheduler")).toBeInTheDocument();
+    expect(within(header as HTMLElement).getByText("test @ api.example.test")).toBeInTheDocument();
+    expect(within(header as HTMLElement).getByText("sync")).toBeInTheDocument();
+  });
+
   it("a missing push run is not found", async () => {
     server.use(http.get("*/api/v1/push/runs/:id", () => HttpResponse.json({ detail: "run_not_found" }, { status: 404 })), ...signedIn());
     renderApp(`/runs/push/${RUN_ID}`);

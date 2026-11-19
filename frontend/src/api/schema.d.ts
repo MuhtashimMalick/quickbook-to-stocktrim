@@ -755,6 +755,8 @@ export interface components {
                 [key: string]: number;
             };
             last_cycle: components["schemas"]["CycleOut"] | null;
+            /** Last Qbwc Auth Refused */
+            last_qbwc_auth_refused: string | null;
             /** Last Qbwc Contact */
             last_qbwc_contact: string | null;
             /** Last Qbwc Contact Age Seconds */
@@ -930,6 +932,10 @@ export interface components {
             eta_seconds: number | null;
             /** Finished At */
             finished_at: string | null;
+            /** Mode */
+            mode: string | null;
+            /** Requested By */
+            requested_by: string | null;
             /**
              * Run Id
              * Format: uuid
@@ -950,6 +956,8 @@ export interface components {
             summary: {
                 [key: string]: unknown;
             } | null;
+            /** Target */
+            target: string | null;
             /**
              * Updated At
              * Format: date-time
@@ -1036,6 +1044,8 @@ export interface components {
             id: string;
             /** Phase */
             phase: string | null;
+            /** Phase Title */
+            phase_title?: string | null;
             /**
              * Since
              * Format: date-time
@@ -1129,8 +1139,11 @@ export interface components {
         SettingsOut: {
             /** Alert Webhook Configured */
             alert_webhook_configured: boolean;
-            /** Environment */
-            environment: string;
+            /**
+             * Environment
+             * @enum {string}
+             */
+            environment: "test" | "production";
             /** History Retention Days */
             history_retention_days: number;
             /** Negative Stock Policy */
@@ -1219,6 +1232,11 @@ export interface components {
             access_token: string;
             /** Expires In */
             expires_in: number;
+            /**
+             * Session Expires At
+             * Format: date-time
+             */
+            session_expires_at: string;
             /**
              * Token Type
              * @default bearer

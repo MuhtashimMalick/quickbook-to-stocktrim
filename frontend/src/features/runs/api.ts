@@ -66,15 +66,17 @@ export function useCycle(id: string) {
   });
 }
 
+/** Query options of one push run; screens add their own refetch policy. */
+export const pushRunOptions = (id: string | null | undefined) => ({
+  queryKey: keys.run(id ?? ""),
+  queryFn: () => unwrap(api.GET("/api/v1/push/runs/{run_id}", { params: { path: { run_id: id ?? "" } } })),
+  enabled: Boolean(id),
+});
+
 /** Progress of a push run (counts per entity, ETA). Disabled without an id. */
 export function usePushRun(id: string | null | undefined) {
   const refetchInterval = usePollInterval<PushRunOut>(isRunning);
-  return useQuery({
-    queryKey: keys.run(id ?? ""),
-    queryFn: () => unwrap(api.GET("/api/v1/push/runs/{run_id}", { params: { path: { run_id: id ?? "" } } })),
-    enabled: Boolean(id),
-    refetchInterval,
-  });
+  return useQuery({ ...pushRunOptions(id), refetchInterval });
 }
 
 export interface EventsState {

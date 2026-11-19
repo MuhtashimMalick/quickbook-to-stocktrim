@@ -1,7 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { api, awaitRefresh, refreshSession } from "../../api/client";
-import { getGeneration, onSessionLost, setToken } from "../../api/session";
+import { getGeneration, onSessionLost, setSessionEnd, setToken } from "../../api/session";
 
 export type AuthState =
   | { status: "loading" }
@@ -63,6 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { data, response } = await api.POST("/api/v1/auth/login", { body: { username, password } });
         if (data) {
           setToken(data.access_token);
+          setSessionEnd(data.session_expires_at);
           const next = await loadMe();
           if (next.status !== "authenticated") {
             setToken(null);

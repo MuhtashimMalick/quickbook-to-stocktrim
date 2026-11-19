@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useLocation } from "react-router";
 import { LiveRegion } from "../components/LiveRegion";
 import { RouteErrorBoundary } from "../components/RouteErrorBoundary";
+import { SessionEndNotice } from "../features/auth/SessionEndNotice";
 import { useEnvironment } from "../features/settings/useEnvironment";
 import { EnvTag, ProductionBanner, WritesChip } from "./EnvironmentBar";
 import { UserMenu } from "./UserMenu";
@@ -44,6 +45,7 @@ export function AppShell() {
           </div>
         </div>
       </header>
+      <SessionEndNotice />
       <main id="main" tabIndex={-1} className="mx-auto max-w-page px-6 py-8">
         <RouteErrorBoundary key={pathname}>
           <Outlet />

@@ -12,7 +12,12 @@ export const server = setupServer();
 /** Requests with no handler: the suite fails on any of them (see setup.ts). */
 export const unhandled: string[] = [];
 
-export const token = (access_token: string): TokenOut => ({ access_token, token_type: "bearer", expires_in: 900 });
+export const token = (access_token: string, session_expires_at = new Date(Date.now() + 24 * 3_600_000).toISOString()): TokenOut => ({
+  access_token,
+  token_type: "bearer",
+  expires_in: 900,
+  session_expires_at,
+});
 export const me = (username = "ada"): MeOut => ({ username, last_login_at: null });
 export const settings = (over: Partial<SettingsOut> = {}): SettingsOut => ({
   environment: "test",
