@@ -13,7 +13,7 @@ from ...appstate import get_state
 from ...db import session_scope
 from ...models import Job, PushRun, QBRecord, SyncCycle, utcnow
 from ...preflight.report import preflight_client
-from ...scheduler import CycleBusy, item_counts, next_run
+from ...scheduler import CycleBusy, env_schedule, item_counts, load_schedule, next_run
 from ...stocktrim.api import StockTrimApi
 from ...stocktrim.errors import StockTrimConfigError, StockTrimError
 
@@ -33,9 +33,18 @@ class CycleStarted(M):
 class SchedulerOut(M):
     enabled: bool
     running: bool  # the scheduler thread is alive
-    daily_at: str
+    time: str  # HH:MM in tz
+    every_days: int
     tz: str
-    next_run_at: Optional[datetime] = None
+    schedule_enabled: bool  # the stored switch; `enabled` is the server ceiling (SCHEDULER_ENABLED)
+    source: str  # database | env_default
+    next_run_at: Optional[datetime] = None  # only when both are enabled
+
+
+def scheduler_out(request: Request, schedule: Any, source: str) -> dict[str, Any]:
+    st, sch = request.app.state.settings, request.app.state.scheduler
+    return {"enabled": st.scheduler_enabled, "running": sch.running, "time": schedule.time, "every_days": schedule.every_days, "tz": schedule.tz, "schedule_enabled": schedule.enabled, "source": source,
+            "next_run_at": next_run(sch.clock(), schedule) if st.scheduler_enabled and schedule.enabled else None}
 
 
 class CycleOut(M):
@@ -113,15 +122,13 @@ def _probe(request: Request) -> Reachability:
 
 @router.get("/health", response_model=Health)
 def health(request: Request, probe: bool = False) -> Any:
-    settings, sch = request.app.state.settings, request.app.state.scheduler
-    out: dict[str, Any] = {
-        "database": True, "environment": settings.stocktrim_environment, "stocktrim_writes_enabled": settings.stocktrim_writes_enabled,
-        "scheduler": {"enabled": settings.scheduler_enabled, "running": sch.running, "daily_at": settings.sync_daily_at, "tz": settings.scheduler_tz,
-                      "next_run_at": next_run(sch.clock(), settings.sync_daily_at, sch.tz) if settings.scheduler_enabled else None},
-    }
+    settings = request.app.state.settings
+    out: dict[str, Any] = {"database": True, "environment": settings.stocktrim_environment, "stocktrim_writes_enabled": settings.stocktrim_writes_enabled}
+    schedule, source = env_schedule(settings), "env_default"  # until the database answers
     try:
         with session_scope() as s:
             s.execute(text("SELECT 1"))
+            schedule, source = load_schedule(settings)
             out["jobs"] = dict(s.execute(select(Job.status, func.count()).where(Job.status.in_(("queued", "running"))).group_by(Job.status)).all())
             out["snapshot"] = {e: {"synced_at_max": m, "records": n} for e, m, n in s.execute(select(QBRecord.entity, func.max(QBRecord.synced_at), func.count()).group_by(QBRecord.entity))}
             out["last_cycle"] = s.scalars(select(SyncCycle).order_by(SyncCycle.started_at.desc()).limit(1)).first()
@@ -134,6 +141,7 @@ def health(request: Request, probe: bool = False) -> Any:
             out["last_qbwc_auth_refused"] = datetime.fromisoformat(refused["at"])
     except Exception:  # noqa: BLE001 - the endpoint exists to report this
         out["database"] = False
+    out["scheduler"] = scheduler_out(request, schedule, source)
     if probe:
         out["stocktrim"] = _probe(request)
     return Health.model_validate(out, from_attributes=True)

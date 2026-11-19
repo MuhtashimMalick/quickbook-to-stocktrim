@@ -95,6 +95,7 @@ _RAW: dict[str, tuple[str, str, str]] = {
     "run_finished": ("Run finished", "The run ended. The counts show the totals.", "See the status and the failed records."),
     "preflight_requested": ("Pre-flight check requested", "Someone started a pre-flight check.", "Nothing to do."),
     "run_cancel_requested": ("Cancel requested", "Someone asked the running push to stop.", "Resume the run later to send what is left."),
+    "schedule_changed": ("Schedule changed", "Someone changed the sync schedule (how often, the time of day, or on/off).", "Nothing to do. The new schedule applies at once."),
     "run_resumed": ("Run resumed", "Someone resumed an interrupted run.", "Nothing to do."),
     # ---- cycle reasons (models.CYCLE_REASONS)
     "read_timeout": ("QuickBooks did not answer in time", "The QuickBooks reads did not finish within the allowed time. The Web Connector probably did not run.",

@@ -5,17 +5,17 @@ Never passed to the engine: acknowledge_foreign, acknowledge_requeue, stamp_only
 import logging
 import threading
 import time as _time
-from datetime import datetime, time, timedelta, timezone
-from typing import Any, Callable, Optional
+from datetime import date, datetime, time, timedelta, timezone
+from typing import Any, Callable, Literal, Optional
 from uuid import UUID
-from zoneinfo import ZoneInfo
 
 import httpx
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, field_validator
 from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
 
 from . import jobs, runlog
-from .appstate import set_state
+from .appstate import get_state, set_state
 from .config import Settings
 from .db import get_engine, session_scope
 from .models import BomEdge, Job, PushedItem, PushRun, QBRecord, SyncCycle, utcnow
@@ -44,15 +44,72 @@ class _End(Exception):
         super().__init__(reason)
 
 
-def next_run(now: datetime, hhmm: str, tz: "timezone | ZoneInfo") -> datetime:
-    """The next HH:MM wall-clock time in `tz` strictly after `now`. A time that does not exist (spring-forward gap) runs at the shifted instant; an ambiguous one (fall back) at its first occurrence."""
-    local = now.astimezone(tz)
-    h, m = map(int, hhmm.split(":"))
-    for days in (0, 1):
-        cand = datetime.combine(local.date() + timedelta(days=days), time(h, m), tzinfo=tz).astimezone(timezone.utc).astimezone(tz)  # UTC round-trip normalises a gap time
-        if cand > now:
+HHMM = r"^([01][0-9]|2[0-3]):[0-5][0-9]$"  # ASCII digits only, nothing around it
+ENV_ANCHOR = date(2000, 1, 1)  # any anchor does for every_days=1
+
+
+class ScheduleIn(BaseModel):
+    """What an admin may set. start_date (the anchor) defaults to today in `tz` (the API fills it)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+    enabled: StrictBool
+    every_days: Literal[1, 3, 7]
+    time: str = Field(pattern=HHMM)
+    tz: str = Field(max_length=64, pattern=r"^[A-Za-z0-9_+/-]+$")
+    start_date: Optional[date] = None
+
+    @field_validator("tz")
+    @classmethod
+    def _check_tz(cls, v: str) -> str:
+        try:
+            tz_of(v)
+        except Exception:  # noqa: BLE001 - unknown key, path-like input, no tz database: all unusable
+            raise ValueError("unknown time zone (use an IANA name such as America/Toronto, or UTC)") from None
+        return v
+
+
+class Schedule(ScheduleIn):
+    """The effective schedule: runs on start_date + k * every_days at `time` in `tz`."""
+
+    start_date: date
+    updated_at: Optional[datetime] = None
+    updated_by: Optional[str] = None
+
+
+def env_schedule(settings: Settings) -> Schedule:
+    """No stored schedule: the daily one from SYNC_DAILY_AT / SCHEDULER_TZ (never written)."""
+    return Schedule(enabled=True, every_days=1, time=settings.sync_daily_at, tz=settings.scheduler_tz, start_date=ENV_ANCHOR)
+
+
+def load_schedule(settings: Settings) -> tuple[Schedule, str]:
+    """(schedule, source): app_state['schedule'] when set, else the env default."""
+    raw = get_state("schedule")
+    return (Schedule.model_validate(raw), "database") if raw else (env_schedule(settings), "env_default")
+
+
+def _slot(sch: Schedule, day: date) -> datetime:
+    h, m = map(int, sch.time.split(":"))
+    tz = tz_of(sch.tz)
+    return datetime.combine(day, time(h, m), tzinfo=tz).astimezone(timezone.utc).astimezone(tz)  # UTC round-trip normalises a gap time (runs at the shifted instant; an ambiguous time at its first occurrence)
+
+
+def next_run(now: datetime, sch: Schedule) -> datetime:
+    """The next slot strictly after `now`: slots are start_date + k * every_days (k >= 0) at the wall-clock time."""
+    local_day = now.astimezone(tz_of(sch.tz)).date()
+    k = max(0, -((sch.start_date - local_day).days // sch.every_days))  # first slot day >= today
+    for i in (0, 1):
+        if (cand := _slot(sch, sch.start_date + timedelta(days=(k + i) * sch.every_days))) > now:
             return cand
     raise AssertionError("unreachable")  # pragma: no cover
+
+
+def prev_run(now: datetime, sch: Schedule) -> Optional[datetime]:
+    """The latest slot <= `now`, None before the first one."""
+    k0 = (now.astimezone(tz_of(sch.tz)).date() - sch.start_date).days // sch.every_days
+    for k in (k0, k0 - 1):  # today's slot may still be ahead
+        if k >= 0 and (slot := _slot(sch, sch.start_date + timedelta(days=k * sch.every_days))) <= now:
+            return slot
+    return None
 
 
 def send_alert(settings: Settings, status: str, reason: str, cycle_id: Optional[UUID] = None, push_error: Optional[str] = None, **http_kw: Any) -> None:
@@ -115,13 +172,20 @@ class Scheduler:
         self.settings, self.kw, self.http_kw = settings, client_kw or {}, http_kw or {}
         self.clock = clock or (lambda: datetime.now(timezone.utc))
         self._stop = threading.Event()
-        self.sleep = sleep or self._stop.wait
-        self.tz = tz_of(settings.scheduler_tz)
+        self.sleep = sleep or self._nap
+        self._wake = threading.Event()  # set by PUT /schedule and stop(): the loop re-reads the schedule now
         self.types = [t.strip() for t in settings.scheduler_read_jobs.split(",") if t.strip()]
         if unknown := [t for t in self.types if t not in READ_JOB_TYPES]:
             raise ValueError(f"SCHEDULER_READ_JOBS has unknown job type(s): {unknown}")
         self._thread: Optional[threading.Thread] = None
         self._worker: Optional[threading.Thread] = None  # a manual cycle
+
+    def _nap(self, seconds: float) -> None:
+        self._wake.wait(seconds)
+        self._wake.clear()
+
+    def wake(self) -> None:
+        self._wake.set()
 
     # ---- lifecycle
     def start(self) -> None:
@@ -134,6 +198,7 @@ class Scheduler:
         end = _time.monotonic() + timeout
         engine.begin_shutdown()  # no NEW real run from here on
         self._stop.set()
+        self._wake.set()
         for t in (self._thread, self._worker):
             if t:
                 t.join(max(0.0, end - _time.monotonic()))
@@ -143,13 +208,11 @@ class Scheduler:
     def running(self) -> bool:
         return bool(self._thread and self._thread.is_alive())
 
-    def _missed_slot(self) -> bool:
-        """Today's slot has passed, no cycle started since it, and it is still within the read timeout: the process was down at the slot."""
+    def _missed_slot(self, sch: Schedule) -> bool:
+        """The latest slot has passed (after the schedule was saved), no cycle started since it, and it is still within the read timeout: the process was down at the slot."""
         now = self.clock()
-        slot = next_run(now - timedelta(days=1), self.settings.sync_daily_at, self.tz)  # walk to the latest slot <= now
-        while (nxt := next_run(slot, self.settings.sync_daily_at, self.tz)) <= now:
-            slot = nxt
-        if slot > now or now - slot > timedelta(hours=self.settings.scheduler_read_timeout_hours):
+        slot = prev_run(now, sch)
+        if slot is None or (sch.updated_at and slot <= sch.updated_at) or now - slot > timedelta(hours=self.settings.scheduler_read_timeout_hours):
             return False
         with session_scope() as s:
             return s.scalar(select(func.count()).select_from(SyncCycle).where(SyncCycle.started_at >= slot)) == 0
@@ -162,20 +225,33 @@ class Scheduler:
         except Exception as e:  # noqa: BLE001
             send_alert(self.settings, "failed", "start_" + type(e).__name__, **self.http_kw)
 
-    def _loop(self) -> None:
+    def _schedule(self, cur: Optional[Schedule]) -> Schedule:
         try:
-            if self._missed_slot():
-                log.warning("daily slot was missed (process down?): running the cycle now")
+            return load_schedule(self.settings)[0]
+        except Exception as e:  # noqa: BLE001 - a DB blip or a bad stored value keeps the last good schedule
+            log.error("schedule not loaded: %s", type(e).__name__)
+            return cur or env_schedule(self.settings)
+
+    def _loop(self) -> None:
+        """Only started when SCHEDULER_ENABLED (the ceiling). Re-reads the stored schedule at every wake-up (at most 60 s apart, or at once on PUT /schedule); enabled=false pauses it."""
+        cur: Optional[Schedule] = self._schedule(None)
+        try:
+            if cur.enabled and self._missed_slot(cur):
+                log.warning("a scheduled slot was missed (process down?): running the cycle now")
                 self._run_scheduled()
         except Exception as e:  # noqa: BLE001
             log.error("missed-slot check failed: %s", type(e).__name__)
+        due: Optional[datetime] = None
+        seen: Optional[Schedule] = None
         while not self._stop.is_set():
-            due = next_run(self.clock(), self.settings.sync_daily_at, self.tz)
-            while (rem := (due - self.clock()).total_seconds()) > 0:
-                self.sleep(min(rem, 60))
-                if self._stop.is_set():
-                    return
-            self._run_scheduled()
+            cur = self._schedule(cur)
+            if cur != seen:  # first pass or changed: recompute (a changed schedule never fires a slot of the old one)
+                seen, due = cur, next_run(self.clock(), cur) if cur.enabled else None
+            if due and (rem := (due - self.clock()).total_seconds()) <= 0:
+                self._run_scheduled()
+                due = next_run(self.clock(), cur)
+            else:
+                self.sleep(min(rem, 60) if due else 60)
 
     # ---- one cycle
     def trigger_now(self, actor: str = "cli") -> UUID:

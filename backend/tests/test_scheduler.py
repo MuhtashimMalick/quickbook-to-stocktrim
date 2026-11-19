@@ -4,7 +4,7 @@ import json
 import logging
 import uuid
 from collections import defaultdict
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Any, Callable, Optional
 from zoneinfo import ZoneInfo
 
@@ -20,7 +20,7 @@ from app.api.v1.preflight import get_stocktrim_client_kw
 from app.db import get_engine, session_scope
 from app.models import PushRun, QBRecord, SyncCycle
 from app.preflight.schema import Finding, Verdict
-from app.scheduler import LOCK_KEY, CycleBusy, Scheduler, next_run, recover_cycles, send_alert
+from app.scheduler import LOCK_KEY, CycleBusy, Schedule, Scheduler, next_run, recover_cycles, send_alert
 from app.sync import engine
 
 from .conftest import HEADERS, QB, rs_error
@@ -335,18 +335,22 @@ def test_loop_waits_for_the_daily_time_then_runs_one_cycle(h):
     assert ran == ["schedule"] and slept == [60, 60] and h.clock.t == datetime(2026, 11, 18, 2, 0, tzinfo=UTC)
 
 
+def daily(hhmm, tz):
+    return Schedule(enabled=True, every_days=1, time=hhmm, tz="UTC" if tz is UTC else tz.key, start_date=date(2020, 1, 1))
+
+
 def test_next_run_uses_the_timezone_and_survives_dst():
     utc, toronto = UTC, ZoneInfo("America/Toronto")
-    assert next_run(datetime(2026, 11, 18, 1, 0, tzinfo=utc), "02:00", utc) == datetime(2026, 11, 18, 2, 0, tzinfo=utc)
-    assert next_run(datetime(2026, 11, 18, 2, 0, tzinfo=utc), "02:00", utc) == datetime(2026, 11, 19, 2, 0, tzinfo=utc)  # strictly after
-    assert next_run(datetime(2026, 11, 18, 1, 0, tzinfo=utc), "02:00", toronto) == datetime(2026, 11, 18, 7, 0, tzinfo=utc)  # EST = UTC-5
-    assert next_run(datetime(2026, 7, 1, 1, 0, tzinfo=utc), "02:00", toronto) == datetime(2026, 7, 1, 6, 0, tzinfo=utc)  # EDT = UTC-4
-    gap = next_run(datetime(2026, 3, 8, 6, 0, tzinfo=utc), "02:30", toronto)  # 02:30 does not exist on 2026-03-08: it runs at the shifted instant, once
+    assert next_run(datetime(2026, 11, 18, 1, 0, tzinfo=utc), daily("02:00", utc)) == datetime(2026, 11, 18, 2, 0, tzinfo=utc)
+    assert next_run(datetime(2026, 11, 18, 2, 0, tzinfo=utc), daily("02:00", utc)) == datetime(2026, 11, 19, 2, 0, tzinfo=utc)  # strictly after
+    assert next_run(datetime(2026, 11, 18, 1, 0, tzinfo=utc), daily("02:00", toronto)) == datetime(2026, 11, 18, 7, 0, tzinfo=utc)  # EST = UTC-5
+    assert next_run(datetime(2026, 7, 1, 1, 0, tzinfo=utc), daily("02:00", toronto)) == datetime(2026, 7, 1, 6, 0, tzinfo=utc)  # EDT = UTC-4
+    gap = next_run(datetime(2026, 3, 8, 6, 0, tzinfo=utc), daily("02:30", toronto))  # 02:30 does not exist on 2026-03-08: it runs at the shifted instant, once
     assert gap.astimezone(utc) == datetime(2026, 3, 8, 7, 30, tzinfo=utc) and gap.hour == 3
-    assert next_run(gap, "02:30", toronto).astimezone(utc) == datetime(2026, 3, 9, 6, 30, tzinfo=utc)
-    fall = next_run(datetime(2026, 11, 1, 4, 0, tzinfo=utc), "01:30", toronto)  # 01:30 happens twice on 2026-11-01: the first one
+    assert next_run(gap, daily("02:30", toronto)).astimezone(utc) == datetime(2026, 3, 9, 6, 30, tzinfo=utc)
+    fall = next_run(datetime(2026, 11, 1, 4, 0, tzinfo=utc), daily("01:30", toronto))  # 01:30 happens twice on 2026-11-01: the first one
     assert fall.astimezone(utc) == datetime(2026, 11, 1, 5, 30, tzinfo=utc)
-    assert next_run(fall, "01:30", toronto).astimezone(utc) == datetime(2026, 11, 2, 6, 30, tzinfo=utc)  # not again an hour later
+    assert next_run(fall, daily("01:30", toronto)).astimezone(utc) == datetime(2026, 11, 2, 6, 30, tzinfo=utc)  # not again an hour later
 
 
 def test_settings_are_validated(tmp_path):
@@ -424,7 +428,7 @@ def test_health_shape_and_content(h):
     assert set(b) == {"database", "environment", "stocktrim_writes_enabled", "scheduler", "last_qbwc_contact", "last_qbwc_contact_age_seconds", "last_qbwc_auth_refused", "last_cycle", "jobs", "snapshot",
                       "push_run", "stocktrim"} and b["stocktrim"] is None  # the probe only runs with ?probe=true
     assert b["database"] is True and b["environment"] == "test" and b["stocktrim_writes_enabled"] is True
-    assert b["scheduler"] == {"enabled": True, "running": False, "daily_at": "02:00", "tz": "UTC", "next_run_at": b["scheduler"]["next_run_at"]} and b["scheduler"]["next_run_at"]
+    assert b["scheduler"] == {"enabled": True, "running": False, "time": "02:00", "every_days": 1, "tz": "UTC", "schedule_enabled": True, "source": "env_default", "next_run_at": b["scheduler"]["next_run_at"]} and b["scheduler"]["next_run_at"]
     assert b["last_qbwc_contact"] and 0 <= b["last_qbwc_contact_age_seconds"] < 120
     assert b["last_cycle"]["status"] == "done" and b["last_cycle"]["reason"] is None and b["last_cycle"]["finished_at"]
     assert b["jobs"] == {} and set(b["snapshot"]["ItemInventory"]) == {"synced_at_max", "records"} and b["snapshot"]["ItemInventory"]["records"] == 6

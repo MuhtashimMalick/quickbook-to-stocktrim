@@ -28,6 +28,8 @@ PROXY_REACHABLE = {
     # stage B4: read APIs of the admin UI (GET only)
     ("GET", "/api/v1/cycles"), ("GET", "/api/v1/cycles/{cycle_id}"), ("GET", "/api/v1/events"), ("GET", "/api/v1/push/runs"), ("GET", "/api/v1/push/runs/{run_id}/entries"),
     ("GET", "/api/v1/push/runs/{run_id}/entries.csv"), ("GET", "/api/v1/settings"), ("GET", "/api/v1/reason-codes"), ("GET", "/api/v1/overview"),
+    # stage B5: the stored sync schedule
+    ("GET", "/api/v1/schedule"), ("PUT", "/api/v1/schedule"),
 }
 CLI_ONLY = {
     ("GET", "/api/v1/qwc"), ("GET", "/api/v1/records/{entity}"), ("GET", "/api/v1/log"), ("POST", "/api/v1/jobs/all-reads"), ("POST", "/api/v1/jobs/{job_type}"),

@@ -27,7 +27,7 @@ PUSH_ERROR_CODES = ("run_not_found", "stamp_has_no_bom_step", "stamp_test_only",
                     "preflight_fingerprint_mismatch", "mass_delete", "requeue_requires_step", "mass_requeue", "stamp_snapshot_newer", "plan_fingerprint_mismatch", "stamp_requires_all_present",
                     "run_not_resumable", "target_mismatch", "run_not_active")
 EVENT_CODES = ("cycle_started", "reads_queued", "waiting_for_web_connector", "reads_done", "snapshot_fresh", "dry_run_planned", "real_run_started", "cycle_finished",
-               "run_started", "step_started", "step_finished", "run_finished", "preflight_requested", "run_cancel_requested", "run_resumed",
+               "run_started", "step_started", "step_finished", "run_finished", "preflight_requested", "run_cancel_requested", "run_resumed", "schedule_changed",
                *(f"check_failed:{r}" for r in dict.fromkeys((*CYCLE_REASONS, *PUSH_ERROR_CODES))))
 # What push_exclusion.code can hold: the domain Issue codes that keep a record (or a BOM line / supplier link) out of the plan, plus the mappers' skip reasons.
 EXCLUSION_ISSUE_CODES = ("empty_key", "whitespace_key", "control_chars", "duplicate_key", "empty_list_id", "parse_error", "inactive_supplier", "inactive_customer", "unresolved_vendor",

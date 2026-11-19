@@ -1,5 +1,5 @@
 """Admin API call from inside the container (the only place TunnelGate accepts it): python -m app.cli GET /jobs
-POST with a body: echo '{"quantity": 5}' | python -m app.cli POST /jobs/create_test_po --json
+PUT/POST with a body: echo '{"quantity": 5}' | python -m app.cli POST /jobs/create_test_po --json
 Admin-UI users (direct DB access, no HTTP; the password is prompted, never an argument): python -m app.cli users add|passwd|disable|enable <username> / users list
 OpenAPI of the proxy-reachable routes: python -m app.cli openapi"""
 import argparse
@@ -96,7 +96,7 @@ def main(argv=None):
     if argv[:1] == ["users"]:
         return users(argv[1:])
     ap = argparse.ArgumentParser(prog="python -m app.cli", description="Call /api/v1<path> with the ADMIN_TOKEN from the environment.")
-    ap.add_argument("method", choices=["GET", "POST"])
+    ap.add_argument("method", choices=["GET", "POST", "PUT"])
     ap.add_argument("path", help="starts with /, e.g. /jobs")
     ap.add_argument("--json", action="store_true", help="send stdin as a JSON body")
     ap.add_argument("--timeout", type=float, default=600, help="seconds to wait for the response (default 600; /preflight with supplier checks takes minutes)")

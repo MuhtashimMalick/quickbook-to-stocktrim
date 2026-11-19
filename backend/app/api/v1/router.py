@@ -22,6 +22,7 @@ from .preflight import router as preflight_router
 from .push import router as push_router
 from .push import runs_router
 from .reads import router as reads_router
+from .schedule import router as schedule_router
 
 router = APIRouter(dependencies=[Depends(direct_only), Depends(require_admin)])  # CLI only
 router.include_router(push_router)
@@ -31,6 +32,7 @@ public.include_router(preflight_router)
 public.include_router(runs_router)
 public.include_router(entries_router)
 public.include_router(reads_router)
+public.include_router(schedule_router)
 
 
 class _Out(BaseModel):

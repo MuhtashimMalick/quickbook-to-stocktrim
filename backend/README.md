@@ -368,7 +368,26 @@ One cycle per day pulls fresh QuickBooks data and then syncs it to StockTrim, wi
 - **One cycle at a time:** a Postgres advisory lock plus a unique index on a `running` cycle; a `running` row left by a crash is marked `interrupted` (at startup and whenever a cycle starts holding the lock). If the process was down at the daily slot, the cycle runs at startup when no cycle started since the slot and it is within `SCHEDULER_READ_TIMEOUT_HOURS` of it. Alerts add `environment`, `cycle_id` and, for a failed push, `push_error`. Shutdown stops the scheduler thread (the cycle ends `interrupted`) before the push run is cancelled (resumable).
 - **Manual trigger** (admin only, 202; 409 `cycle_running` while one runs; 403 when the scheduler is disabled): `docker compose exec app python -m app.cli POST /scheduler/run-now`. A timed-out cycle leaves its read jobs queued: they run when the Web Connector next connects, and the next cycle reuses them.
 - **Health:** `docker compose exec app python -m app.cli GET /health` (add `?probe=true` for one read-only StockTrim GET): database, scheduler state and next run, `last_qbwc_contact` and its age (written on every SUCCESSFUL Web Connector authenticate, at most once a minute; refused logins go to `last_qbwc_auth_refused`), the last cycle, queued/running QuickBooks jobs, per-entity snapshot `synced_at_max` and record counts, the latest push run (status, item counts), the writes flag and the environment.
-- Simplifications: a single daily cycle (no hourly stock sync yet), an entity that is empty in QuickBooks is not checked by the freshness guard, alerts go to a webhook only (no email).
+- Simplifications: one cycle every 1, 3 or 7 days (no hourly stock sync yet), an entity that is empty in QuickBooks is not checked by the freshness guard, alerts go to a webhook only (no email).
+
+## Sync schedule (stage B5)
+
+The schedule is stored in Postgres (`app_state` key `schedule`, no table) so the admin UI can change it: **every 1, 3 or 7 days** at a **time** in a **time zone**, switched on or off. `SYNC_DAILY_AT` / `SCHEDULER_TZ` are only the default: with no stored schedule the effective one is "every 1 day at SYNC_DAILY_AT in SCHEDULER_TZ" (`source: env_default`, nothing is written until the first PUT).
+
+- **Anchor:** runs happen on `start_date + k * every_days` at `time` in `tz`, independent of earlier cycles and of restarts. `start_date` defaults to today in `tz` on save; if that day's slot has already passed, the first run is the next slot (a saved schedule never fires a slot from before it was saved). Example: every 3 days from Monday 2026-11-16 at 02:00 runs Mon 16, Thu 19, Sun 22, Wed 25 Nov, and so on. Weekly = 7 days from the anchor's weekday.
+- **DST:** a local time that does not exist that day (spring forward) runs at the shifted instant (02:30 becomes 03:30); an ambiguous one (fall back) runs at its first occurrence, once.
+- **Restart safety:** at startup the loop runs one cycle at once if the latest slot is not older than `SCHEDULER_READ_TIMEOUT_HOURS`, no cycle started since it, and the schedule was saved before it.
+- **Two switches:** `SCHEDULER_ENABLED` (env) is the ceiling: false = no automatic cycle at all, whatever is stored (the UI shows "disabled on the server"; `ceiling_enabled` in the API). The stored `enabled=false` only pauses the automatic runs. Manual run-now is unaffected by the stored switch (it needs the ceiling, as before). `SCHEDULER_ALLOW_PRODUCTION` and every safety check are unchanged.
+- **Applies at once:** the loop re-reads the schedule at every wake-up (at most 60 s apart) and a PUT wakes it immediately; no restart.
+- **API** (Bearer, reachable through the proxy; extra fields are rejected): `GET /schedule` returns the effective schedule, `source` (`database`|`env_default`), the next 3 runs (`utc` and `local` ISO), `ceiling_enabled`, `allow_production` and the last cycle (id, status, started_at). `PUT /schedule` takes `{"enabled": true, "every_days": 3, "time": "02:00", "tz": "America/Chicago", "start_date": "2026-11-16"}` (`start_date` optional, at most 365 days from today; `time` strictly `HH:MM`; `tz` an IANA name), stores it with `updated_by` = the signed-in user, writes a `schedule_changed` run event (counts only: `every_days`, `enabled`) and returns the same body as GET. `/health`, `/overview` and `/settings` show the stored schedule (`scheduler.time`, `every_days`, `tz`, `schedule_enabled`, `source`, `next_run_at`; `/settings.schedule`).
+- **CLI, for emergencies** (inside the container; the PUT is recorded as actor `cli`; not possible through the proxy):
+
+```
+docker compose exec -T app sh -c "echo '{\"enabled\": false, \"every_days\": 1, \"time\": \"02:00\", \"tz\": \"UTC\"}' | python -m app.cli PUT /schedule --json"
+```
+
+  Back to the env default: `DELETE FROM app_state WHERE key = 'schedule';` in psql.
+- Migration 0012 only widens the `run_event.code` check constraint for `schedule_changed`.
 
 ## Run log (stage B3)
 

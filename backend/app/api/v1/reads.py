@@ -13,7 +13,7 @@ from ...db import session_scope
 from ...models import AppUser, Job, PushRun, RunEvent, SyncCycle
 from ...quickbooks.tasks import READ_JOB_TYPES
 from ...reasons import CATALOG, describe
-from ...scheduler import item_counts
+from ...scheduler import item_counts, load_schedule
 from .ops import CycleOut, Freshness, Health, M, PushRunHealth, SchedulerOut, health
 from .push import PushRunOut
 
@@ -132,13 +132,20 @@ class UserOut(M):
     last_login_at: Optional[datetime]
 
 
+class ScheduleSummary(M):
+    enabled: bool
+    every_days: int
+    time: str
+    tz: str
+    source: str  # database | env_default
+
+
 class SettingsOut(M):
     environment: str
     stocktrim_writes_enabled: bool
     scheduler_enabled: bool
     scheduler_allow_production: bool
-    sync_daily_at: str
-    scheduler_tz: str
+    schedule: ScheduleSummary
     sync_max_planned_calls: int
     stocktrim_host: Optional[str]  # hostname only: never credentials
     stocktrim_max_rps: float
@@ -154,11 +161,12 @@ class SettingsOut(M):
 @router.get("/settings", response_model=SettingsOut)
 def get_settings(request: Request) -> Any:
     st, sch = request.app.state.settings, request.app.state.scheduler
+    schedule, source = load_schedule(st)
     with session_scope() as s:
         users = [UserOut.model_validate(u, from_attributes=True) for u in s.scalars(select(AppUser).order_by(AppUser.username))]
     return SettingsOut(
         environment=st.stocktrim_environment, stocktrim_writes_enabled=st.stocktrim_writes_enabled, scheduler_enabled=st.scheduler_enabled,
-        scheduler_allow_production=st.scheduler_allow_production, sync_daily_at=st.sync_daily_at, scheduler_tz=st.scheduler_tz, sync_max_planned_calls=st.sync_max_planned_calls,
+        scheduler_allow_production=st.scheduler_allow_production, schedule=ScheduleSummary(source=source, **schedule.model_dump(include={"enabled", "every_days", "time", "tz"})), sync_max_planned_calls=st.sync_max_planned_calls,
         stocktrim_host=urlparse(st.stocktrim_base_url).hostname, stocktrim_max_rps=st.stocktrim_max_rps, read_jobs=sch.types, sales_history_years=st.sales_history_years,
         negative_stock_policy=st.negative_stock_policy, alert_webhook_configured=st.alert_webhook is not None, history_retention_days=st.history_retention_days,
         version=os.environ.get("APP_VERSION") or os.environ.get("GIT_SHA") or None, users=users)
