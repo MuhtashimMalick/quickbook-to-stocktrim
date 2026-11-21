@@ -8,7 +8,7 @@ Pure QuickBooks -> canonical logic; no StockTrim, no QBWC. No client data in thi
 - Vendor keys and item keys are separate namespaces (resolved separately). Inventory and assembly items share ONE namespace.
 
 ## Quarantine rules (`resolve`)
-Quarantined (not pushed, reported with `Issue`): empty/blank key, leading/trailing whitespace, control characters, empty ListID (`empty_list_id`), every member of a key-collision group or a duplicate-ListID group (`duplicate_key`), records that failed to parse (`parse_error`).
+Quarantined (not pushed, reported with `Issue`): empty/blank key, leading/trailing whitespace, control characters, empty ListID (`empty_list_id`), every member of a duplicate-ListID group or of a key-collision group with TWO OR MORE active records (`duplicate_key`; a collision group with at most one active record keeps that one and SETS ASIDE the inactive twins into `QuarantineResult.inactive` with a `duplicate_key` warning, see client-behaviours.md), records that failed to parse (`parse_error`).
 Kept and only warned: key longer than 200, internal double space, non-ASCII.
 `parse_error` messages carry the exception type and the failing FIELD name (pydantic: the error `loc`), never the value.
 

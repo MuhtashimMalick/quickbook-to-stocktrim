@@ -62,7 +62,7 @@ def qb_report(session: Session, key_field: Any, limit: int) -> tuple[dict[str, A
     entities = {}
     for name, parsed, res in (("products", snap.products, prod), ("suppliers", snap.suppliers, sup), ("customers", snap.customers, cust)):
         entities[name] = {"parsed": len(parsed), "ok": len(res.ok), "quarantined": len(res.quarantined) + parse_fail[name], "parse_errors": parse_fail[name],
-                          "warnings": len(res.warnings), **({"inactive": len(res.inactive)} if name == "suppliers" else {})}
+                          "warnings": len(res.warnings), **({"inactive": len(res.inactive)} if name != "customers" else {})}
     every: list[Issue] = [*snap.issues, *bom.issues, *(i for r in (prod, sup, cust) for q in r.quarantined for i in q.issues), *(w for r in (prod, sup, cust) for w in r.warnings)]
     groups: dict[str, dict[str, Any]] = {}
     for i in every:
@@ -101,6 +101,7 @@ def verdict(qb: dict[str, Any], st: dict[str, Any], sync: bool = False, acked: b
     add(warnings, "qb_customers_quarantined", ents["customers"]["quarantined"])
     for code in ("internal_double_space", "non_ascii_key", "key_too_long", "unresolved_vendor", "bom_component_excluded", "bom_component_unresolved"):
         add(warnings, code, _issue_count(qb, code))
+    add(warnings, "duplicate_key_set_aside", ents["products"].get("inactive") or 0)  # RECORDS set aside (inactive twins of a kept active item, or all-inactive groups)
     add(warnings, "negative_stock", qb["negative_stock_count"])
     add(warnings, "subassemblies_without_bom", bom.get("subassemblies_without_bom", 0))
     status = st["status"]

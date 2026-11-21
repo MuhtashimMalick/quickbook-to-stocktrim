@@ -8,7 +8,7 @@ import re
 import unicodedata
 from collections import defaultdict
 from collections.abc import Callable, Iterable
-from typing import TypeVar
+from typing import Optional, TypeVar
 
 from .models import Customer, Issue, IssueCode, Product, Quarantined, QuarantineResult, Supplier
 
@@ -40,8 +40,11 @@ def key_problems(key: str) -> list[tuple[IssueCode, str, str]]:
     return out
 
 
-def resolve(records: Iterable[T], entity: str, key_of: Callable[[T], str], lid_of: Callable[[T], str]) -> QuarantineResult[T]:
-    """Validate every key and ListID, then quarantine every member of each key-collision or duplicate-ListID group."""
+def resolve(records: Iterable[T], entity: str, key_of: Callable[[T], str], lid_of: Callable[[T], str],
+            is_active: Optional[Callable[[T], bool]] = None) -> QuarantineResult[T]:
+    """Validate every key and ListID, then quarantine every member of each duplicate-ListID group and of each key-collision group.
+    With `is_active`, a key-collision group with AT MOST ONE active member is not a conflict: the active one is kept and every inactive
+    twin is SET ASIDE (`.inactive`, `duplicate_key` warning); two or more active members quarantine the whole group."""
     recs = list(records)
     groups: dict[str, list[int]] = defaultdict(list)
     lid_groups: dict[str, list[int]] = defaultdict(list)
@@ -63,21 +66,27 @@ def resolve(records: Iterable[T], entity: str, key_of: Callable[[T], str], lid_o
             lid_groups[lid_of(r)].append(i)
         else:
             add(i, "empty_list_id", "quarantine", "record has no ListID")
+    set_aside: set[int] = set()
     for idx in groups.values():
         if len(idx) > 1:
-            keys = ", ".join(repr(key_of(recs[i])) for i in idx)
+            keys = ", ".join(sorted(repr(key_of(recs[i])) for i in idx))
+            conflict = is_active is None or sum(is_active(recs[i]) for i in idx) > 1
             for i in idx:
-                add(i, "duplicate_key", "quarantine", f"{len(idx)} records collide case-insensitively: {keys}")
+                if conflict:
+                    add(i, "duplicate_key", "quarantine", f"{len(idx)} records collide case-insensitively: {keys}")
+                elif not is_active(recs[i]):  # type: ignore[misc]
+                    set_aside.add(i)
+                    add(i, "duplicate_key", "warning", f"inactive twin of an active record (or all are inactive), set aside: {keys}")
     for lid, idx in lid_groups.items():
         if len(idx) > 1:
             for i in idx:
                 add(i, "duplicate_key", "quarantine", f"{len(idx)} records share ListID {lid!r}")
     result: QuarantineResult[T] = QuarantineResult()
-    for r, mine in zip(recs, issues):
+    for i, (r, mine) in enumerate(zip(recs, issues)):
         if any(x.severity == "quarantine" for x in mine):
             result.quarantined.append(Quarantined(record=r, issues=mine))
         else:
-            result.ok.append(r)
+            (result.inactive if i in set_aside else result.ok).append(r)
             warnings.extend(mine)
     result.warnings = warnings
     return result
@@ -86,8 +95,8 @@ def resolve(records: Iterable[T], entity: str, key_of: Callable[[T], str], lid_o
 def resolve_suppliers(suppliers: Iterable[Supplier]) -> QuarantineResult[Supplier]:
     """Phase 2's supplier push must use EXACTLY `.ok`: valid keys, unique, and IsActive. Inactive vendors are valid but go to
     `.inactive` (with an `inactive_supplier` warning) and are never pushed, so no product may link to them either."""
-    res = resolve(suppliers, "supplier", lambda s: s.code, lambda s: s.list_id)
-    res.inactive = [s for s in res.ok if not s.is_active]
+    res = resolve(suppliers, "supplier", lambda s: s.code, lambda s: s.list_id, lambda s: s.is_active)
+    res.inactive += [s for s in res.ok if not s.is_active]
     res.ok = [s for s in res.ok if s.is_active]
     res.warnings += [Issue(entity="supplier", ref=s.list_id, code="inactive_supplier", severity="warning", message=f"supplier {s.code!r} is inactive: not pushed")
                      for s in res.inactive]
@@ -97,8 +106,8 @@ def resolve_suppliers(suppliers: Iterable[Supplier]) -> QuarantineResult[Supplie
 def resolve_customers(customers: Iterable[Customer]) -> QuarantineResult[Customer]:
     """Customers are keyed by ListID (always unique); duplicate Names are only a warning. Like suppliers, the push must use exactly
     `.ok`: IsActive=false customers go to `.inactive` (with an `inactive_customer` warning) and are never pushed."""
-    res = resolve(customers, "customer", lambda c: c.code, lambda c: c.list_id)
-    res.inactive = [c for c in res.ok if not c.is_active]
+    res = resolve(customers, "customer", lambda c: c.code, lambda c: c.list_id, lambda c: c.is_active)
+    res.inactive += [c for c in res.ok if not c.is_active]
     res.ok = [c for c in res.ok if c.is_active]
     res.warnings += [Issue(entity="customer", ref=c.list_id, code="inactive_customer", severity="warning", message="customer is inactive: not pushed")
                      for c in res.inactive]
@@ -113,10 +122,10 @@ def resolve_customers(customers: Iterable[Customer]) -> QuarantineResult[Custome
 
 
 def resolve_products(products: Iterable[Product], suppliers: QuarantineResult[Supplier] | None = None) -> QuarantineResult[Product]:
-    """One namespace across inventory + assembly items. With `suppliers`, the preferred vendor is replaced by the Vendor
+    """One namespace across inventory + assembly items; colliding keys follow the active-count rule of `resolve` (`.inactive` = set-aside twins). With `suppliers`, the preferred vendor is replaced by the Vendor
     key via ListID (`preferred_vendor_code`, set only here). An unknown, quarantined or inactive vendor leaves it None (never push
     a supplier StockTrim would auto-create) with an `unresolved_vendor` warning."""
-    res = resolve(products, "product", lambda p: p.sku, lambda p: p.list_id)
+    res = resolve(products, "product", lambda p: p.sku, lambda p: p.list_id, lambda p: p.is_active)
     if suppliers is not None:
         code_by_lid = {s.list_id: s.code for s in suppliers.ok}
         for i, p in enumerate(res.ok):

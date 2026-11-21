@@ -98,7 +98,7 @@ def plan_bom(products: QuarantineResult[Product], assemblies: Iterable[dict[str,
     pushed edge). `summed_duplicates` counts LINES merged into an earlier line; `assemblies_with_summed_duplicates` counts assemblies.
     `subassemblies_without_bom`: assemblies used as a component of a pushed edge that have no pushed BOM of their own."""
     by_lid = {p.list_id: p for p in [*products.ok, *extra_components] if p.list_id}
-    bad_lids = ({q.record.list_id for q in products.quarantined} | set(unusable_list_ids)) - {""}
+    bad_lids = ({q.record.list_id for q in products.quarantined} | {p.list_id for p in products.inactive} | set(unusable_list_ids)) - {""}  # inactive = set-aside duplicate-key twins
     lid_of = {p.sku: p.list_id for p in by_lid.values()}
     plan = BomPlan()
     issues = plan.issues
@@ -127,7 +127,7 @@ def plan_bom(products: QuarantineResult[Product], assemblies: Iterable[dict[str,
             if comp is None:
                 n_excluded += 1
                 if lid in bad_lids:
-                    issue("bom_component_excluded", parent.list_id, "warning", f"component of {parent.sku!r} is a quarantined or unparseable product")
+                    issue("bom_component_excluded", parent.list_id, "warning", f"component of {parent.sku!r} is a quarantined, set-aside or unparseable product")
                 else:
                     issue("bom_component_unresolved", parent.list_id, "warning", f"component of {parent.sku!r} is not an inventory/assembly item")
                 continue

@@ -132,7 +132,7 @@ class Excl(NamedTuple):
 
 _KEY = {"supplier": lambda r: r.code, "product": lambda r: r.sku, "customer": lambda r: r.code}
 _ENTITY = {"Vendor": "supplier", "Customer": "customer"}  # parse-issue entity -> push entity (every other one is an item)
-_KEPT_OUT_WARNINGS = ("inactive_supplier", "inactive_customer", "unresolved_vendor")  # warning issues that still leave something out (the record / the supplier link)
+_KEPT_OUT_WARNINGS = ("inactive_supplier", "inactive_customer", "unresolved_vendor", "duplicate_key")  # duplicate_key as a WARNING = a set-aside inactive twin  # warning issues that still leave something out (the record / the supplier link)
 
 
 def domain_exclusions(suppliers: QuarantineResult[Supplier], products: QuarantineResult[Product], customers: QuarantineResult[Customer], bom: BomPlan, parse_issues: Iterable) -> list[Excl]:
