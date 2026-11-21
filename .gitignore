@@ -2,3 +2,10 @@ quickbook_trial_exported_files/
 sos-to-stocktrim-meretusa/
 gitignore/
 .env
+# secrets and generated files must never be committed (editor backups of .env, the generated .qwc)
+.env.*
+!.env.example
+*.save
+*.bak
+*.swp
+*.qwc
