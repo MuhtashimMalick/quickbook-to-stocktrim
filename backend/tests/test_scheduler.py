@@ -131,7 +131,8 @@ def test_full_cycle_done_queues_once_and_never_acknowledges(h, calls):
     assert isinstance(row.summary["warnings"], dict)
     # the dry-run first, then the real run with ITS fingerprints; nothing but (settings, steps, dry_run, fp, plan_fp, kw, mode) is ever passed
     (d_args, d_kw), (r_args, r_kw) = calls[-2], calls[-1]
-    assert d_kw == r_kw == {"requested_by": "scheduler"} and len(d_args) == len(r_args) == 7  # no acknowledge_* / stamp_only, positionally or by keyword
+    assert d_kw == {"requested_by": "scheduler"} and set(r_kw) == {"requested_by", "history_since"} and len(d_args) == len(r_args) == 7  # no acknowledge_* / stamp_only; the real run only adds the dry-run window
+    assert r_kw["history_since"].isoformat() == run.options["history_since"]
     assert d_args[2] is True and r_args[2] is False and d_args[6] == r_args[6] == "sync" and list(d_args[1]) == list(engine.STEPS)
     assert r_args[3:5] == (calls_fp(h, 0), calls_fp(h, 1))
     assert appstate.get_state("last_cycle")["status"] == "done" and h.alerts == []
@@ -207,7 +208,7 @@ def test_mass_requeue_aborts_and_is_never_acknowledged(clean_db, tmp_path, calls
     h.fake.customers.clear()  # looks like a wipe
     row = h.cycle()
     assert (row.status, row.reason) == ("aborted", "mass_requeue") and row.push_run_id is None
-    assert all(len(a) == 7 and set(k) == {"requested_by"} for a, k in calls[-1:])
+    assert all(len(a) == 7 and set(k) <= {"requested_by", "history_since"} for a, k in calls[-1:])
 
 
 def test_blocking_verdict_aborts(h, monkeypatch):
@@ -722,3 +723,21 @@ def test_reads_done_needs_every_job(h):
     j = jobs.create_job("customers")
     jobs.set_job_status(j.id, "done")
     assert h.sch._reads_done([j.id]) is True and h.sch._reads_done([j.id, j.id + 99]) is False  # a vanished job is not "done"
+
+
+def test_a_cycle_spanning_midnight_keeps_the_dry_runs_window(h, monkeypatch):
+    h.baseline()
+    products(h, 1)
+    day = date.today() + timedelta(days=1)
+
+    class Tomorrow(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return datetime(day.year, day.month, day.day, 0, 5, tzinfo=tz)
+    after_dry_run(monkeypatch, lambda: monkeypatch.setattr(engine, "datetime", Tomorrow))  # midnight passes between the dry-run and the real run
+    row = h.cycle()
+    assert (row.status, row.reason) == ("done", None)
+    with session_scope() as s:
+        runs = list(s.scalars(select(PushRun).where(PushRun.requested_by == "scheduler")))
+    assert len(runs) == 2 and len({r.options["history_since"] for r in runs}) == 1
+    assert runs[0].options["history_since"] != engine.history_start(h.env.settings, day).isoformat()

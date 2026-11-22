@@ -421,7 +421,7 @@ class Scheduler:
         except Exception:  # noqa: BLE001
             raise _End("aborted", "lock_lost") from None
         try:
-            r = engine.start(s_, steps, False, d["preflight_fingerprint"], d["plan_fingerprint"], kw, "sync", requested_by="scheduler")
+            r = engine.start(s_, steps, False, d["preflight_fingerprint"], d["plan_fingerprint"], kw, "sync", requested_by="scheduler", history_since=date.fromisoformat(d["history_since"]))  # the dry-run's window: a cycle across midnight keeps one plan
         except engine.PushError as e:
             raise _End("aborted", e.code) from None
         run_id = r["run_id"]

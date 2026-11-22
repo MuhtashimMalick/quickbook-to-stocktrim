@@ -15,7 +15,7 @@
 
 
 ## Sales orders and purchase orders: defaults the client may change
-- Sales history: only orders dated within the last 3 years are sent (`SALES_HISTORY_YEARS`).
+- Sales history: only orders dated within the last 3 years are sent (`SALES_HISTORY_YEARS`); the window start is fixed when a run is created, so a resumed run keeps its orders.
 - Quantity: the ORDERED quantity of each sales-order line; for a manually closed sales order the INVOICED quantity (closing cancels the unshipped remainder; a closed line with nothing invoiced is skipped).
 - Skipped sales-order lines: items that are not pushed products (shipping, discounts, fees, non-inventory, unknown), lines inside bundles/groups, and lines with a zero or negative quantity. They are counted in the dry-run.
 - Purchase orders: ALL of them are sent, with the status taken from QuickBooks: open -> Sent (remaining quantity = ordered - received), fully received -> Received (ordered quantity), manually closed but not fully received -> Received (so StockTrim does not count it as on order). A PO whose state changes later is re-sent with the new status. POs whose vendor is not a pushed supplier, or with no pushable line, are skipped.

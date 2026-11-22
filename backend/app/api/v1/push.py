@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime, timedelta, timezone
 from typing import Any, Literal, Optional
 from uuid import UUID
 
@@ -28,10 +28,14 @@ class PushRequest(M):
     acknowledge_requeue: Optional[dict[Literal["suppliers", "products", "customers"], int]] = None  # sync mode: per step the re-queued count a human has seen (mass_requeue); the scheduler never sets it
     acknowledge_delete: Optional[dict[Literal["bom"], int]] = None  # sync mode: the BOM edge DELETE count a human has seen (mass_delete); the scheduler never sets it
 
+    history_since: Optional[date] = None  # sales-order window start (ISO date); default today. A real run passes the dry-run's value so both plan the same orders
+
     @model_validator(mode="after")
     def _real_run_needs_plan_fingerprint(self) -> "PushRequest":
         if not self.dry_run and not self.plan_fingerprint:
             raise ValueError("plan_fingerprint is required when dry_run is false")
+        if self.history_since and not (datetime.now(timezone.utc).date() - timedelta(days=365 * 11) <= self.history_since <= datetime.now(timezone.utc).date()):
+            raise ValueError("history_since must not be in the future or older than 11 years")
         if self.stamp_only and "bom" in self.steps:
             raise ValueError("stamp_only covers suppliers, products and customers (BOM keeps its own ledger)")
         return self
@@ -64,6 +68,7 @@ class PushStarted(M):
     verdict: Optional[Verdict] = None
     plan_fingerprint: Optional[str] = None
     preflight_fingerprint: Optional[str] = None
+    history_since: Optional[date] = None  # dry-run: the sales-order window start it planned with; pass it to the real run
 
 
 class Sample(M):
@@ -100,7 +105,7 @@ def _call(fn: Any, *a: Any) -> Any:
 @router.post("", response_model=PushStarted, response_model_exclude_none=True)
 def push(request: Request, body: PushRequest, kw: dict[str, Any] = Depends(get_stocktrim_client_kw)) -> Any:
     """dry_run (default): plan + pre-flight, writes nothing to StockTrim. Real run: needs STOCKTRIM_WRITES_ENABLED, an ok pre-flight and BOTH fingerprints of the dry-run."""
-    return _call(engine.start, request.app.state.settings, body.steps, body.dry_run, body.preflight_fingerprint, body.plan_fingerprint, kw, body.mode, body.acknowledge_foreign, body.stamp_only, body.acknowledge_requeue, body.acknowledge_delete, request.state.actor)
+    return _call(engine.start, request.app.state.settings, body.steps, body.dry_run, body.preflight_fingerprint, body.plan_fingerprint, kw, body.mode, body.acknowledge_foreign, body.stamp_only, body.acknowledge_requeue, body.acknowledge_delete, request.state.actor, body.history_since)
 
 
 @runs_router.get("/runs/{run_id}", response_model=PushRunOut)

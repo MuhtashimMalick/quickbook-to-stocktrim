@@ -10,7 +10,7 @@ import threading
 import time
 from collections import Counter
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any, Callable, Optional
 from urllib.parse import urlparse
@@ -112,8 +112,21 @@ class Built:
     exclusions: list[Excl] = field(default_factory=list)  # what the plan leaves out (push_exclusion rows)
 
 
-def build_plan(settings: Settings, steps: "tuple[str, ...] | list[str]" = ()) -> Built:
-    """`steps` selects the (big) order plans to build; the master-data plan is always built."""
+def history_start(settings: Settings, today: Optional[date] = None) -> date:
+    """First day of the sales-order window: ~N years back from `today` (default: today, UTC). ponytail: ~N years, not calendar-exact."""
+    return (today or datetime.now(timezone.utc).date()) - timedelta(days=round(365.25 * settings.sales_history_years))
+
+
+def run_history_since(settings: Settings, row: PushRun) -> date:
+    """The window start of a run: fixed when the run was created (options.history_since), so a resume after midnight rebuilds the same plan.
+    A run created before that was stored derives it from its start date with the same formula and the CURRENT sales_history_years."""
+    if stored := row.options.get("history_since"):
+        return date.fromisoformat(stored)
+    return history_start(settings, (row.started_at or row.created_at).date())
+
+
+def build_plan(settings: Settings, steps: "tuple[str, ...] | list[str]" = (), since: Optional[date] = None) -> Built:
+    """`steps` selects the (big) order plans to build; the master-data plan is always built. `since` = sales-order window start (default: N years back from today)."""
     with session_scope() as s:
         snap = load_snapshot(s, settings.product_key_field)
         orders = {n: list(stream_payloads(s, e)) for n, e in (("sales_orders", "SalesOrder"), ("purchase_orders", "PurchaseOrder")) if n in steps}
@@ -125,8 +138,7 @@ def build_plan(settings: Settings, steps: "tuple[str, ...] | list[str]" = ()) ->
     excl = domain_exclusions(sup, prod, cust, bom, snap.issues)
     sku_of = {p.list_id: p.sku for p in prod.ok}
     if "sales_orders" in orders:
-        since = datetime.now(timezone.utc).date() - timedelta(days=round(365.25 * settings.sales_history_years))  # ponytail: ~N years, not calendar-exact
-        plan.sales_orders, plan.order_stats["sales_orders"] = sales_order_lines(orders["sales_orders"], sku_of, {c.list_id for c in cust.ok}, since, excl)
+        plan.sales_orders, plan.order_stats["sales_orders"] = sales_order_lines(orders["sales_orders"], sku_of, {c.list_id for c in cust.ok}, since or history_start(settings), excl)
     if "purchase_orders" in orders:
         plan.purchase_orders, plan.order_stats["purchase_orders"] = purchase_orders(orders["purchase_orders"], sku_of, {s.list_id: s.code for s in sup.ok}, excl)
     return Built(plan, {p.sku: p.list_id for p in prod.ok}, bom,
@@ -727,7 +739,7 @@ def _thread_main(run_id: UUID, settings: Settings, kw: dict[str, Any], built: Op
         opts, steps, prior = row.options, row.options["steps"], float((row.summary or {}).get("duration_seconds", 0))
         extra = {k: v for k, v in (row.summary or {}).items() if k in ("sync", "mode")}  # a resume keeps what the first start reported
         if built is None:  # fresh run: build the plan HERE (the request returned long ago), check it is the approved one, then lay out the items
-            built = build_plan(settings, steps)
+            built = build_plan(settings, steps, run_history_since(settings, row))
             diff = compute_diff(row.target, built, steps, exists or {}) if opts.get("mode") == "sync" else None
             if plan_fingerprint(built.plan, diff.sel if diff else steps) != opts.get("plan_fingerprint"):
                 raise PlanChanged
@@ -838,7 +850,7 @@ def _stamp(built: Built, target: str, steps: list[str], dry_run: bool, report: A
 
 def start(settings: Settings, steps: list[str], dry_run: bool, fingerprint: Optional[str], plan_fp: Optional[str], kw: dict[str, Any], mode: str = "auto",
           acknowledge_foreign: Optional[str] = None, stamp_only: bool = False, acknowledge_requeue: Optional[dict[str, int]] = None,
-          acknowledge_delete: Optional[dict[str, int]] = None, requested_by: str = "cli") -> dict[str, Any]:
+          acknowledge_delete: Optional[dict[str, int]] = None, requested_by: str = "cli", history_since: Optional[date] = None) -> dict[str, Any]:
     steps = [s for s in STEPS if s in steps]
     if stamp_only and "bom" in steps:
         raise PushError(422, "stamp_has_no_bom_step")
@@ -864,7 +876,8 @@ def start(settings: Settings, steps: list[str], dry_run: bool, fingerprint: Opti
             raise PushError(409, "no_completed_initial_run")  # a diff needs a baseline
         if stamp_only and mode != "sync":
             raise PushError(409, "stamp_needs_sync_mode")
-        opts = {"steps": steps, "dry_run": dry_run, "mode": mode, "negative_stock_policy": settings.negative_stock_policy}
+        since = history_since or history_start(settings)  # computed ONCE per run and stored: a resume rebuilds the same plan on any later day
+        opts = {"steps": steps, "dry_run": dry_run, "mode": mode, "negative_stock_policy": settings.negative_stock_policy, "history_since": since.isoformat()}
         ledger = _ledger(target)  # not None = the account may hold what an earlier run of ours pushed
         if mode == "initial" and ledger and any(ledger[st] for st in steps if st in LEDGER_STEPS):  # before the minutes-long StockTrim reads; dry-runs too (same 409)
             raise PushError(409, "step_already_pushed")  # re-pushing master data on a used target is the incremental sync (mode sync/auto); only BOM edges are diffed in initial mode
@@ -882,7 +895,7 @@ def start(settings: Settings, steps: list[str], dry_run: bool, fingerprint: Opti
         built, diff = None, None
         if mode == "sync" and not stamp_only:  # the sync guards need the diff, so the plan is built here (dry-run and real run alike)
             _requires_step(target, steps, exists)
-            built = build_plan(settings, steps)
+            built = build_plan(settings, steps, since)
             diff = compute_diff(target, built, steps, exists)
             _mass_requeue(diff, acknowledge_requeue)
             _mass_delete(diff, acknowledge_delete, target)
@@ -899,7 +912,7 @@ def start(settings: Settings, steps: list[str], dry_run: bool, fingerprint: Opti
             _launch(run.id, settings, kw, None, exists)
             launched = True  # the thread now owns the lock
             return {"run_id": run.id, "status": "running", "dry_run": False, "mode": mode}
-        built = built or build_plan(settings, steps)
+        built = built or build_plan(settings, steps, since)
         pfp = plan_fingerprint(built.plan, diff.sel if diff else steps)
         plan_counts = {**built.plan.counts, "dropped_supplier_links": sum(w.count for w in report.verdict.warnings if w.code == "unresolved_vendor")}
         extra: dict[str, Any] = {"mode": mode}
@@ -916,7 +929,7 @@ def start(settings: Settings, steps: list[str], dry_run: bool, fingerprint: Opti
         _write_exclusions(run.id, built)
         event("run_finished", run_id=run.id, counts={**plan_counts, "exclusions": len(built.exclusions)}, actor=requested_by)
         return {"run_id": run.id, "status": "done", "dry_run": True, "mode": mode, "plan": plan_counts, "verdict": report.verdict, "plan_fingerprint": pfp,
-                "preflight_fingerprint": report.fingerprint,
+                "preflight_fingerprint": report.fingerprint, "history_since": since.isoformat(),
                 **({"sync": extra["sync"], "planned_calls": diff.calls, "eta_seconds": math.ceil(diff.calls / settings.stocktrim_max_rps)} if diff else {})}
     finally:
         if not dry_run and not launched:
@@ -936,7 +949,7 @@ def resume(settings: Settings, run_id: UUID, kw: dict[str, Any], actor: str = "c
     if not _ACTIVE.acquire(blocking=False):
         raise PushError(409, "push_running")
     try:
-        built = build_plan(settings, row.options["steps"])
+        built = build_plan(settings, row.options["steps"], run_history_since(settings, row))
         sel: Any = row.options["steps"]
         if row.options.get("mode") == "sync":  # a sync run was approved for exactly the keys of its items
             sel = {}
