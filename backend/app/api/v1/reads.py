@@ -178,6 +178,7 @@ class SettingsOut(M):
     sales_history_years: int
     negative_stock_policy: str
     alert_webhook_configured: bool
+    qbwc_company_file_configured: bool  # never the path
     history_retention_days: int
     version: Optional[str]  # APP_VERSION or GIT_SHA from the environment, when the image sets one
     users: list[UserOut]
@@ -193,7 +194,7 @@ def get_settings(request: Request) -> Any:
         environment=st.stocktrim_environment, stocktrim_writes_enabled=st.stocktrim_writes_enabled, scheduler_enabled=st.scheduler_enabled,
         scheduler_allow_production=st.scheduler_allow_production, schedule=ScheduleSummary(source=source, **schedule.model_dump(include={"enabled", "every_days", "time", "tz"})), sync_max_planned_calls=st.sync_max_planned_calls,
         stocktrim_host=urlparse(st.stocktrim_base_url).hostname, stocktrim_max_rps=st.stocktrim_max_rps, read_jobs=sch.types, sales_history_years=st.sales_history_years,
-        negative_stock_policy=st.negative_stock_policy, alert_webhook_configured=st.alert_webhook is not None, history_retention_days=st.history_retention_days,
+        negative_stock_policy=st.negative_stock_policy, alert_webhook_configured=st.alert_webhook is not None, qbwc_company_file_configured=bool(st.qbwc_company_file), history_retention_days=st.history_retention_days,
         version=os.environ.get("APP_VERSION") or os.environ.get("GIT_SHA") or None, users=users)
 
 

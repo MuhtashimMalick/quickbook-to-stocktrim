@@ -318,7 +318,7 @@ def test_settings_has_no_secrets(make_env, tmp_path, clean_db):
     d = r.json()
     for secret in ("qbwc-pw-SECRET1", TOKEN, "jwt-SECRET-", "st-auth-ID-SECRET2", "st-sig-SECRET3", "SECRET4", "hooks.example.test", "argon2", "password_hash", "/v1"):
         assert secret not in r.text, secret
-    assert d["stocktrim_host"] == "api.example.test" and d["alert_webhook_configured"] is True and d["read_jobs"] == ["customers", "vendors"]
+    assert d["stocktrim_host"] == "api.example.test" and d["alert_webhook_configured"] is True and d["qbwc_company_file_configured"] is False and d["read_jobs"] == ["customers", "vendors"]
     assert d["stocktrim_writes_enabled"] is False and d["scheduler_enabled"] is False and d["environment"] == "test" and d["sync_max_planned_calls"] == 2000
     assert [(u["username"], u["is_active"]) for u in d["users"]] == [("alice", True)] and set(d["users"][0]) == {"username", "is_active", "last_login_at"}
     assert d["users"][0]["last_login_at"] is not None

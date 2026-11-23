@@ -400,7 +400,7 @@ class Scheduler:
         v = d["verdict"]
         ctx["summary"]["planned_calls"] = d["planned_calls"]
         ctx["summary"]["sync"] = {st: {k: n for k, n in c.items() if isinstance(n, int)} for st, c in d["sync"].items()}
-        ev("dry_run_planned", run_id=d["run_id"], counts={"planned_calls": d["planned_calls"], **{k: sum(c.get(k, 0) for c in ctx["summary"]["sync"].values()) for k in ("new", "changed", "unchanged", "requeued", "vanished")}})
+        ev("dry_run_planned", run_id=d["run_id"], counts={"planned_calls": d["planned_calls"], **{k: sum(c.get(k, 0) for c in ctx["summary"]["sync"].values()) for k in ("new", "changed", "unchanged", "requeued", "vanished", "aged_out")}})
         ctx["summary"]["warnings"] = {w.code: w.count for w in v.warnings}
         if v.foreign_hash or any(w.code == "foreign_in_plan" for w in v.warnings):
             raise _End("aborted", "foreign_records")

@@ -110,6 +110,7 @@ class Built:
     bom: BomPlan
     quantities: dict[str, Decimal]  # bom_edge_key -> planned quantity (exact Decimal, already rounded to StockTrim's 5 decimals)
     exclusions: list[Excl] = field(default_factory=list)  # what the plan leaves out (push_exclusion rows)
+    aged_orders: set[str] = field(default_factory=set)  # TxnIDs of the sales orders still in QuickBooks but dated before the window
 
 
 def history_start(settings: Settings, today: Optional[date] = None) -> date:
@@ -137,12 +138,13 @@ def build_plan(settings: Settings, steps: "tuple[str, ...] | list[str]" = (), si
     plan = build_push_plan(sup, prod, cust, bom, settings.negative_stock_policy)
     excl = domain_exclusions(sup, prod, cust, bom, snap.issues)
     sku_of = {p.list_id: p.sku for p in prod.ok}
+    aged: set[str] = set()
     if "sales_orders" in orders:
-        plan.sales_orders, plan.order_stats["sales_orders"] = sales_order_lines(orders["sales_orders"], sku_of, {c.list_id for c in cust.ok}, since or history_start(settings), excl)
+        plan.sales_orders, plan.order_stats["sales_orders"] = sales_order_lines(orders["sales_orders"], sku_of, {c.list_id for c in cust.ok}, since or history_start(settings), excl, aged)
     if "purchase_orders" in orders:
         plan.purchase_orders, plan.order_stats["purchase_orders"] = purchase_orders(orders["purchase_orders"], sku_of, {s.list_id: s.code for s in sup.ok}, excl)
     return Built(plan, {p.sku: p.list_id for p in prod.ok}, bom,
-                 {bom_edge_key(e.parent_sku, e.component_sku): e.quantity for es in bom.edges_by_parent.values() for e in es}, excl)
+                 {bom_edge_key(e.parent_sku, e.component_sku): e.quantity for es in bom.edges_by_parent.values() for e in es}, excl, aged)
 
 
 def payload_hash(req: Any) -> str:
@@ -303,9 +305,13 @@ def compute_diff(target: str, built: Built, steps: list[str], exists: dict[str, 
             else:
                 out["unchanged"].append(k)
         keys = {norm(k) for k, _ in plan}
-        d.vanished_refs[st] = [r for n, (_, r, _) in sorted(led.items()) if n not in keys and r]
+        # sales orders: an unplanned line whose order is still in QuickBooks, dated before the window, is AGED OUT (still in StockTrim, expected); the rest is vanished
+        gone = [n for n in led if n not in keys]
+        aged = {n for n in gone if st == "sales_orders" and led[n][0].split(":")[0] in built.aged_orders}
+        d.vanished_refs[st] = [r for n, (_, r, _) in sorted(led.items()) if n not in keys and n not in aged and r]
         d.requeued[st] = out["requeued"]
-        d.stats[st] = {**{n: len(v) for n, v in out.items()}, "vanished": sum(1 for n in led if n not in keys), **({"inexact": _inexact(target)} if st == "products" else {})}
+        d.stats[st] = {**{n: len(v) for n, v in out.items()}, "vanished": len(gone) - len(aged), **({"aged_out": len(aged)} if st == "sales_orders" else {}),
+                       **({"inexact": _inexact(target)} if st == "products" else {})}
         push = {*out["new"], *out["changed"], *out["requeued"]}
         d.sel[st] = [k for k, _ in plan if k in push]  # plan order
     d.so_calls = len(so_chunks(d.sel.get("sales_orders", []), dict(built.plan.sales_orders)))

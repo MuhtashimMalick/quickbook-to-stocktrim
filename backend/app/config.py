@@ -37,6 +37,7 @@ class Settings(DatabaseSettings):
     refresh_reuse_grace_seconds: int = Field(10, ge=0, le=60)  # a token rotated less than this ago and replayed = benign race, no revocation
     qwc_owner_id: UUID
     qwc_file_id: UUID
+    qbwc_company_file: str = ""  # path the Web Connector opens by itself (authenticate slot 1); empty = whichever company file is open
     qwc_app_name: str = "Specialty Archery StockTrim"
     qwc_app_description: str = "Specialty Archery: QuickBooks Desktop <-> StockTrim sync"
     qwc_filename: str = Field("SpecialtyArchery-StockTrim.qwc", pattern=r"^[A-Za-z0-9._-]+\.qwc$")
@@ -89,6 +90,14 @@ class Settings(DatabaseSettings):
         if self.admin_token.get_secret_value() == "change-me-admin":
             raise ValueError("admin_token is still the example placeholder; generate one with openssl rand -hex 24")
         return self
+
+    @field_validator("qbwc_company_file")
+    @classmethod
+    def _check_company_file(cls, v: str) -> str:
+        v = v.strip()
+        if len(v) > 260 or any(ord(c) < 32 or ord(c) == 127 for c in v):
+            raise ValueError("qbwc_company_file must be at most 260 characters without control characters")
+        return v
 
     @field_validator("scheduler_tz")
     @classmethod

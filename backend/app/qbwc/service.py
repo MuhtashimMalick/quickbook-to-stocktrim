@@ -7,6 +7,7 @@ import json
 import logging
 import re
 import time
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
@@ -89,7 +90,17 @@ def setup_file_log(log_dir: Path, retention_days: int) -> None:
     logger.setLevel(logging.INFO)
 
 
+@dataclass
 class LoggingQBWCService(QBWCService):
+    company_file: str = ""  # QBWC_COMPANY_FILE: named in the authenticate answer when work is queued ("" = whichever file is open)
+
+    def _do_authenticate(self, call: soap.SoapCall) -> list[str]:
+        out = list(super()._do_authenticate(call))
+        if self.company_file and out[0] and out[1] == "":  # authenticated with work queued (idle = "none", refused = "nvu": untouched)
+            out[1] = self.company_file
+            logger.info("QBWC company file named in authenticate: configured=True len=%d", len(self.company_file))
+        return out
+
     def _touch(self, key: str) -> None:
         last = self.__dict__.setdefault("_contact_at", {})  # per state key: monotonic time of the last write (throttled to once a minute)
         if time.monotonic() - last.get(key, -1e9) < 60:

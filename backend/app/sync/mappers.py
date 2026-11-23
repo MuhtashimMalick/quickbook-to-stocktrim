@@ -147,8 +147,8 @@ def domain_exclusions(suppliers: QuarantineResult[Supplier], products: Quarantin
     return out + [Excl("bom_edge", i.ref, i.ref, i.code) for i in bom.issues]
 
 
-def sales_order_lines(orders: Iterable[dict], sku_of: dict[str, str], customers: set[str], since: date, skipped: Optional[list[Excl]] = None) -> tuple[list[tuple[str, SalesOrderRequest]], dict[str, int]]:
-    """One request per order LINE of the orders dated >= `since`; key = externalReferenceId = 'TxnID:TxnLineID'. Only lines of pushable products (`sku_of`: ListID -> SKU) are sent;
+def sales_order_lines(orders: Iterable[dict], sku_of: dict[str, str], customers: set[str], since: date, skipped: Optional[list[Excl]] = None, aged: Optional[set[str]] = None) -> tuple[list[tuple[str, SalesOrderRequest]], dict[str, int]]:
+    """One request per order LINE of the orders dated >= `since` (`aged` (out) receives the TxnIDs of the orders dated before it); key = externalReferenceId = 'TxnID:TxnLineID'. Only lines of pushable products (`sku_of`: ListID -> SKU) are sent;
     quantity = ordered, but invoiced for a manually closed order. customerCode only when that customer is pushed (StockTrim rejects an unknown one).
     stats: orders (in window), lines (to send), skipped by reason: non_product, group (lines inside bundles), zero_quantity, closed_uninvoiced. `skipped` (out) receives one Excl per skipped line."""
     out: list[tuple[str, SalesOrderRequest]] = []
@@ -161,6 +161,8 @@ def sales_order_lines(orders: Iterable[dict], sku_of: dict[str, str], customers:
     for o in orders:
         day = _day(o.get("TxnDate"))
         if day is None or day.date() < since:
+            if aged is not None and day is not None:
+                aged.add(str(o.get("TxnID")))
             continue
         st["orders"] += 1
         closed = _true(o.get("IsManuallyClosed"))

@@ -38,7 +38,7 @@ def build_app(settings: Optional[Settings] = None) -> FastAPI:
     app = FastAPI(lifespan=lifespan, redirect_slashes=False, title="QuickBooks <-> StockTrim POC (QuickBooks side)")
     app.state.settings = settings
     app.state.scheduler = Scheduler(settings)
-    service = LoggingQBWCService(DbAuthenticator(settings), on_session_end=end_session)
+    service = LoggingQBWCService(DbAuthenticator(settings), on_session_end=end_session, company_file=settings.qbwc_company_file)
     app.state.qbwc_service = service
     create_app(service, endpoint_url=settings.app_url, path=QBWC_PATH, app=app)
     app.add_middleware(TunnelGate)
